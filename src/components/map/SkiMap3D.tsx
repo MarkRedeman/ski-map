@@ -6,7 +6,11 @@ import { Pistes } from './Pistes'
 import { Lifts } from './Lifts'
 import { UserMarker } from './UserMarker'
 import { RouteOverlay } from './RouteOverlay'
+import { RunPath } from './RunPath'
+import { useSelectedRun } from '@/hooks/useRuns'
 export function SkiMap3D() {
+  const selectedRun = useSelectedRun()
+  
   return (
     <Canvas
       camera={{
@@ -43,6 +47,8 @@ export function SkiMap3D() {
         <Lifts />
         <UserMarker />
         <RouteOverlay />
+        {/* Render selected ski run if available */}
+        {selectedRun && <RunPath run={selectedRun} />}
       </Suspense>
       
       {/* Camera Controls */}

@@ -13,14 +13,16 @@ A 3D ski navigation app for the Sölden ski area in Austria. Find your way throu
 - **GPS Tracking** - Real-time location with accuracy indicator
 - **PWA Support** - Works offline on the slopes!
 
-### Phase 2: Run Tracking 🚧
+### Phase 2: Run Tracking ✅
 - Upload Garmin/GPX data
 - Visualize past runs on 3D terrain
 - Run statistics and comparisons
+- Speed-colored path visualization
 
-### Phase 3: Video Generation 🚧
+### Phase 3: Video Generation ✅
 - Remotion-powered video creation
-- Animated run replays
+- Animated run replays with stats overlay
+- Client-side video export (WebCodecs)
 - Shareable highlight videos
 
 ## Getting Started
@@ -84,15 +86,15 @@ src/
 
 | Mistake Type | Shots | Description |
 |-------------|-------|-------------|
-| TypeScript errors | 0 | Compilation failures |
+| TypeScript errors | 1 | Vite ImportMeta types not recognized |
 | Runtime errors | 0 | Crashes & bugs |
 | Git failures | 0 | Commit/push issues |
 | Agent failures | 0 | Parallel task failures |
 | User-reported bugs | 0 | Bugs caught by user |
 
-### 🥃 Total Shots: 0
+### 🥃 Total Shots: 1
 
-*Last updated: Phase 1 completion*
+*Last updated: Phase 3 completion*
 
 > "Always code as if the guy who ends up maintaining your code will be a violent psychopath who knows where you live." - But also, drink responsibly! 🍻
 

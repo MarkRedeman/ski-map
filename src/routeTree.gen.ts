@@ -10,33 +10,63 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RunsIndexRouteImport } from './routes/runs/index'
+import { Route as RunsUploadRouteImport } from './routes/runs/upload'
+import { Route as RunsVideoRunIdRouteImport } from './routes/runs/video.$runId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RunsIndexRoute = RunsIndexRouteImport.update({
+  id: '/runs/',
+  path: '/runs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RunsUploadRoute = RunsUploadRouteImport.update({
+  id: '/runs/upload',
+  path: '/runs/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RunsVideoRunIdRoute = RunsVideoRunIdRouteImport.update({
+  id: '/runs/video/$runId',
+  path: '/runs/video/$runId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/runs/upload': typeof RunsUploadRoute
+  '/runs/': typeof RunsIndexRoute
+  '/runs/video/$runId': typeof RunsVideoRunIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/runs/upload': typeof RunsUploadRoute
+  '/runs': typeof RunsIndexRoute
+  '/runs/video/$runId': typeof RunsVideoRunIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/runs/upload': typeof RunsUploadRoute
+  '/runs/': typeof RunsIndexRoute
+  '/runs/video/$runId': typeof RunsVideoRunIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/runs/upload' | '/runs/' | '/runs/video/$runId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/runs/upload' | '/runs' | '/runs/video/$runId'
+  id: '__root__' | '/' | '/runs/upload' | '/runs/' | '/runs/video/$runId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  RunsUploadRoute: typeof RunsUploadRoute
+  RunsIndexRoute: typeof RunsIndexRoute
+  RunsVideoRunIdRoute: typeof RunsVideoRunIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +78,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/runs/': {
+      id: '/runs/'
+      path: '/runs'
+      fullPath: '/runs/'
+      preLoaderRoute: typeof RunsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/runs/upload': {
+      id: '/runs/upload'
+      path: '/runs/upload'
+      fullPath: '/runs/upload'
+      preLoaderRoute: typeof RunsUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/runs/video/$runId': {
+      id: '/runs/video/$runId'
+      path: '/runs/video/$runId'
+      fullPath: '/runs/video/$runId'
+      preLoaderRoute: typeof RunsVideoRunIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  RunsUploadRoute: RunsUploadRoute,
+  RunsIndexRoute: RunsIndexRoute,
+  RunsVideoRunIdRoute: RunsVideoRunIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
