@@ -8,7 +8,9 @@ import { useFrame } from '@react-three/fiber'
 import { Line } from '@react-three/drei'
 import * as THREE from 'three'
 import { useNavigationStore } from '@/stores/useNavigationStore'
+import { useMapStore } from '@/stores/useMapStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
+import { projectPointsOnGrid, projectVectorsOnGrid, type ElevationGrid } from '@/lib/geo/elevationGrid'
 
 /** Colors for route segments by type */
 const ROUTE_COLORS = {
@@ -23,8 +25,9 @@ const ROUTE_COLORS = {
  */
 export function RouteOverlay() {
   const selectedRoute = useNavigationStore((s) => s.selectedRoute)
+  const elevationGrid = useMapStore((s) => s.elevationGrid)
   
-  if (!selectedRoute || selectedRoute.steps.length === 0) {
+  if (!selectedRoute || selectedRoute.steps.length === 0 || !elevationGrid) {
     return null
   }
   
@@ -38,11 +41,12 @@ export function RouteOverlay() {
           type={step.type}
           index={index}
           totalSteps={selectedRoute.steps.length}
+          elevationGrid={elevationGrid}
         />
       ))}
       
       {/* Animated direction indicator */}
-      <RouteAnimation steps={selectedRoute.steps} />
+      <RouteAnimation steps={selectedRoute.steps} elevationGrid={elevationGrid} />
     </group>
   )
 }
@@ -53,28 +57,26 @@ interface RouteSegmentProps {
   type: 'piste' | 'lift'
   index: number
   totalSteps: number
+  elevationGrid: ElevationGrid
 }
 
 /**
  * Individual route segment rendered as a thick line
  */
-function RouteSegment({ fromCoords, toCoords, type }: RouteSegmentProps) {
-  // Convert geo coords to local 3D coords
-  // [lat, lon, elevation] -> local [x, y, z]
+function RouteSegment({ fromCoords, toCoords, type, elevationGrid }: RouteSegmentProps) {
+  // Convert geo coords to local 3D coords and project onto terrain
   const points = useMemo(() => {
-    const fromLocal = coordsToLocal(
-      [[fromCoords[1], fromCoords[0]]],
-      fromCoords[2] + 15 // Raise above terrain
-    )[0]
-    const toLocal = coordsToLocal(
-      [[toCoords[1], toCoords[0]]],
-      toCoords[2] + 15
-    )[0]
+    const fromLocal = coordsToLocal([[fromCoords[1], fromCoords[0]]], 0)[0]
+    const toLocal = coordsToLocal([[toCoords[1], toCoords[0]]], 0)[0]
     
     if (!fromLocal || !toLocal) return []
     
-    return [fromLocal, toLocal]
-  }, [fromCoords, toCoords])
+    // Project onto terrain with offset (higher for lifts) - O(1) per point!
+    const offset = type === 'lift' ? 12 : 5
+    const projected = projectPointsOnGrid(elevationGrid, [fromLocal, toLocal], offset)
+    
+    return projected
+  }, [fromCoords, toCoords, type, elevationGrid])
   
   if (points.length < 2) return null
   
@@ -107,12 +109,13 @@ interface RouteAnimationProps {
     from: { coordinates: [number, number, number] }
     to: { coordinates: [number, number, number] }
   }>
+  elevationGrid: ElevationGrid
 }
 
 /**
  * Animated sphere that travels along the route
  */
-function RouteAnimation({ steps }: RouteAnimationProps) {
+function RouteAnimation({ steps, elevationGrid }: RouteAnimationProps) {
   const meshRef = useRef<THREE.Mesh>(null)
   const progressRef = useRef(0)
   
@@ -123,7 +126,7 @@ function RouteAnimation({ steps }: RouteAnimationProps) {
     for (const step of steps) {
       const fromLocal = coordsToLocal(
         [[step.from.coordinates[1], step.from.coordinates[0]]],
-        step.from.coordinates[2] + 20
+        0
       )[0]
       
       if (fromLocal) {
@@ -136,7 +139,7 @@ function RouteAnimation({ steps }: RouteAnimationProps) {
     if (lastStep) {
       const toLocal = coordsToLocal(
         [[lastStep.to.coordinates[1], lastStep.to.coordinates[0]]],
-        lastStep.to.coordinates[2] + 20
+        0
       )[0]
       
       if (toLocal) {
@@ -144,8 +147,9 @@ function RouteAnimation({ steps }: RouteAnimationProps) {
       }
     }
     
-    return points
-  }, [steps])
+    // Project all points onto terrain with offset (O(1) per point!)
+    return projectVectorsOnGrid(elevationGrid, points, 8)
+  }, [steps, elevationGrid])
   
   // Create curve for smooth animation
   const curve = useMemo(() => {

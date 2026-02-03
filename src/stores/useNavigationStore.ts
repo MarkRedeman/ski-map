@@ -44,6 +44,9 @@ interface NavigationState {
   setFromLocation: (location: Location | null) => void
   setToLocation: (location: Location | null) => void
   swapLocations: () => void
+  
+  // Quick destination setter (for clicking on map)
+  setDestination: (dest: { id: string; name: string; coordinates: [number, number, number]; type: string }) => void
 
   // Current route
   selectedRoute: Route | null
@@ -91,6 +94,16 @@ export const useNavigationStore = create<NavigationState>()(
         fromLocation: state.toLocation,
         toLocation: state.fromLocation,
       })),
+    
+    setDestination: (dest) =>
+      set({
+        toLocation: {
+          id: dest.id,
+          name: dest.name,
+          coordinates: dest.coordinates,
+          type: dest.type === 'piste' ? 'piste_end' : 'lift_station',
+        },
+      }),
 
     selectedRoute: null,
     setSelectedRoute: (route) => set({ selectedRoute: route }),

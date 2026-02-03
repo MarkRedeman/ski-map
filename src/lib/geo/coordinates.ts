@@ -91,14 +91,23 @@ export function getSoldenBounds() {
   const [minX, , minZ] = geoToLocal(minLat, minLon)
   const [maxX, , maxZ] = geoToLocal(maxLat, maxLon)
   
+  const actualMinX = Math.min(minX, maxX)
+  const actualMaxX = Math.max(minX, maxX)
+  const actualMinZ = Math.min(minZ, maxZ)
+  const actualMaxZ = Math.max(minZ, maxZ)
+  
+  // Calculate actual center of the bounding box (not 0,0!)
+  const centerX = (actualMinX + actualMaxX) / 2
+  const centerZ = (actualMinZ + actualMaxZ) / 2
+  
   return {
-    minX: Math.min(minX, maxX),
-    maxX: Math.max(minX, maxX),
-    minZ: Math.min(minZ, maxZ),
-    maxZ: Math.max(minZ, maxZ),
-    centerX: 0,
-    centerZ: 0,
-    width: Math.abs(maxX - minX),
-    depth: Math.abs(maxZ - minZ),
+    minX: actualMinX,
+    maxX: actualMaxX,
+    minZ: actualMinZ,
+    maxZ: actualMaxZ,
+    centerX,
+    centerZ,
+    width: Math.abs(actualMaxX - actualMinX),
+    depth: Math.abs(actualMaxZ - actualMinZ),
   }
 }
