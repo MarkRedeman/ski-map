@@ -17,8 +17,6 @@ export function Lifts() {
   const elevationGrid = useMapStore((s) => s.elevationGrid)
   const hoveredLiftId = useMapStore((s) => s.hoveredLiftId)
   const selectedLiftId = useMapStore((s) => s.selectedLiftId)
-  const setHoveredLift = useMapStore((s) => s.setHoveredLift)
-  const setSelectedLift = useMapStore((s) => s.setSelectedLift)
 
   if (!showLifts || isLoading || !lifts?.length || !elevationGrid) {
     return null
@@ -31,12 +29,9 @@ export function Lifts() {
           key={lift.id}
           id={lift.id}
           coordinates={lift.coordinates}
-          name={lift.name}
           elevationGrid={elevationGrid}
           isHovered={hoveredLiftId === lift.id}
           isSelected={selectedLiftId === lift.id}
-          onHover={setHoveredLift}
-          onSelect={setSelectedLift}
         />
       ))}
     </group>
@@ -46,15 +41,12 @@ export function Lifts() {
 interface LiftLineProps {
   id: string
   coordinates: [number, number][]
-  name: string
   elevationGrid: ElevationGrid
   isHovered: boolean
   isSelected: boolean
-  onHover: (id: string | null) => void
-  onSelect: (id: string | null) => void
 }
 
-function LiftLine({ id, coordinates, elevationGrid, isHovered, isSelected, onHover, onSelect }: LiftLineProps) {
+function LiftLine({ coordinates, elevationGrid, isHovered, isSelected }: LiftLineProps) {
   // Convert geo coordinates to local 3D coordinates and project onto terrain
   // Lifts get a higher offset since cables are above the ground
   const points = useMemo(() => {
@@ -68,13 +60,6 @@ function LiftLine({ id, coordinates, elevationGrid, isHovered, isSelected, onHov
   const isHighlighted = isHovered || isSelected
   const color = isHighlighted ? LIFT_COLOR_HOVER : LIFT_COLOR
 
-  const handlePointerOver = () => onHover(id)
-  const handlePointerOut = () => onHover(null)
-  const handleClick = (e: { stopPropagation: () => void }) => {
-    e.stopPropagation()
-    onSelect(id)
-  }
-
   return (
     <group>
       {/* Lift cable line */}
@@ -85,30 +70,19 @@ function LiftLine({ id, coordinates, elevationGrid, isHovered, isSelected, onHov
         dashed
         dashSize={2}
         gapSize={1}
-        onPointerOver={handlePointerOver}
-        onPointerOut={handlePointerOut}
-        onClick={handleClick}
+        // Pointer events now handled by ProximitySelector for better UX
+        raycast={() => null}
       />
       
       {/* Station markers at start and end */}
       {points[0] && (
-        <mesh
-          position={points[0]}
-          onPointerOver={handlePointerOver}
-          onPointerOut={handlePointerOut}
-          onClick={handleClick}
-        >
+        <mesh position={points[0]} raycast={() => null}>
           <boxGeometry args={[3, 6, 3]} />
           <meshStandardMaterial color={color} />
         </mesh>
       )}
       {points[points.length - 1] && (
-        <mesh
-          position={points[points.length - 1]}
-          onPointerOver={handlePointerOver}
-          onPointerOut={handlePointerOut}
-          onClick={handleClick}
-        >
+        <mesh position={points[points.length - 1]} raycast={() => null}>
           <boxGeometry args={[3, 6, 3]} />
           <meshStandardMaterial color={color} />
         </mesh>

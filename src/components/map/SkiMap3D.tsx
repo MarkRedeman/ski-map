@@ -9,6 +9,7 @@ import { RouteOverlay } from './RouteOverlay'
 import { RunPath } from './RunPath'
 import { InfoTooltip } from './InfoTooltip'
 import { InfoPanel } from './InfoPanel'
+import { ProximitySelector } from './ProximitySelector'
 import { useSelectedRun } from '@/hooks/useRuns'
 import { getSoldenBounds } from '@/lib/geo/coordinates'
 
@@ -59,6 +60,8 @@ export function SkiMap3D() {
           {selectedRun && <RunPath run={selectedRun} />}
           {/* Hover tooltip */}
           <InfoTooltip />
+          {/* Proximity-based selection handler */}
+          <ProximitySelector />
         </Suspense>
         
         {/* Camera Controls */}

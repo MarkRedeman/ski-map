@@ -21,8 +21,6 @@ export function Pistes() {
   const showPistes = useMapStore((s) => s.showPistes)
   const hoveredPisteId = useMapStore((s) => s.hoveredPisteId)
   const selectedPisteId = useMapStore((s) => s.selectedPisteId)
-  const setHoveredPiste = useMapStore((s) => s.setHoveredPiste)
-  const setSelectedPiste = useMapStore((s) => s.setSelectedPiste)
   const elevationGrid = useMapStore((s) => s.elevationGrid)
 
   const filteredPistes = useMemo(
@@ -44,8 +42,6 @@ export function Pistes() {
           difficulty={piste.difficulty}
           isHovered={hoveredPisteId === piste.id}
           isSelected={selectedPisteId === piste.id}
-          onHover={setHoveredPiste}
-          onSelect={setSelectedPiste}
           elevationGrid={elevationGrid}
         />
       ))}
@@ -59,12 +55,10 @@ interface PisteLineProps {
   difficulty: Difficulty
   isHovered: boolean
   isSelected: boolean
-  onHover: (id: string | null) => void
-  onSelect: (id: string | null) => void
   elevationGrid: ElevationGrid
 }
 
-function PisteLine({ id, coordinates, difficulty, isHovered, isSelected, onHover, onSelect, elevationGrid }: PisteLineProps) {
+function PisteLine({ coordinates, difficulty, isHovered, isSelected, elevationGrid }: PisteLineProps) {
   // Convert geo coordinates to local 3D coordinates and project onto terrain
   const points = useMemo(() => {
     const localCoords = coordsToLocal(coordinates, 0)
@@ -83,12 +77,8 @@ function PisteLine({ id, coordinates, difficulty, isHovered, isSelected, onHover
       lineWidth={isHighlighted ? 5 : 2}
       opacity={isHighlighted ? 1 : 0.8}
       transparent
-      onPointerOver={() => onHover(id)}
-      onPointerOut={() => onHover(null)}
-      onClick={(e) => {
-        e.stopPropagation()
-        onSelect(id)
-      }}
+      // Pointer events now handled by ProximitySelector for better UX
+      raycast={() => null}
     />
   )
 }

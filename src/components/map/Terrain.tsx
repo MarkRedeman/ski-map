@@ -55,7 +55,6 @@ export function Terrain() {
   const meshRef = useRef<THREE.Mesh>(null)
   const setTerrainMesh = useMapStore((s) => s.setTerrainMesh)
   const setElevationGrid = useMapStore((s) => s.setElevationGrid)
-  const clearSelection = useMapStore((s) => s.clearSelection)
   
   // Register terrain mesh and elevation grid with store
   useEffect(() => {
@@ -148,18 +147,12 @@ export function Terrain() {
     return geo
   }, [bounds.width, bounds.depth])
 
-  // Handle click on terrain to clear selection
-  const handleClick = () => {
-    clearSelection()
-  }
-
   return (
     <mesh 
       ref={meshRef} 
       geometry={geometry} 
       position={[bounds.centerX, 0, bounds.centerZ]}
       receiveShadow
-      onClick={handleClick}
     >
       <meshStandardMaterial
         vertexColors
