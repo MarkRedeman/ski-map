@@ -1,6 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Environment, GizmoHelper, GizmoViewport } from '@react-three/drei'
-import { Suspense, useMemo } from 'react'
+import { Suspense } from 'react'
 import { Terrain } from './Terrain'
 import { Pistes } from './Pistes'
 import { Lifts } from './Lifts'
@@ -11,19 +11,19 @@ import { InfoTooltip } from './InfoTooltip'
 import { InfoPanel } from './InfoPanel'
 import { ProximitySelector } from './ProximitySelector'
 import { useSelectedRun } from '@/hooks/useRuns'
-import { getSoldenBounds } from '@/lib/geo/coordinates'
 
 export function SkiMap3D() {
   const selectedRun = useSelectedRun()
   
-  // Get the actual center of the ski area for camera positioning
-  const bounds = useMemo(() => getSoldenBounds(), [])
+  // Camera and controls are centered on Giggijoch (0, 0, 0)
+  // since all geo coordinates are converted relative to SOLDEN_CENTER
   
   return (
     <div className="relative h-full w-full">
       <Canvas
         camera={{
-          position: [bounds.centerX, 300, bounds.centerZ + 400],
+          // Position camera looking at Giggijoch from the south
+          position: [0, 300, 400],
           fov: 50,
           near: 1,
           far: 10000,

@@ -151,7 +151,7 @@ export function Terrain() {
     <mesh 
       ref={meshRef} 
       geometry={geometry} 
-      position={[bounds.centerX, 0, bounds.centerZ]}
+      position={[0, 0, 0]}
       receiveShadow
     >
       <meshStandardMaterial
