@@ -5,6 +5,7 @@ import { Terrain } from './Terrain'
 import { Pistes } from './Pistes'
 import { Lifts } from './Lifts'
 import { UserMarker } from './UserMarker'
+import { RouteOverlay } from './RouteOverlay'
 export function SkiMap3D() {
   return (
     <Canvas
@@ -41,6 +42,7 @@ export function SkiMap3D() {
         <Pistes />
         <Lifts />
         <UserMarker />
+        <RouteOverlay />
       </Suspense>
       
       {/* Camera Controls */}

@@ -1,27 +1,33 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { MapPin, Navigation, ArrowRightLeft, Loader2 } from 'lucide-react'
 import { useNavigationStore, type Location } from '@/stores/useNavigationStore'
 import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
+import { useRouteCalculation } from '@/hooks/useRoute'
 import { cn } from '@/lib/utils'
 
 export function SearchPanel() {
-  const { 
-    fromLocation, 
-    toLocation, 
-    setFromLocation, 
-    setToLocation, 
-    swapLocations,
-    isCalculating 
-  } = useNavigationStore()
+  const fromLocation = useNavigationStore((s) => s.fromLocation)
+  const toLocation = useNavigationStore((s) => s.toLocation)
+  const setFromLocation = useNavigationStore((s) => s.setFromLocation)
+  const setToLocation = useNavigationStore((s) => s.setToLocation)
+  const swapLocations = useNavigationStore((s) => s.swapLocations)
+  const isCalculating = useNavigationStore((s) => s.isCalculating)
+  const setIsCalculating = useNavigationStore((s) => s.setIsCalculating)
+  const setSelectedRoute = useNavigationStore((s) => s.setSelectedRoute)
+  const enabledDifficulties = useNavigationStore((s) => s.enabledDifficulties)
 
   const [fromQuery, setFromQuery] = useState('')
   const [toQuery, setToQuery] = useState('')
   const [activeInput, setActiveInput] = useState<'from' | 'to' | null>(null)
+  const [routeError, setRouteError] = useState<string | null>(null)
 
   // Get available locations from pistes and lifts
   const { data: pistes } = usePistes()
   const { data: lifts } = useLifts()
+
+  // Route calculation
+  const { isReady, calculate } = useRouteCalculation()
 
   const locations = useMemo(() => {
     const locs: Location[] = []
@@ -32,7 +38,7 @@ export function SearchPanel() {
         if (lift.stations) {
           lift.stations.forEach((station, i) => {
             locs.push({
-              id: `${lift.id}-station-${i}`,
+              id: `lift_station-${lift.id}-${i}`,
               name: station.name || `${lift.name} ${i === 0 ? 'Bottom' : 'Top'}`,
               type: 'lift_station',
               coordinates: station.coordinates,
@@ -47,16 +53,16 @@ export function SearchPanel() {
       pistes.forEach((piste) => {
         if (piste.startPoint) {
           locs.push({
-            id: `${piste.id}-start`,
-            name: `${piste.name} (Start)`,
+            id: `piste_start-${piste.id}`,
+            name: `${piste.name} (Top)`,
             type: 'piste_start',
             coordinates: piste.startPoint,
           })
         }
         if (piste.endPoint) {
           locs.push({
-            id: `${piste.id}-end`,
-            name: `${piste.name} (End)`,
+            id: `piste_end-${piste.id}`,
+            name: `${piste.name} (Bottom)`,
             type: 'piste_end',
             coordinates: piste.endPoint,
           })
@@ -86,7 +92,36 @@ export function SearchPanel() {
       setToQuery(location.name)
     }
     setActiveInput(null)
+    setRouteError(null)
   }
+
+  const handleGetDirections = useCallback(() => {
+    if (!fromLocation || !toLocation || !calculate) return
+
+    setIsCalculating(true)
+    setRouteError(null)
+    setSelectedRoute(null)
+
+    // Use setTimeout to allow UI to update before computation
+    setTimeout(() => {
+      try {
+        const route = calculate(fromLocation, toLocation, enabledDifficulties)
+        
+        if (route) {
+          setSelectedRoute(route)
+        } else {
+          setRouteError('No route found. Try enabling more difficulty levels or choosing different locations.')
+        }
+      } catch (error) {
+        console.error('Route calculation error:', error)
+        setRouteError('Failed to calculate route. Please try again.')
+      } finally {
+        setIsCalculating(false)
+      }
+    }, 50)
+  }, [fromLocation, toLocation, calculate, enabledDifficulties, setIsCalculating, setSelectedRoute])
+
+  const canCalculate = fromLocation && toLocation && isReady && !isCalculating
 
   return (
     <div className="space-y-3">
@@ -159,12 +194,20 @@ export function SearchPanel() {
         </div>
       )}
 
+      {/* Error Message */}
+      {routeError && (
+        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600">
+          {routeError}
+        </div>
+      )}
+
       {/* Calculate Route Button */}
       <button
-        disabled={!fromLocation || !toLocation || isCalculating}
+        onClick={handleGetDirections}
+        disabled={!canCalculate}
         className={cn(
           'flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all',
-          fromLocation && toLocation
+          canCalculate
             ? 'bg-sky-600 text-white hover:bg-sky-700'
             : 'bg-slate-100 text-slate-400 cursor-not-allowed'
         )}

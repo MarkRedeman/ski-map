@@ -1,14 +1,103 @@
-# Ski Navigation in Solden
+# 🎿 Sölden Ski Navigator
 
-Help! I keep getting lost during wintersport vacation and my friends have trouble finding me. Pleae help me build a SPA application (using tanstack router, query) that can help me solve these problems.
-For context:
-1. We are in Solden
-2. I continuously share my location data with Google Maps as well as with Garmin and Strava
+A 3D ski navigation app for the Sölden ski area in Austria. Find your way through the slopes, filter by difficulty, and never get separated from your friends again!
 
-As a start I'd like us to build an application that can easily help us navigate the pistes:
-Let's say most of my friends are at the start of the Giggijoch piste and I am at the Gaislachkogl. I'd like this app to be able to show me how to navigat to the Giggijoch piste. It should allow me to filter pistes by color (blue, red, black) so that If I'm tired I can choose the easiest slopes.
-It would be great if we could visualize this in 3D space (I guess using r3f).
+## Features
 
-Later I would also like to visualize my own runs by uploading my garmin data. And perhaps it might even be fun if we could auto generate some videos based on the 3D visualization using remotion (it allows to do all of this client side)
+### Phase 1: Navigation MVP ✅
+- **3D Terrain Visualization** - React Three Fiber powered 3D map of Sölden
+- **Piste Display** - All pistes color-coded by difficulty (blue/red/black)
+- **Lift Display** - Ski lifts with station markers
+- **Difficulty Filter** - Toggle pistes by difficulty level
+- **Route Planning** - Dijkstra-based pathfinding between locations
+- **GPS Tracking** - Real-time location with accuracy indicator
+- **PWA Support** - Works offline on the slopes!
 
-Let's start building a plan for this application.
+### Phase 2: Run Tracking 🚧
+- Upload Garmin/GPX data
+- Visualize past runs on 3D terrain
+- Run statistics and comparisons
+
+### Phase 3: Video Generation 🚧
+- Remotion-powered video creation
+- Animated run replays
+- Shareable highlight videos
+
+## Getting Started
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+## Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+# Mapbox API token for terrain tiles
+VITE_MAPBOX_TOKEN=your_mapbox_token_here
+```
+
+> **Note:** Get your Mapbox token at https://account.mapbox.com/access-tokens/
+
+## Tech Stack
+
+- **Frontend**: React 18 + TypeScript
+- **Build**: Vite
+- **Routing**: TanStack Router (file-based, type-safe)
+- **Data Fetching**: TanStack Query v5
+- **State**: Zustand
+- **3D**: React Three Fiber + Drei
+- **Styling**: Tailwind CSS v4
+- **PWA**: vite-plugin-pwa + Workbox
+- **Data Sources**: OpenStreetMap Overpass API, Mapbox Terrain
+
+## Project Structure
+
+```
+src/
+├── routes/           # TanStack Router file-based routes
+├── components/
+│   ├── map/          # 3D visualization (R3F)
+│   ├── navigation/   # Search, filters, route cards
+│   └── layout/       # Header, sidebar
+├── lib/
+│   ├── api/          # Overpass API client
+│   ├── routing/      # Graph + pathfinding
+│   └── geo/          # Coordinate utilities
+├── stores/           # Zustand state
+└── hooks/            # TanStack Query hooks
+```
+
+---
+
+## 🍺 Après-Ski Shot Counter
+
+*Tracking development "mistakes" made while building this app*
+
+| Mistake Type | Shots | Description |
+|-------------|-------|-------------|
+| TypeScript errors | 0 | Compilation failures |
+| Runtime errors | 0 | Crashes & bugs |
+| Git failures | 0 | Commit/push issues |
+| Agent failures | 0 | Parallel task failures |
+| User-reported bugs | 0 | Bugs caught by user |
+
+### 🥃 Total Shots: 0
+
+*Last updated: Phase 1 completion*
+
+> "Always code as if the guy who ends up maintaining your code will be a violent psychopath who knows where you live." - But also, drink responsibly! 🍻
+
+---
+
+## License
+
+MIT

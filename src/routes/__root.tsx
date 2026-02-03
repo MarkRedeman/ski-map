@@ -2,6 +2,7 @@ import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/router-devtools'
 import { Suspense } from 'react'
 import { Header } from '@/components/layout/Header'
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt'
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -22,6 +23,7 @@ function RootLayout() {
           <Outlet />
         </Suspense>
       </main>
+      <PWAInstallPrompt />
       {import.meta.env.DEV && <TanStackRouterDevtools position="bottom-right" />}
     </div>
   )

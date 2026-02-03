@@ -2,6 +2,17 @@
 .idea
 *.log
 tmp/
+dist/
+
+# Environment variables (secrets)
+.env
+.env.local
+.env.*.local
+
+# Agent/AI tool files
+.agents/
+.opencode/
+bun.lock
 
 *.tern-port
 node_modules/
