@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+:root {
+  /* Ski-themed color palette */
+  --color-snow: #f8fafc;
+  --color-ice: #e0f2fe;
+  --color-sky: #0ea5e9;
+  --color-mountain: #334155;
+  --color-forest: #166534;
+  
+  /* Piste difficulty colors */
+  --color-piste-blue: #3b82f6;
+  --color-piste-red: #ef4444;
+  --color-piste-black: #1e293b;
+  
+  /* Lift colors */
+  --color-lift: #f59e0b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--color-snow);
+  color: var(--color-mountain);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-ice);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-sky);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #0284c7;
+}
