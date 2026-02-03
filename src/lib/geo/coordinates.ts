@@ -81,12 +81,16 @@ export function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: n
 
 /**
  * Get bounds of the Sölden ski area in local coordinates
+ * Includes padding to ensure all pistes are covered by terrain
  */
 export function getSoldenBounds() {
-  const minLat = 46.87
-  const maxLat = 46.98
-  const minLon = 10.95
-  const maxLon = 11.15
+  // Extended bounds to cover entire ski area plus surrounding mountains
+  // Original: 46.87-46.98 lat, 10.95-11.15 lon
+  // Extended with ~20% padding on each side
+  const minLat = 46.84
+  const maxLat = 47.01
+  const minLon = 10.90
+  const maxLon = 11.20
   
   const [minX, , minZ] = geoToLocal(minLat, minLon)
   const [maxX, , maxZ] = geoToLocal(maxLat, maxLon)

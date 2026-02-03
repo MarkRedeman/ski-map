@@ -7,6 +7,10 @@ interface MapState {
   terrainMesh: THREE.Mesh | null
   setTerrainMesh: (mesh: THREE.Mesh | null) => void
   
+  // Terrain group for chunked terrain raycasting
+  terrainGroup: THREE.Group | null
+  setTerrainGroup: (group: THREE.Group | null) => void
+  
   // Elevation grid for fast O(1) terrain height lookups
   elevationGrid: ElevationGrid | null
   setElevationGrid: (grid: ElevationGrid | null) => void
@@ -55,6 +59,10 @@ export const useMapStore = create<MapState>((set) => ({
   // Terrain mesh for raycasting (legacy)
   terrainMesh: null,
   setTerrainMesh: (mesh) => set({ terrainMesh: mesh }),
+  
+  // Terrain group for chunked terrain
+  terrainGroup: null,
+  setTerrainGroup: (group) => set({ terrainGroup: group }),
   
   // Elevation grid for fast lookups
   elevationGrid: null,

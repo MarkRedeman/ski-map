@@ -26,6 +26,7 @@ const raycaster = new THREE.Raycaster()
 export function ProximitySelector() {
   const { camera, gl } = useThree()
   const terrainMesh = useMapStore((s) => s.terrainMesh)
+  const terrainGroup = useMapStore((s) => s.terrainGroup)
   const elevationGrid = useMapStore((s) => s.elevationGrid)
   const setHoveredPiste = useMapStore((s) => s.setHoveredPiste)
   const setHoveredLift = useMapStore((s) => s.setHoveredLift)
@@ -80,20 +81,26 @@ export function ProximitySelector() {
   
   // Get terrain intersection point from mouse position
   const getTerrainPoint = useCallback((event: PointerEvent): THREE.Vector3 | null => {
-    if (!terrainMesh) return null
+    // Prefer terrain group (chunked terrain) over single mesh
+    const raycastTarget = terrainGroup || terrainMesh
+    if (!raycastTarget) return null
     
     const rect = gl.domElement.getBoundingClientRect()
     const x = ((event.clientX - rect.left) / rect.width) * 2 - 1
     const y = -((event.clientY - rect.top) / rect.height) * 2 + 1
     
     raycaster.setFromCamera(new THREE.Vector2(x, y), camera)
-    const intersects = raycaster.intersectObject(terrainMesh, false)
+    
+    // For groups, raycast recursively; for mesh, direct intersection
+    const intersects = terrainGroup 
+      ? raycaster.intersectObjects(terrainGroup.children, true)
+      : raycaster.intersectObject(terrainMesh!, false)
     
     if (intersects.length > 0 && intersects[0]) {
       return intersects[0].point
     }
     return null
-  }, [terrainMesh, camera, gl])
+  }, [terrainMesh, terrainGroup, camera, gl])
   
   // Handle pointer move for hover
   const handlePointerMove = useCallback((event: PointerEvent) => {

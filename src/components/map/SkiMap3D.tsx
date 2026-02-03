@@ -1,7 +1,7 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Environment, GizmoHelper, GizmoViewport } from '@react-three/drei'
 import { Suspense } from 'react'
-import { Terrain } from './Terrain'
+import { ChunkedTerrain } from './ChunkedTerrain'
 import { Pistes } from './Pistes'
 import { Lifts } from './Lifts'
 import { UserMarker } from './UserMarker'
@@ -51,7 +51,7 @@ export function SkiMap3D() {
         
         {/* 3D Content */}
         <Suspense fallback={null}>
-          <Terrain />
+          <ChunkedTerrain />
           <Pistes />
           <Lifts />
           <UserMarker />
