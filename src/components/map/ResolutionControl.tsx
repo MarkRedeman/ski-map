@@ -5,11 +5,15 @@
  * Also includes a toggle for showing/hiding peak and place labels.
  * Positioned in the bottom-right corner of the map.
  * Shows a loading spinner when terrain is being fetched.
+ * Includes a "locate me" button when location tracking is active.
  */
 
+import { Navigation } from 'lucide-react'
 import { useSettingsStore, type ResolutionLevel } from '@/stores/useSettingsStore'
 import { useTerrainStore } from '@/store/terrainStore'
 import { useMapStore } from '@/stores/useMapStore'
+import { useNavigationStore } from '@/stores/useNavigationStore'
+import { geoToLocal } from '@/lib/geo/coordinates'
 
 const RESOLUTION_LEVELS: ResolutionLevel[] = ['1x', '2x', '4x', '8x', '16x']
 
@@ -21,9 +25,42 @@ export function ResolutionControl() {
   const showPistes = useMapStore((s) => s.showPistes)
   const showLifts = useMapStore((s) => s.showLifts)
   const toggleLayer = useMapStore((s) => s.toggleLayer)
+  const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
+  
+  const userLocation = useNavigationStore((s) => s.userLocation)
+  const isTrackingLocation = useNavigationStore((s) => s.isTrackingLocation)
+
+  const handleLocateMe = () => {
+    if (!userLocation) return
+    
+    const [lat, lon, elevation] = userLocation
+    const [x, y, z] = geoToLocal(lat, lon, elevation)
+    
+    setCameraFocusTarget({
+      position: [x, y, z],
+      distance: 150,
+    })
+  }
 
   return (
     <div className="absolute bottom-4 right-4 flex items-center gap-3 rounded-lg bg-black/60 px-3 py-2 backdrop-blur-sm">
+      {/* Locate me button - only visible when tracking */}
+      {isTrackingLocation && userLocation && (
+        <>
+          <button
+            onClick={handleLocateMe}
+            className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors bg-blue-500 text-white hover:bg-blue-600"
+            title="Center map on my location"
+          >
+            <Navigation className="h-3.5 w-3.5" />
+            <span>Find Me</span>
+          </button>
+          
+          {/* Separator */}
+          <div className="h-4 w-px bg-white/20" />
+        </>
+      )}
+
       {/* Pistes toggle */}
       <button
         onClick={() => toggleLayer('pistes')}

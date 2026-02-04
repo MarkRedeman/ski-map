@@ -29,10 +29,16 @@ export function useGeolocation(): GeolocationState & {
 } {
   const watchIdRef = useRef<number | null>(null)
   const [error, setError] = useState<GeolocationError | null>(null)
-  const [accuracy, setAccuracy] = useState<number | null>(null)
-  const [heading, setHeading] = useState<number | null>(null)
   
-  const { setUserLocation, isTrackingLocation, setIsTrackingLocation } = useNavigationStore()
+  const { 
+    setUserLocation, 
+    setUserAccuracy, 
+    setUserHeading,
+    userAccuracy,
+    userHeading,
+    isTrackingLocation, 
+    setIsTrackingLocation 
+  } = useNavigationStore()
 
   const handlePositionSuccess = useCallback((position: GeolocationPosition) => {
     const { latitude, longitude, altitude, accuracy: posAccuracy, heading: posHeading } = position.coords
@@ -41,17 +47,17 @@ export function useGeolocation(): GeolocationState & {
     // Default to 0 if altitude is not available
     setUserLocation([latitude, longitude, altitude ?? 0])
     
-    // Update accuracy (in meters)
-    setAccuracy(posAccuracy)
+    // Update accuracy in store (in meters)
+    setUserAccuracy(posAccuracy)
     
     // Update heading if available (in degrees, 0 = north)
     if (posHeading !== null && !isNaN(posHeading)) {
-      setHeading(posHeading)
+      setUserHeading(posHeading)
     }
     
     // Clear any previous errors on successful position
     setError(null)
-  }, [setUserLocation])
+  }, [setUserLocation, setUserAccuracy, setUserHeading])
 
   const handlePositionError = useCallback((positionError: GeolocationPositionError) => {
     let message: string
@@ -112,10 +118,10 @@ export function useGeolocation(): GeolocationState & {
     
     setIsTrackingLocation(false)
     setUserLocation(null)
-    setAccuracy(null)
-    setHeading(null)
+    setUserAccuracy(null)
+    setUserHeading(null)
     setError(null)
-  }, [setIsTrackingLocation, setUserLocation])
+  }, [setIsTrackingLocation, setUserLocation, setUserAccuracy, setUserHeading])
 
   // Clean up on unmount
   useEffect(() => {
@@ -130,8 +136,8 @@ export function useGeolocation(): GeolocationState & {
   return {
     isTracking: isTrackingLocation,
     error,
-    accuracy,
-    heading,
+    accuracy: userAccuracy,
+    heading: userHeading,
     startTracking,
     stopTracking,
   }

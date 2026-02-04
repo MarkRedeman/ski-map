@@ -135,3 +135,23 @@ export function getSoldenBounds() {
     depth: Math.abs(actualMaxZ - actualMinZ),
   };
 }
+
+/** Sölden ski area geographic bounds */
+export const SOLDEN_BOUNDS = {
+  minLat: 46.84,
+  maxLat: 47.01,
+  minLon: 10.86,
+  maxLon: 11.2,
+};
+
+/**
+ * Check if a geographic coordinate is within the Sölden ski area bounds
+ */
+export function isInSoldenBounds(lat: number, lon: number): boolean {
+  return (
+    lat >= SOLDEN_BOUNDS.minLat &&
+    lat <= SOLDEN_BOUNDS.maxLat &&
+    lon >= SOLDEN_BOUNDS.minLon &&
+    lon <= SOLDEN_BOUNDS.maxLon
+  );
+}

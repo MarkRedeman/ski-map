@@ -1,13 +1,24 @@
-import { Locate, LocateOff, AlertCircle } from 'lucide-react'
+import { Locate, LocateOff, AlertCircle, Navigation, MapPinOff } from 'lucide-react'
 import { useGeolocation } from '@/hooks/useGeolocation'
+import { useNavigationStore } from '@/stores/useNavigationStore'
+import { useMapStore } from '@/stores/useMapStore'
+import { geoToLocal, isInSoldenBounds } from '@/lib/geo/coordinates'
 import { cn } from '@/lib/utils'
 
 /**
  * Button component that toggles GPS location tracking on/off.
- * Shows current tracking state, accuracy, and error states.
+ * Shows current tracking state, accuracy, error states, and out-of-bounds warning.
+ * Includes a "center on me" button to navigate the camera to the user's location.
  */
 export function LocationButton() {
   const { isTracking, error, accuracy, startTracking, stopTracking } = useGeolocation()
+  const userLocation = useNavigationStore((s) => s.userLocation)
+  const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
+
+  // Check if user is within Sölden ski area bounds
+  const isInBounds = userLocation 
+    ? isInSoldenBounds(userLocation[0], userLocation[1])
+    : true // Default to true when no location
 
   const handleClick = () => {
     if (isTracking) {
@@ -15,6 +26,20 @@ export function LocationButton() {
     } else {
       startTracking()
     }
+  }
+
+  const handleCenterOnMe = (e: React.MouseEvent) => {
+    e.stopPropagation() // Don't trigger the main button
+    
+    if (!userLocation) return
+    
+    const [lat, lon, elevation] = userLocation
+    const [x, y, z] = geoToLocal(lat, lon, elevation)
+    
+    setCameraFocusTarget({
+      position: [x, y, z],
+      distance: 150, // Zoom in reasonably close
+    })
   }
 
   const formatAccuracy = (meters: number): string => {
@@ -26,70 +51,95 @@ export function LocationButton() {
 
   return (
     <div className="space-y-2">
-      <button
-        onClick={handleClick}
-        className={cn(
-          'flex w-full items-center gap-3 rounded px-3 py-2.5 transition-all',
-          error
-            ? 'bg-red-500/20 text-red-300'
-            : isTracking
-              ? 'bg-blue-500/20 text-blue-300'
-              : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
-        )}
-      >
-        {/* Icon with pulsing animation when active */}
-        <div className="relative">
-          {error ? (
-            <AlertCircle className="h-5 w-5 text-red-400" />
-          ) : isTracking ? (
-            <>
-              <Locate className="h-5 w-5 text-blue-400" />
-              {/* Pulsing ring animation */}
-              <span className="absolute inset-0 animate-ping rounded-full bg-blue-400 opacity-50" />
-            </>
-          ) : (
-            <LocateOff className="h-5 w-5 text-white/50" />
-          )}
-        </div>
-
-        {/* Label and status */}
-        <div className="flex-1 text-left">
-          <span className="text-sm font-medium">
-            {error
-              ? 'Location Error'
-              : isTracking
-                ? 'Tracking Active'
-                : 'Enable Location'}
-          </span>
-          
-          {/* Accuracy indicator when tracking */}
-          {isTracking && accuracy !== null && !error && (
-            <div className="text-xs text-blue-400">
-              Accuracy: {formatAccuracy(accuracy)} ({Math.round(accuracy)}m)
-            </div>
-          )}
-        </div>
-
-        {/* Toggle indicator */}
-        <div
+      <div className="flex gap-2">
+        {/* Main toggle button */}
+        <button
+          onClick={handleClick}
           className={cn(
-            'h-4 w-8 rounded-full transition-colors',
-            isTracking ? 'bg-blue-500' : 'bg-white/20'
+            'flex flex-1 items-center gap-3 rounded px-3 py-2.5 transition-all',
+            error
+              ? 'bg-red-500/20 text-red-300'
+              : isTracking
+                ? 'bg-blue-500/20 text-blue-300'
+                : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
           )}
         >
+          {/* Icon with pulsing animation when active */}
+          <div className="relative">
+            {error ? (
+              <AlertCircle className="h-5 w-5 text-red-400" />
+            ) : isTracking ? (
+              <>
+                <Locate className="h-5 w-5 text-blue-400" />
+                {/* Pulsing ring animation */}
+                <span className="absolute inset-0 animate-ping rounded-full bg-blue-400 opacity-50" />
+              </>
+            ) : (
+              <LocateOff className="h-5 w-5 text-white/50" />
+            )}
+          </div>
+
+          {/* Label and status */}
+          <div className="flex-1 text-left">
+            <span className="text-sm font-medium">
+              {error
+                ? 'Location Error'
+                : isTracking
+                  ? 'Tracking Active'
+                  : 'Enable Location'}
+            </span>
+            
+            {/* Accuracy indicator when tracking */}
+            {isTracking && accuracy !== null && !error && (
+              <div className="text-xs text-blue-400">
+                Accuracy: {formatAccuracy(accuracy)} ({Math.round(accuracy)}m)
+              </div>
+            )}
+          </div>
+
+          {/* Toggle indicator */}
           <div
             className={cn(
-              'h-4 w-4 rounded-full bg-white shadow transition-transform',
-              isTracking ? 'translate-x-4' : 'translate-x-0'
+              'h-4 w-8 rounded-full transition-colors',
+              isTracking ? 'bg-blue-500' : 'bg-white/20'
             )}
-          />
-        </div>
-      </button>
+          >
+            <div
+              className={cn(
+                'h-4 w-4 rounded-full bg-white shadow transition-transform',
+                isTracking ? 'translate-x-4' : 'translate-x-0'
+              )}
+            />
+          </div>
+        </button>
+
+        {/* Center on me button - only visible when tracking */}
+        {isTracking && userLocation && (
+          <button
+            onClick={handleCenterOnMe}
+            className={cn(
+              'flex items-center justify-center rounded px-3 transition-all',
+              'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+            )}
+            title="Center map on my location"
+          >
+            <Navigation className="h-5 w-5" />
+          </button>
+        )}
+      </div>
 
       {/* Error message */}
       {error && (
         <div className="rounded bg-red-500/20 p-2 text-xs text-red-300">
           {error.message}
+        </div>
+      )}
+
+      {/* Out of bounds warning */}
+      {isTracking && !error && !isInBounds && (
+        <div className="flex items-center gap-2 rounded bg-amber-500/20 p-2 text-xs text-amber-300">
+          <MapPinOff className="h-4 w-4 flex-shrink-0" />
+          <span>You are outside the Sölden ski area</span>
         </div>
       )}
 

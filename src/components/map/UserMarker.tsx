@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Sphere, Html, Ring } from '@react-three/drei'
 import * as THREE from 'three'
@@ -9,71 +9,16 @@ import { geoToLocal } from '@/lib/geo/coordinates'
 const SCALE = 0.1
 
 /**
- * Custom hook for device orientation (compass heading)
- */
-function useDeviceHeading(): number | null {
-  const [heading, setHeading] = useState<number | null>(null)
-
-  useEffect(() => {
-    // Check if DeviceOrientationEvent is available
-    if (typeof DeviceOrientationEvent === 'undefined') {
-      return
-    }
-
-    const handleOrientation = (event: DeviceOrientationEvent) => {
-      // alpha is the compass heading (0-360, 0 = north)
-      // Note: On iOS, we might need to use webkitCompassHeading
-      const deviceHeading = (event as DeviceOrientationEvent & { webkitCompassHeading?: number })
-        .webkitCompassHeading ?? event.alpha
-      
-      if (deviceHeading !== null) {
-        setHeading(deviceHeading)
-      }
-    }
-
-    // Request permission on iOS 13+
-    const requestPermission = async () => {
-      const DeviceOrientationEventTyped = DeviceOrientationEvent as unknown as {
-        requestPermission?: () => Promise<'granted' | 'denied'>
-      }
-      
-      if (typeof DeviceOrientationEventTyped.requestPermission === 'function') {
-        try {
-          const permission = await DeviceOrientationEventTyped.requestPermission()
-          if (permission === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation, true)
-          }
-        } catch {
-          // Permission denied or error
-        }
-      } else {
-        // Non-iOS or older iOS, just add the listener
-        window.addEventListener('deviceorientation', handleOrientation, true)
-      }
-    }
-
-    requestPermission()
-
-    return () => {
-      window.removeEventListener('deviceorientation', handleOrientation, true)
-    }
-  }, [])
-
-  return heading
-}
-
-interface UserMarkerProps {
-  /** GPS accuracy in meters (optional, for accuracy circle) */
-  accuracy?: number | null
-}
-
-/**
  * Renders the user's current location marker on the 3D map
- * with accuracy circle and device heading indicator
+ * with accuracy circle and device heading indicator.
+ * 
+ * Reads location, accuracy, and heading from the navigation store.
  */
-export function UserMarker({ accuracy = null }: UserMarkerProps) {
+export function UserMarker() {
   const userLocation = useNavigationStore((s) => s.userLocation)
   const isTracking = useNavigationStore((s) => s.isTrackingLocation)
+  const accuracy = useNavigationStore((s) => s.userAccuracy)
+  const heading = useNavigationStore((s) => s.userHeading)
   
   const markerRef = useRef<THREE.Mesh>(null)
   const pulseRef = useRef<THREE.Mesh>(null)
@@ -85,8 +30,7 @@ export function UserMarker({ accuracy = null }: UserMarkerProps) {
   const currentPositionRef = useRef<THREE.Vector3>(new THREE.Vector3())
   const initializedRef = useRef(false)
   
-  // Device heading for rotation
-  const deviceHeading = useDeviceHeading()
+  // Heading for rotation (from geolocation or device orientation)
   const targetRotationRef = useRef(0)
   const currentRotationRef = useRef(0)
 
@@ -107,11 +51,11 @@ export function UserMarker({ accuracy = null }: UserMarkerProps) {
 
   // Update target rotation when heading changes
   useEffect(() => {
-    if (deviceHeading !== null) {
+    if (heading !== null) {
       // Convert heading to radians (heading is 0-360, 0 = north)
-      targetRotationRef.current = -(deviceHeading * Math.PI) / 180
+      targetRotationRef.current = -(heading * Math.PI) / 180
     }
-  }, [deviceHeading])
+  }, [heading])
 
   // Animate the pulse effect and smooth position/rotation transitions
   useFrame((state, delta) => {
@@ -131,7 +75,7 @@ export function UserMarker({ accuracy = null }: UserMarkerProps) {
     }
 
     // Smooth rotation interpolation for direction cone
-    if (coneGroupRef.current && deviceHeading !== null) {
+    if (coneGroupRef.current && heading !== null) {
       // Lerp rotation
       const angleDiff = targetRotationRef.current - currentRotationRef.current
       
@@ -194,13 +138,15 @@ export function UserMarker({ accuracy = null }: UserMarkerProps) {
         <meshStandardMaterial color="#3b82f6" />
       </Sphere>
       
-      {/* Direction indicator - rotates with device heading */}
-      <group ref={coneGroupRef}>
-        <mesh position={[0, 0, -3]} rotation={[Math.PI / 2, 0, 0]}>
-          <coneGeometry args={[1.5, 3, 8]} />
-          <meshStandardMaterial color="#1d4ed8" />
-        </mesh>
-      </group>
+      {/* Direction indicator - rotates with heading */}
+      {heading !== null && (
+        <group ref={coneGroupRef}>
+          <mesh position={[0, 0, -3]} rotation={[Math.PI / 2, 0, 0]}>
+            <coneGeometry args={[1.5, 3, 8]} />
+            <meshStandardMaterial color="#1d4ed8" />
+          </mesh>
+        </group>
+      )}
       
       {/* Label */}
       <Html
