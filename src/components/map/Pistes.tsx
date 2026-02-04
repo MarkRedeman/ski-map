@@ -4,7 +4,6 @@ import { usePistes, filterPistesByDifficulty } from '@/hooks/usePistes'
 import { useNavigationStore, type Difficulty } from '@/stores/useNavigationStore'
 import { useMapStore } from '@/stores/useMapStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
-import { projectPointsOnChunks, type ChunkElevationMap } from '@/lib/geo/elevationGrid'
 
 const DIFFICULTY_COLORS: Record<Difficulty, string> = {
   blue: '#3b82f6',
@@ -13,7 +12,8 @@ const DIFFICULTY_COLORS: Record<Difficulty, string> = {
 }
 
 /**
- * Renders all ski pistes as 3D lines on the terrain
+ * Renders all ski pistes as 3D lines
+ * DEBUG MODE: No terrain projection, just raw coordinates at Y=0
  */
 export function Pistes() {
   const { data: pistes, isLoading } = usePistes()
@@ -21,14 +21,13 @@ export function Pistes() {
   const showPistes = useMapStore((s) => s.showPistes)
   const hoveredPisteId = useMapStore((s) => s.hoveredPisteId)
   const selectedPisteId = useMapStore((s) => s.selectedPisteId)
-  const chunkElevationMap = useMapStore((s) => s.chunkElevationMap)
 
   const filteredPistes = useMemo(
     () => filterPistesByDifficulty(pistes, enabledDifficulties),
     [pistes, enabledDifficulties]
   )
 
-  if (!showPistes || isLoading || !filteredPistes.length || !chunkElevationMap) {
+  if (!showPistes || isLoading || !filteredPistes.length) {
     return null
   }
 
@@ -42,7 +41,6 @@ export function Pistes() {
           difficulty={piste.difficulty}
           isHovered={hoveredPisteId === piste.id}
           isSelected={selectedPisteId === piste.id}
-          chunkElevationMap={chunkElevationMap}
         />
       ))}
     </group>
@@ -55,16 +53,19 @@ interface PisteLineProps {
   difficulty: Difficulty
   isHovered: boolean
   isSelected: boolean
-  chunkElevationMap: ChunkElevationMap
 }
 
-function PisteLine({ coordinates, difficulty, isHovered, isSelected, chunkElevationMap }: PisteLineProps) {
-  // Convert geo coordinates to local 3D coordinates and project onto terrain
+function PisteLine({ coordinates, difficulty, isHovered, isSelected }: PisteLineProps) {
+  // Convert geo coordinates to local 3D coordinates (no terrain projection)
+  // Use null elevation to get Y=0 (flat plane for debugging)
   const points = useMemo(() => {
-    const localCoords = coordsToLocal(coordinates, 0)
-    // Project points onto terrain with 2m offset above surface (O(1) per point!)
-    return projectPointsOnChunks(chunkElevationMap, localCoords, 2)
-  }, [coordinates, chunkElevationMap])
+    // Get XZ from geo coords, but set Y=2 (above grid) for all points
+    return coordinates.map(([lon, lat]) => {
+      const result = coordsToLocal([[lon, lat]], 0)
+      const [x, , z] = result[0] ?? [0, 0, 0]
+      return [x, 2, z] as [number, number, number]
+    })
+  }, [coordinates])
 
   if (points.length < 2) return null
 

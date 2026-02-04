@@ -149,7 +149,9 @@ export function sampleElevation(grid: ElevationGrid, x: number, z: number): numb
   
   // Convert world coords to grid coords (0 to cols-1, 0 to rows-1)
   const gridX = ((x - grid.minX) / (grid.maxX - grid.minX)) * (grid.cols - 1)
-  const gridZ = ((z - grid.minZ) / (grid.maxZ - grid.minZ)) * (grid.rows - 1)
+  // Z is inverted: PlaneGeometry after rotateX(-PI/2) has row 0 at +Z (south/maxZ)
+  // and last row at -Z (north/minZ), so we invert the mapping
+  const gridZ = ((grid.maxZ - z) / (grid.maxZ - grid.minZ)) * (grid.rows - 1)
   
   // Get integer grid cell indices
   const x0 = Math.floor(gridX)

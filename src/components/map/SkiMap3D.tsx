@@ -1,23 +1,30 @@
-import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Environment, GizmoHelper, GizmoViewport } from '@react-three/drei'
-import { Suspense } from 'react'
-import { ChunkedTerrain } from './ChunkedTerrain'
-import { Pistes } from './Pistes'
-import { Lifts } from './Lifts'
-import { UserMarker } from './UserMarker'
-import { RouteOverlay } from './RouteOverlay'
-import { RunPath } from './RunPath'
-import { InfoTooltip } from './InfoTooltip'
-import { InfoPanel } from './InfoPanel'
-import { ProximitySelector } from './ProximitySelector'
-import { useSelectedRun } from '@/hooks/useRuns'
+import { Canvas } from "@react-three/fiber";
+import {
+  OrbitControls,
+  Environment,
+  GizmoHelper,
+  GizmoViewport,
+  Grid,
+} from "@react-three/drei";
+import { Suspense } from "react";
+import { ContourTerrain } from "./ContourTerrain";
+import { Pistes } from "./Pistes";
+import { Lifts } from "./Lifts";
+import { UserMarker } from "./UserMarker";
+import { RouteOverlay } from "./RouteOverlay";
+import { RunPath } from "./RunPath";
+import { InfoTooltip } from "./InfoTooltip";
+import { InfoPanel } from "./InfoPanel";
+import { ProximitySelector } from "./ProximitySelector";
+import { KeyboardControls } from "./KeyboardControls";
+import { useSelectedRun } from "@/hooks/useRuns";
 
 export function SkiMap3D() {
-  const selectedRun = useSelectedRun()
-  
+  const selectedRun = useSelectedRun();
+
   // Camera and controls are centered on Giggijoch (0, 0, 0)
   // since all geo coordinates are converted relative to SOLDEN_CENTER
-  
+
   return (
     <div className="relative h-full w-full">
       <Canvas
@@ -44,14 +51,34 @@ export function SkiMap3D() {
           shadow-camera-top={500}
           shadow-camera-bottom={-500}
         />
-        
+
         {/* Sky / Environment */}
         <Environment preset="dawn" />
-        <fog attach="fog" args={['#87ceeb', 500, 2500]} />
-        
+        <fog attach="fog" args={["#87ceeb", 500, 2500]} />
+
+        {/* Debug Grid - shows coordinate system */}
+        <Grid
+          position={[0, 0, 0]}
+          args={[1000, 1000]}
+          cellSize={50}
+          cellThickness={0.5}
+          cellColor="#6b7280"
+          sectionSize={200}
+          sectionThickness={1.5}
+          sectionColor="#374151"
+          fadeDistance={2000}
+          infiniteGrid
+        />
+
+        {/* Origin marker */}
+        <mesh position={[0, 10, 0]}>
+          <sphereGeometry args={[5, 16, 16]} />
+          <meshStandardMaterial color="#22c55e" />
+        </mesh>
+
         {/* 3D Content */}
         <Suspense fallback={null}>
-          <ChunkedTerrain />
+          <ContourTerrain />
           <Pistes />
           <Lifts />
           <UserMarker />
@@ -63,7 +90,10 @@ export function SkiMap3D() {
           {/* Proximity-based selection handler */}
           <ProximitySelector />
         </Suspense>
-        
+
+        {/* Keyboard Controls */}
+        <KeyboardControls />
+
         {/* Camera Controls */}
         <OrbitControls
           makeDefault
@@ -78,17 +108,28 @@ export function SkiMap3D() {
           panSpeed={0.8}
           target={[0, 0, 0]}
         />
-        
+
         {/* Development helpers */}
         {import.meta.env.DEV && (
           <GizmoHelper alignment="bottom-left" margin={[80, 80]}>
-            <GizmoViewport axisColors={['#ef4444', '#22c55e', '#3b82f6']} labelColor="white" />
+            <GizmoViewport
+              axisColors={["#ef4444", "#22c55e", "#3b82f6"]}
+              labelColor="white"
+            />
           </GizmoHelper>
         )}
       </Canvas>
-      
+
       {/* Info Panel (outside Canvas, positioned absolutely) */}
       <InfoPanel />
+
+      {/* Debug controls hint */}
+      <div className="hidden absolute bottom-4 left-4 bg-black/50 text-white text-xs p-2 rounded font-mono">
+        <div>WASD/Arrows: Move camera</div>
+        <div>Q/E: Up/Down</div>
+        <div>Shift: Fast move</div>
+        <div className="mt-1 text-green-400">Green sphere = Origin (0,0,0)</div>
+      </div>
     </div>
-  )
+  );
 }

@@ -3,22 +3,21 @@ import { Line } from '@react-three/drei'
 import { useLifts } from '@/hooks/useLifts'
 import { useMapStore } from '@/stores/useMapStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
-import { projectPointsOnChunks, type ChunkElevationMap } from '@/lib/geo/elevationGrid'
 
 const LIFT_COLOR = '#f59e0b' // Amber
 const LIFT_COLOR_HOVER = '#fbbf24' // Lighter amber
 
 /**
- * Renders all ski lifts as 3D lines on the terrain
+ * Renders all ski lifts as 3D lines
+ * DEBUG MODE: No terrain projection, just raw coordinates at Y=5
  */
 export function Lifts() {
   const { data: lifts, isLoading } = useLifts()
   const showLifts = useMapStore((s) => s.showLifts)
-  const chunkElevationMap = useMapStore((s) => s.chunkElevationMap)
   const hoveredLiftId = useMapStore((s) => s.hoveredLiftId)
   const selectedLiftId = useMapStore((s) => s.selectedLiftId)
 
-  if (!showLifts || isLoading || !lifts?.length || !chunkElevationMap) {
+  if (!showLifts || isLoading || !lifts?.length) {
     return null
   }
 
@@ -29,7 +28,6 @@ export function Lifts() {
           key={lift.id}
           id={lift.id}
           coordinates={lift.coordinates}
-          chunkElevationMap={chunkElevationMap}
           isHovered={hoveredLiftId === lift.id}
           isSelected={selectedLiftId === lift.id}
         />
@@ -41,19 +39,20 @@ export function Lifts() {
 interface LiftLineProps {
   id: string
   coordinates: [number, number][]
-  chunkElevationMap: ChunkElevationMap
   isHovered: boolean
   isSelected: boolean
 }
 
-function LiftLine({ coordinates, chunkElevationMap, isHovered, isSelected }: LiftLineProps) {
-  // Convert geo coordinates to local 3D coordinates and project onto terrain
-  // Lifts get a higher offset since cables are above the ground
+function LiftLine({ coordinates, isHovered, isSelected }: LiftLineProps) {
+  // Convert geo coordinates to local 3D coordinates (no terrain projection)
+  // Use Y=10 for lifts (above pistes for visibility)
   const points = useMemo(() => {
-    const localCoords = coordsToLocal(coordinates, 0)
-    // Project onto terrain with 10m offset for lift cables (O(1) per point!)
-    return projectPointsOnChunks(chunkElevationMap, localCoords, 10)
-  }, [coordinates, chunkElevationMap])
+    return coordinates.map(([lon, lat]) => {
+      const result = coordsToLocal([[lon, lat]], 0)
+      const [x, , z] = result[0] ?? [0, 0, 0]
+      return [x, 10, z] as [number, number, number]
+    })
+  }, [coordinates])
 
   if (points.length < 2) return null
 
