@@ -1,18 +1,62 @@
 /**
- * MapLegend component - shows lift type and piste difficulty legend with filter toggles
+ * MapLegend component - Collapsible filter panel for pistes and lifts
  * 
  * Displays all lift types and piste difficulties with their colors and icons.
  * Clicking on an item toggles its visibility on the map.
+ * 
+ * On mobile, collapses to a small "Filters" button.
  */
 
+import { ChevronUp, ChevronDown, SlidersHorizontal } from 'lucide-react'
 import { useMapStore, ALL_LIFT_TYPES, type LiftType } from '@/stores/useMapStore'
 import { useNavigationStore, ALL_DIFFICULTIES, type Difficulty } from '@/stores/useNavigationStore'
+import { useUIStore } from '@/stores/useUIStore'
 import { LIFT_TYPE_CONFIG } from './Lifts'
 import { PISTE_DIFFICULTY_CONFIG } from './Pistes'
 
 export function MapLegend() {
+  const legendExpanded = useUIStore((s) => s.legendExpanded)
+  const toggleLegend = useUIStore((s) => s.toggleLegend)
+
+  // Count active filters for collapsed state indicator
+  const enabledDifficulties = useNavigationStore((s) => s.enabledDifficulties)
+  const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes)
+  const activeFilters = enabledDifficulties.size + visibleLiftTypes.size
+  const totalFilters = ALL_DIFFICULTIES.length + ALL_LIFT_TYPES.length - 1 // -1 for 'Lift' type we hide
+
+  if (!legendExpanded) {
+    // Collapsed state - show compact button
+    return (
+      <button
+        onClick={toggleLegend}
+        className="absolute bottom-4 left-4 flex items-center gap-2 rounded-lg bg-black/80 px-3 py-2 backdrop-blur-md transition-all hover:bg-black/90"
+        title="Expand filter panel"
+      >
+        <SlidersHorizontal className="h-4 w-4 text-white" />
+        <span className="text-xs font-medium text-white">Filters</span>
+        <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-medium text-white/80">
+          {activeFilters}/{totalFilters}
+        </span>
+        <ChevronUp className="h-3 w-3 text-white/60" />
+      </button>
+    )
+  }
+
   return (
     <div className="absolute bottom-4 left-4 flex flex-col gap-3 rounded-lg bg-black/80 p-3 backdrop-blur-md">
+      {/* Header with collapse button */}
+      <button
+        onClick={toggleLegend}
+        className="flex items-center justify-between gap-2 text-white/60 hover:text-white transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal className="h-4 w-4" />
+          <span className="text-xs font-semibold">Filters</span>
+        </div>
+        <ChevronDown className="h-4 w-4" />
+      </button>
+      
+      <div className="h-px bg-white/20" />
       <PisteLegend />
       <div className="h-px bg-white/20" />
       <LiftLegend />

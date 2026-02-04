@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Suspense, lazy, useEffect, useRef } from 'react'
 import { Sidebar } from '@/components/layout/Sidebar'
+import { SidebarToggle } from '@/components/layout/SidebarToggle'
 import { PlaybackControls } from '@/components/playback/PlaybackControls'
 import { useRunsStore } from '@/stores/useRunsStore'
 import { usePlaybackStore } from '@/stores/usePlaybackStore'
@@ -140,6 +141,9 @@ function RidePage() {
       
       {/* 3D Map View */}
       <div className="flex-1 relative">
+        {/* Sidebar toggle button */}
+        <SidebarToggle />
+        
         <Suspense
           fallback={
             <div className="flex h-full items-center justify-center bg-gradient-to-b from-sky-100 to-white">
