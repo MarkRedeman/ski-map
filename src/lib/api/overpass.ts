@@ -4,10 +4,10 @@
  * Fetches pistes, lifts, and POIs for the Sölden ski area
  */
 
-// Sölden ski area bounding box
+// Sölden ski area bounding box (includes Rettenbach & Tiefenbach glaciers)
 const SOLDEN_BBOX = {
-  south: 46.87,
-  west: 10.95,
+  south: 46.84,
+  west: 10.86,
   north: 46.98,
   east: 11.15,
 }

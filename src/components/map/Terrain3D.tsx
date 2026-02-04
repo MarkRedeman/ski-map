@@ -5,9 +5,10 @@
  * textured with satellite imagery.
  */
 
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useTerrainData } from '@/hooks/useTerrainData'
+import { useMapStore } from '@/stores/useMapStore'
 
 interface Terrain3DProps {
   /** Tile zoom level for data fetching (default 12) */
@@ -19,6 +20,7 @@ interface Terrain3DProps {
 export function Terrain3D({ zoom = 12, segments = 256 }: Terrain3DProps) {
   const meshRef = useRef<THREE.Mesh>(null)
   const { data, isLoading, error } = useTerrainData({ zoom })
+  const setTerrainMesh = useMapStore((s) => s.setTerrainMesh)
 
   // Create the displaced geometry
   const geometry = useMemo(() => {
@@ -114,6 +116,14 @@ export function Terrain3D({ zoom = 12, segments = 256 }: Terrain3DProps) {
       // flatShading: true,
     })
   }, [data])
+
+  // Register terrain mesh with store for raycasting (used by ProximitySelector)
+  useEffect(() => {
+    if (meshRef.current && geometry) {
+      setTerrainMesh(meshRef.current)
+    }
+    return () => setTerrainMesh(null)
+  }, [geometry, setTerrainMesh])
 
   if (isLoading) {
     return (

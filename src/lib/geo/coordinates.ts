@@ -104,12 +104,12 @@ export function distanceMeters(
  * Includes padding to ensure all pistes are covered by terrain
  */
 export function getSoldenBounds() {
-  // Extended bounds to cover entire ski area plus surrounding mountains
+  // Extended bounds to cover entire ski area including Rettenbach & Tiefenbach glaciers
   // Original: 46.87-46.98 lat, 10.95-11.15 lon
-  // Extended with ~20% padding on each side
+  // Extended to include glaciers to the southwest
   const minLat = 46.84;
   const maxLat = 47.01;
-  const minLon = 10.9;
+  const minLon = 10.86;
   const maxLon = 11.2;
 
   const [minX, , minZ] = geoToLocal(minLat, minLon);

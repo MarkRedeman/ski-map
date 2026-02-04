@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Line } from '@react-three/drei'
+import { useThree, useFrame } from '@react-three/fiber'
 import { useLifts } from '@/hooks/useLifts'
 import { useMapStore } from '@/stores/useMapStore'
 import { useTerrainStore } from '@/store/terrainStore'
@@ -7,12 +8,36 @@ import { coordsToLocal } from '@/lib/geo/coordinates'
 import { sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid'
 
 const LIFT_COLOR = '#f59e0b' // Amber
-const LIFT_COLOR_HOVER = '#fbbf24' // Lighter amber
+const LIFT_COLOR_HIGHLIGHT = '#fcd34d' // Brighter amber for highlight
 
 /** Height offset above terrain for lift cables (in scene units, ~100m real) */
 const LIFT_CABLE_OFFSET = 10
 /** Height offset above terrain for station buildings */
 const LIFT_STATION_OFFSET = 3
+
+/** Base line width for lifts (in pixels) */
+const BASE_LINE_WIDTH = 8
+/** Highlighted line width multiplier */
+const HIGHLIGHT_MULTIPLIER = 2
+
+/**
+ * Hook to calculate zoom-based line width scaling
+ * Returns a scale factor based on camera distance
+ */
+function useZoomScale(): number {
+  const { camera } = useThree()
+  const [scale, setScale] = useState(1)
+  
+  useFrame(() => {
+    const distance = camera.position.length()
+    const newScale = Math.max(0.5, Math.min(2, 300 / distance))
+    if (Math.abs(newScale - scale) > 0.05) {
+      setScale(newScale)
+    }
+  })
+  
+  return scale
+}
 
 /**
  * Renders all ski lifts as 3D lines that follow terrain elevation
@@ -23,6 +48,7 @@ export function Lifts() {
   const hoveredLiftId = useMapStore((s) => s.hoveredLiftId)
   const selectedLiftId = useMapStore((s) => s.selectedLiftId)
   const elevationGrid = useTerrainStore((s) => s.elevationGrid)
+  const zoomScale = useZoomScale()
 
   if (!showLifts || isLoading || !lifts?.length) {
     return null
@@ -38,6 +64,7 @@ export function Lifts() {
           isHovered={hoveredLiftId === lift.id}
           isSelected={selectedLiftId === lift.id}
           elevationGrid={elevationGrid}
+          zoomScale={zoomScale}
         />
       ))}
     </group>
@@ -50,9 +77,10 @@ interface LiftLineProps {
   isHovered: boolean
   isSelected: boolean
   elevationGrid: ElevationGrid | null
+  zoomScale: number
 }
 
-function LiftLine({ coordinates, isHovered, isSelected, elevationGrid }: LiftLineProps) {
+function LiftLine({ coordinates, isHovered, isSelected, elevationGrid, zoomScale }: LiftLineProps) {
   // Convert geo coordinates to local 3D coordinates with terrain elevation
   // Lifts are elevated above terrain to simulate cable height
   const { cablePoints, stationPoints } = useMemo(() => {
@@ -84,7 +112,9 @@ function LiftLine({ coordinates, isHovered, isSelected, elevationGrid }: LiftLin
   if (cablePoints.length < 2) return null
 
   const isHighlighted = isHovered || isSelected
-  const color = isHighlighted ? LIFT_COLOR_HOVER : LIFT_COLOR
+  const color = isHighlighted ? LIFT_COLOR_HIGHLIGHT : LIFT_COLOR
+  const baseWidth = BASE_LINE_WIDTH * zoomScale
+  const lineWidth = isHighlighted ? baseWidth * HIGHLIGHT_MULTIPLIER : baseWidth
 
   return (
     <group>
@@ -92,7 +122,7 @@ function LiftLine({ coordinates, isHovered, isSelected, elevationGrid }: LiftLin
       <Line
         points={cablePoints}
         color={color}
-        lineWidth={isHighlighted ? 5 : 3}
+        lineWidth={lineWidth}
         dashed
         dashSize={2}
         gapSize={1}

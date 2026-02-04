@@ -12,11 +12,11 @@ import { useContourLines } from '@/hooks/useContourLines'
 import { useTerrainStore } from '@/store/terrainStore'
 import { sampleElevation } from '@/lib/geo/elevationGrid'
 
-// Sölden ski area bounds (extended for surrounding mountains)
+// Sölden ski area bounds (includes Rettenbach & Tiefenbach glaciers)
 const SOLDEN_BOUNDS = {
   minLat: 46.84,
   maxLat: 47.01,
-  minLon: 10.9,
+  minLon: 10.86,
   maxLon: 11.2,
 }
 
@@ -122,7 +122,7 @@ export function ContourTerrain({
               color={minorColor}
               lineWidth={0.5}
               transparent
-              opacity={0.4}
+              opacity={0.25}
             />
           )
         })
@@ -139,7 +139,7 @@ export function ContourTerrain({
               color={majorColor}
               lineWidth={1.5}
               transparent
-              opacity={0.7}
+              opacity={0.45}
             />
           )
         })

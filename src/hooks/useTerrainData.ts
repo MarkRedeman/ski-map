@@ -17,11 +17,11 @@ import { geoToLocal, SOLDEN_CENTER } from '@/lib/geo/coordinates'
 import type { ElevationGrid } from '@/lib/geo/elevationGrid'
 import { useTerrainStore } from '@/store/terrainStore'
 
-// Sölden ski area bounds
+// Sölden ski area bounds (includes Rettenbach & Tiefenbach glaciers)
 const SOLDEN_BOUNDS = {
   minLat: 46.84,
   maxLat: 47.01,
-  minLon: 10.9,
+  minLon: 10.86,
   maxLon: 11.2,
 }
 
