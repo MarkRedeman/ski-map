@@ -5,6 +5,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { getTilesForBounds, buildElevationGridFromTiles } from '@/lib/geo/mapboxTiles'
 import { generateContours, contourToWorld, simplifyContour, type ContourData3D } from '@/lib/geo/contourGenerator'
+import { SOLDEN_CENTER } from '@/lib/geo/coordinates'
+
+// Scale factor matching coordinates.ts
+const SCALE = 0.1
 
 interface UseContourLinesOptions {
   minLat: number
@@ -66,8 +70,19 @@ export function useContourLines({
       const contours = generateContours(elevations, width, height, interval)
       console.log(`[Contours] Generated ${contours.length} contour levels`)
 
-      // 4. Convert to 3D world coordinates
-      let worldContours = contourToWorld(contours, bounds, width, height, 1)
+      // 4. Convert to 3D world coordinates with actual elevation
+      // Use useElevationForY=true to render contours at their real elevation
+      // Add small offset (1 unit = 10m) to float slightly above terrain surface
+      let worldContours = contourToWorld(
+        contours, 
+        bounds, 
+        width, 
+        height, 
+        1, // yOffset above terrain
+        true, // useElevationForY
+        SOLDEN_CENTER.elevation, // centerElevation
+        SCALE // scale
+      )
       
       // 5. Simplify contours to reduce vertex count
       if (simplifyTolerance > 0) {

@@ -87,14 +87,20 @@ export function generateContours(
  * @param bounds - Geographic bounds of the elevation grid
  * @param width - Grid width in pixels
  * @param height - Grid height in pixels
- * @param yOffset - Y offset for the contour lines in 3D space (default 0)
+ * @param yOffset - Y offset above the contour's actual elevation (default 0)
+ * @param useElevationForY - If true, set Y based on contour elevation (converted to scene units)
+ * @param centerElevation - Reference elevation (used when useElevationForY is true)
+ * @param scale - Scale factor for elevation (used when useElevationForY is true)
  */
 export function contourToWorld(
   contourLines: ContourLine[],
   bounds: { minLon: number; maxLon: number; minLat: number; maxLat: number },
   width: number,
   height: number,
-  yOffset: number = 0
+  yOffset: number = 0,
+  useElevationForY: boolean = false,
+  centerElevation: number = 2284,
+  scale: number = 0.1
 ): ContourData3D[] {
   const { minLon, maxLon, minLat, maxLat } = bounds
   const lonRange = maxLon - minLon
@@ -169,7 +175,16 @@ export function contourToWorld(
             break
           }
           
-          worldRing.push([x, yOffset, z])
+          // Calculate Y coordinate
+          let y: number
+          if (useElevationForY) {
+            // Use actual contour elevation, converted to scene units
+            y = (contour.elevation - centerElevation) * scale + yOffset
+          } else {
+            y = yOffset
+          }
+          
+          worldRing.push([x, y, z])
         }
         
         // Only add rings with at least 3 valid points

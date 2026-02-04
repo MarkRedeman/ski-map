@@ -3,7 +3,9 @@ import { Line } from '@react-three/drei'
 import { usePistes, filterPistesByDifficulty } from '@/hooks/usePistes'
 import { useNavigationStore, type Difficulty } from '@/stores/useNavigationStore'
 import { useMapStore } from '@/stores/useMapStore'
+import { useTerrainStore } from '@/store/terrainStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
+import { sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid'
 
 const DIFFICULTY_COLORS: Record<Difficulty, string> = {
   blue: '#3b82f6',
@@ -12,8 +14,7 @@ const DIFFICULTY_COLORS: Record<Difficulty, string> = {
 }
 
 /**
- * Renders all ski pistes as 3D lines
- * DEBUG MODE: No terrain projection, just raw coordinates at Y=0
+ * Renders all ski pistes as 3D lines that follow terrain elevation
  */
 export function Pistes() {
   const { data: pistes, isLoading } = usePistes()
@@ -21,6 +22,7 @@ export function Pistes() {
   const showPistes = useMapStore((s) => s.showPistes)
   const hoveredPisteId = useMapStore((s) => s.hoveredPisteId)
   const selectedPisteId = useMapStore((s) => s.selectedPisteId)
+  const elevationGrid = useTerrainStore((s) => s.elevationGrid)
 
   const filteredPistes = useMemo(
     () => filterPistesByDifficulty(pistes, enabledDifficulties),
@@ -41,6 +43,7 @@ export function Pistes() {
           difficulty={piste.difficulty}
           isHovered={hoveredPisteId === piste.id}
           isSelected={selectedPisteId === piste.id}
+          elevationGrid={elevationGrid}
         />
       ))}
     </group>
@@ -53,19 +56,29 @@ interface PisteLineProps {
   difficulty: Difficulty
   isHovered: boolean
   isSelected: boolean
+  elevationGrid: ElevationGrid | null
 }
 
-function PisteLine({ coordinates, difficulty, isHovered, isSelected }: PisteLineProps) {
-  // Convert geo coordinates to local 3D coordinates (no terrain projection)
-  // Use null elevation to get Y=0 (flat plane for debugging)
+/** Height offset above terrain surface (in scene units, ~20m real) */
+const PISTE_OFFSET = 2
+
+function PisteLine({ coordinates, difficulty, isHovered, isSelected, elevationGrid }: PisteLineProps) {
+  // Convert geo coordinates to local 3D coordinates with terrain elevation
   const points = useMemo(() => {
-    // Get XZ from geo coords, but set Y=2 (above grid) for all points
     return coordinates.map(([lon, lat]) => {
       const result = coordsToLocal([[lon, lat]], 0)
       const [x, , z] = result[0] ?? [0, 0, 0]
-      return [x, 2, z] as [number, number, number]
+      
+      // Sample terrain elevation if available, otherwise use flat Y=2
+      let y = PISTE_OFFSET
+      if (elevationGrid) {
+        const terrainY = sampleElevation(elevationGrid, x, z)
+        y = terrainY + PISTE_OFFSET
+      }
+      
+      return [x, y, z] as [number, number, number]
     })
-  }, [coordinates])
+  }, [coordinates, elevationGrid])
 
   if (points.length < 2) return null
 

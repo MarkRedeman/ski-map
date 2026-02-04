@@ -6,8 +6,8 @@ import {
   GizmoViewport,
 } from "@react-three/drei";
 import { Suspense } from "react";
+import { Terrain3D } from "./Terrain3D";
 import { ContourTerrain } from "./ContourTerrain";
-import { SatelliteGround } from "./SatelliteGround";
 import { Pistes } from "./Pistes";
 import { Lifts } from "./Lifts";
 import { UserMarker } from "./UserMarker";
@@ -56,18 +56,13 @@ export function SkiMap3D() {
         <Environment preset="dawn" />
         <fog attach="fog" args={["#87ceeb", 500, 2500]} />
 
-        {/* Origin marker (for debugging) */}
-        <mesh position={[0, 10, 0]}>
-          <sphereGeometry args={[5, 16, 16]} />
-          <meshStandardMaterial color="#22c55e" />
-        </mesh>
-
         {/* 3D Content */}
         <Suspense fallback={null}>
-          {/* Satellite imagery as ground layer */}
-          <SatelliteGround yPosition={0} zoom={12} />
-          {/* Contour lines on top */}
+          {/* 3D terrain with satellite texture */}
+          <Terrain3D zoom={12} segments={256} />
+          {/* Contour lines at actual elevations */}
           <ContourTerrain />
+          {/* Pistes and lifts follow terrain */}
           <Pistes />
           <Lifts />
           <UserMarker />
@@ -111,14 +106,6 @@ export function SkiMap3D() {
 
       {/* Info Panel (outside Canvas, positioned absolutely) */}
       <InfoPanel />
-
-      {/* Debug controls hint */}
-      <div className="hidden absolute bottom-4 left-4 bg-black/50 text-white text-xs p-2 rounded font-mono">
-        <div>WASD/Arrows: Move camera</div>
-        <div>Q/E: Up/Down</div>
-        <div>Shift: Fast move</div>
-        <div className="mt-1 text-green-400">Green sphere = Origin (0,0,0)</div>
-      </div>
     </div>
   );
 }
