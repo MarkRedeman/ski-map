@@ -9,15 +9,10 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useTerrainData } from '@/hooks/useTerrainData'
 import { useMapStore } from '@/stores/useMapStore'
+import { useTerrainSettings } from '@/stores/useSettingsStore'
 
-interface Terrain3DProps {
-  /** Tile zoom level for data fetching (default 12) */
-  zoom?: number
-  /** Number of mesh segments (default 256) */
-  segments?: number
-}
-
-export function Terrain3D({ zoom = 12, segments = 256 }: Terrain3DProps) {
+export function Terrain3D() {
+  const { zoom, segments } = useTerrainSettings()
   const meshRef = useRef<THREE.Mesh>(null)
   const { data, isLoading, error } = useTerrainData({ zoom })
   const setTerrainMesh = useMapStore((s) => s.setTerrainMesh)

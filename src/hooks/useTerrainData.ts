@@ -5,7 +5,7 @@
  * satellite texture (for terrain material).
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import * as THREE from 'three'
 import {
@@ -159,16 +159,20 @@ export function useTerrainData({
     enabled: enabled && !!accessToken,
     staleTime: Infinity,
     gcTime: 1000 * 60 * 60,
+    // Keep previous data visible while fetching new resolution
+    placeholderData: keepPreviousData,
   })
 
   // Update store when data changes
+  // Note: With keepPreviousData, isLoading is only true for initial load
+  // Use isFetching to detect when refetching for a new resolution
   useEffect(() => {
-    setIsLoading(query.isLoading)
-    if (query.data) {
+    setIsLoading(query.isFetching)
+    if (query.data && !query.isPlaceholderData) {
       setElevationGrid(query.data.elevationGrid)
       console.log('[TerrainData] Elevation grid stored for other components')
     }
-  }, [query.data, query.isLoading, setElevationGrid, setIsLoading])
+  }, [query.data, query.isFetching, query.isPlaceholderData, setElevationGrid, setIsLoading])
 
   return query
 }

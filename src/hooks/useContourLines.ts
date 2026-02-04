@@ -2,7 +2,7 @@
  * React Query hook for loading contour lines from Mapbox terrain tiles
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { getTilesForBounds, buildElevationGridFromTiles } from '@/lib/geo/mapboxTiles'
 import { generateContours, contourToWorld, simplifyContour, type ContourData3D } from '@/lib/geo/contourGenerator'
 import { SOLDEN_CENTER } from '@/lib/geo/coordinates'
@@ -146,5 +146,7 @@ export function useContourLines({
     enabled: enabled && !!accessToken,
     staleTime: Infinity, // Terrain data doesn't change
     gcTime: 1000 * 60 * 60, // Keep in cache for 1 hour
+    // Keep previous contours visible while fetching new resolution
+    placeholderData: keepPreviousData,
   })
 }

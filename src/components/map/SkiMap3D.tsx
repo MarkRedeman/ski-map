@@ -17,6 +17,7 @@ import { InfoTooltip } from "./InfoTooltip";
 import { InfoPanel } from "./InfoPanel";
 import { ProximitySelector } from "./ProximitySelector";
 import { KeyboardControls } from "./KeyboardControls";
+import { ResolutionControl } from "./ResolutionControl";
 import { useSelectedRun } from "@/hooks/useRuns";
 
 export function SkiMap3D() {
@@ -59,7 +60,7 @@ export function SkiMap3D() {
         {/* 3D Content */}
         <Suspense fallback={null}>
           {/* 3D terrain with satellite texture */}
-          <Terrain3D zoom={12} segments={256} />
+          <Terrain3D />
           {/* Contour lines at actual elevations */}
           <ContourTerrain />
           {/* Pistes and lifts follow terrain */}
@@ -106,6 +107,9 @@ export function SkiMap3D() {
 
       {/* Info Panel (outside Canvas, positioned absolutely) */}
       <InfoPanel />
+
+      {/* Resolution Control (outside Canvas, bottom-right corner) */}
+      <ResolutionControl />
     </div>
   );
 }

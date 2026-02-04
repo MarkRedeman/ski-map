@@ -11,6 +11,7 @@ import { Line } from '@react-three/drei'
 import { useContourLines } from '@/hooks/useContourLines'
 import { useTerrainStore } from '@/store/terrainStore'
 import { sampleElevation } from '@/lib/geo/elevationGrid'
+import { useTerrainSettings } from '@/stores/useSettingsStore'
 
 // Sölden ski area bounds (includes Rettenbach & Tiefenbach glaciers)
 const SOLDEN_BOUNDS = {
@@ -25,8 +26,6 @@ interface ContourTerrainProps {
   interval?: number
   /** Major contour interval - thicker lines (default 100) */
   majorInterval?: number
-  /** Tile zoom level (default 12 = ~16 tiles) */
-  zoom?: number
   /** Minor contour line color */
   minorColor?: string
   /** Major contour line color */
@@ -36,10 +35,10 @@ interface ContourTerrainProps {
 export function ContourTerrain({
   interval = 50,
   majorInterval = 100,
-  zoom = 12,
   minorColor = '#9ca3af',
   majorColor = '#4b5563',
 }: ContourTerrainProps) {
+  const { zoom } = useTerrainSettings()
   const { data: contours, isLoading, error } = useContourLines({
     ...SOLDEN_BOUNDS,
     zoom,
