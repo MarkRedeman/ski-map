@@ -2,12 +2,14 @@
  * Resolution Control component
  * 
  * Provides buttons to adjust terrain resolution (1x, 2x, 4x, 8x, 16x).
+ * Also includes a toggle for showing/hiding peak and place labels.
  * Positioned in the bottom-right corner of the map.
  * Shows a loading spinner when terrain is being fetched.
  */
 
 import { useSettingsStore, type ResolutionLevel } from '@/stores/useSettingsStore'
 import { useTerrainStore } from '@/store/terrainStore'
+import { useMapStore } from '@/stores/useMapStore'
 
 const RESOLUTION_LEVELS: ResolutionLevel[] = ['1x', '2x', '4x', '8x', '16x']
 
@@ -15,9 +17,30 @@ export function ResolutionControl() {
   const resolution = useSettingsStore((s) => s.resolution)
   const setResolution = useSettingsStore((s) => s.setResolution)
   const isLoading = useTerrainStore((s) => s.isLoading)
+  const showLabels = useMapStore((s) => s.showLabels)
+  const toggleLayer = useMapStore((s) => s.toggleLayer)
 
   return (
-    <div className="absolute bottom-4 right-4 flex items-center gap-2 rounded-lg bg-black/60 px-3 py-2 backdrop-blur-sm">
+    <div className="absolute bottom-4 right-4 flex items-center gap-3 rounded-lg bg-black/60 px-3 py-2 backdrop-blur-sm">
+      {/* Labels toggle */}
+      <button
+        onClick={() => toggleLayer('labels')}
+        className={`
+          flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors
+          ${showLabels
+            ? 'bg-amber-500 text-white'
+            : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
+          }
+        `}
+        title={showLabels ? 'Hide labels' : 'Show labels'}
+      >
+        <span>🏷️</span>
+        <span>Labels</span>
+      </button>
+
+      {/* Separator */}
+      <div className="h-4 w-px bg-white/20" />
+
       {/* Resolution buttons */}
       <div className="flex gap-1">
         {RESOLUTION_LEVELS.map((level) => (
@@ -65,9 +88,6 @@ export function ResolutionControl() {
           </svg>
         </div>
       )}
-
-      {/* Resolution label */}
-      <span className="ml-1 text-xs text-white/50">Resolution</span>
     </div>
   )
 }

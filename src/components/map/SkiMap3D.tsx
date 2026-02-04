@@ -5,7 +5,7 @@ import {
   GizmoHelper,
   GizmoViewport,
 } from "@react-three/drei";
-import { Suspense } from "react";
+import { Suspense, useState, useCallback } from "react";
 import { Terrain3D } from "./Terrain3D";
 import { ContourTerrain } from "./ContourTerrain";
 import { Pistes } from "./Pistes";
@@ -18,10 +18,23 @@ import { InfoPanel } from "./InfoPanel";
 import { ProximitySelector } from "./ProximitySelector";
 import { KeyboardControls } from "./KeyboardControls";
 import { ResolutionControl } from "./ResolutionControl";
+import { CompassController, CompassUI } from "./Compass";
+import { PeakLabels } from "./PeakLabels";
+import { PlaceLabels } from "./PlaceLabels";
 import { useSelectedRun } from "@/hooks/useRuns";
 
 export function SkiMap3D() {
   const selectedRun = useSelectedRun();
+  
+  // Compass state - needs to bridge Canvas (controller) and DOM (UI)
+  const [compassRotation, setCompassRotation] = useState(0);
+  const [resetToNorth, setResetToNorth] = useState(false);
+  
+  const handleCompassClick = useCallback(() => {
+    setResetToNorth(true);
+    // Reset the trigger after a short delay
+    setTimeout(() => setResetToNorth(false), 100);
+  }, []);
 
   // Camera and controls are centered on Giggijoch (0, 0, 0)
   // since all geo coordinates are converted relative to SOLDEN_CENTER
@@ -72,12 +85,21 @@ export function SkiMap3D() {
           {selectedRun && <RunPath run={selectedRun} />}
           {/* Hover tooltip */}
           <InfoTooltip />
+          {/* Peak and place labels */}
+          <PeakLabels />
+          <PlaceLabels />
           {/* Proximity-based selection handler */}
           <ProximitySelector />
         </Suspense>
 
         {/* Keyboard Controls */}
         <KeyboardControls />
+        
+        {/* Compass Controller (updates rotation state) */}
+        <CompassController 
+          onRotationUpdate={setCompassRotation}
+          resetToNorth={resetToNorth}
+        />
 
         {/* Camera Controls */}
         <OrbitControls
@@ -107,6 +129,9 @@ export function SkiMap3D() {
 
       {/* Info Panel (outside Canvas, positioned absolutely) */}
       <InfoPanel />
+
+      {/* Compass (outside Canvas, top-right corner) */}
+      <CompassUI rotation={compassRotation} onClick={handleCompassClick} />
 
       {/* Resolution Control (outside Canvas, bottom-right corner) */}
       <ResolutionControl />

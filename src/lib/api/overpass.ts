@@ -165,6 +165,22 @@ export interface Lift {
   capacity?: number
 }
 
+export interface Peak {
+  id: string
+  name: string
+  lat: number
+  lon: number
+  elevation: number
+}
+
+export interface Place {
+  id: string
+  name: string
+  type: 'town' | 'village' | 'hamlet'
+  lat: number
+  lon: number
+}
+
 /**
  * Fetch and parse ski pistes from OSM
  */
@@ -271,4 +287,64 @@ export async function fetchLifts(): Promise<Lift[]> {
   })
 
   return lifts
+}
+
+/**
+ * Build Overpass QL query for mountain peaks
+ */
+function buildPeaksQuery(): string {
+  const { south, west, north, east } = SOLDEN_BBOX
+  return `
+[out:json][timeout:30];
+node["natural"="peak"](${south},${west},${north},${east});
+out body;
+`.trim()
+}
+
+/**
+ * Build Overpass QL query for villages, towns, and hamlets
+ */
+function buildPlacesQuery(): string {
+  const { south, west, north, east } = SOLDEN_BBOX
+  return `
+[out:json][timeout:30];
+node["place"~"village|town|hamlet"](${south},${west},${north},${east});
+out body;
+`.trim()
+}
+
+/**
+ * Fetch and parse mountain peaks from OSM
+ */
+export async function fetchPeaks(): Promise<Peak[]> {
+  const query = buildPeaksQuery()
+  const response = await executeQuery(query)
+  
+  return response.elements
+    .filter((el): el is OSMNode => el.type === 'node' && !!el.tags?.name)
+    .map((node) => ({
+      id: `peak-${node.id}`,
+      name: node.tags!.name!,
+      lat: node.lat,
+      lon: node.lon,
+      elevation: parseFloat(node.tags?.ele ?? '0'),
+    }))
+}
+
+/**
+ * Fetch and parse villages, towns, and hamlets from OSM
+ */
+export async function fetchPlaces(): Promise<Place[]> {
+  const query = buildPlacesQuery()
+  const response = await executeQuery(query)
+  
+  return response.elements
+    .filter((el): el is OSMNode => el.type === 'node' && !!el.tags?.name && !!el.tags?.place)
+    .map((node) => ({
+      id: `place-${node.id}`,
+      name: node.tags!.name!,
+      type: node.tags!.place as 'town' | 'village' | 'hamlet',
+      lat: node.lat,
+      lon: node.lon,
+    }))
 }
