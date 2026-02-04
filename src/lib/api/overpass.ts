@@ -106,15 +106,15 @@ export function parseDifficulty(osmDifficulty?: string): 'blue' | 'red' | 'black
   switch (osmDifficulty) {
     case 'novice':
     case 'easy':
-      return 'blue'
     case 'intermediate':
-      return 'red'
+      return 'blue'
     case 'advanced':
+      return 'red'
     case 'expert':
     case 'freeride':
       return 'black'
     default:
-      return 'red' // Default to intermediate if unknown
+      return 'blue' // Default to easy if unknown
   }
 }
 
@@ -142,10 +142,12 @@ export function parseLiftType(aerialway?: string): string {
   }
 }
 
+import type { Difficulty } from '@/stores/useNavigationStore'
+
 export interface Piste {
   id: string
   name: string
-  difficulty: 'blue' | 'red' | 'black'
+  difficulty: Difficulty
   ref?: string // Piste number/reference
   coordinates: [number, number][] // [lon, lat] pairs
   startPoint?: [number, number, number] // [lat, lon, elevation]

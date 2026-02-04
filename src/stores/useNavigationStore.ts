@@ -3,6 +3,9 @@ import { subscribeWithSelector } from 'zustand/middleware'
 
 export type Difficulty = 'blue' | 'red' | 'black'
 
+/** All available difficulty levels in order from easiest to hardest */
+export const ALL_DIFFICULTIES: Difficulty[] = ['blue', 'red', 'black']
+
 export interface Location {
   id: string
   name: string

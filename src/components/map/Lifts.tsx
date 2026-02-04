@@ -61,9 +61,11 @@ const LIFT_CABLE_OFFSET = 10
 const LIFT_STATION_OFFSET = 3
 
 /** Base line width for lifts (in pixels) */
-const BASE_LINE_WIDTH = 8
+const BASE_LINE_WIDTH = 6
 /** Highlighted line width multiplier */
 const HIGHLIGHT_MULTIPLIER = 2
+/** Default opacity for lines */
+const LINE_OPACITY = 0.9
 
 /**
  * Hook to calculate zoom-based line width scaling
@@ -75,8 +77,12 @@ function useZoomScale(): number {
   
   useFrame(() => {
     const distance = camera.position.length()
-    const newScale = Math.max(0.5, Math.min(2, 300 / distance))
-    if (Math.abs(newScale - scale) > 0.05) {
+    // Scale: closer = thicker, farther = thinner
+    // At distance 300 (default overview), scale = 1
+    // At distance 1000, scale = 0.3 (farther, much thinner)
+    // At distance 2000, scale = 0.15 (very far, very thin)
+    const newScale = Math.max(0.15, Math.min(2, 300 / distance))
+    if (Math.abs(newScale - scale) > 0.02) {
       setScale(newScale)
     }
   })
@@ -189,6 +195,8 @@ function LiftLine({ type, coordinates, isHovered, isSelected, elevationGrid, zoo
         points={cablePoints}
         color={color}
         lineWidth={lineWidth}
+        opacity={isHighlighted ? 1 : LINE_OPACITY}
+        transparent
         dashed
         dashSize={2}
         gapSize={1}

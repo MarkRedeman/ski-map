@@ -21,7 +21,7 @@ import { ResolutionControl } from "./ResolutionControl";
 import { CompassController, CompassUI } from "./Compass";
 import { PeakLabels } from "./PeakLabels";
 import { PlaceLabels } from "./PlaceLabels";
-import { LiftLegend } from "./LiftLegend";
+import { MapLegend } from "./MapLegend";
 import { useSelectedRun } from "@/hooks/useRuns";
 
 export function SkiMap3D() {
@@ -136,8 +136,8 @@ export function SkiMap3D() {
       {/* Resolution Control (outside Canvas, bottom-right corner) */}
       <ResolutionControl />
 
-      {/* Lift Legend with filter toggles (outside Canvas, bottom-left corner) */}
-      <LiftLegend />
+      {/* Map Legend with piste and lift filter toggles (outside Canvas, bottom-left corner) */}
+      <MapLegend />
     </div>
   );
 }

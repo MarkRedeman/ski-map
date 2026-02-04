@@ -22,10 +22,19 @@ const DIFFICULTY_COLORS_HIGHLIGHT: Record<Difficulty, string> = {
   black: '#475569',
 }
 
+/** Piste difficulty configuration with colors and icons */
+export const PISTE_DIFFICULTY_CONFIG: Record<Difficulty, { color: string; colorHighlight: string; icon: string; label: string }> = {
+  blue: { color: '#3b82f6', colorHighlight: '#60a5fa', icon: '🔵', label: 'Easy' },
+  red: { color: '#ef4444', colorHighlight: '#f87171', icon: '🔴', label: 'Intermediate' },
+  black: { color: '#1e293b', colorHighlight: '#475569', icon: '⚫', label: 'Expert' },
+}
+
 /** Base line width (in pixels) */
-const BASE_LINE_WIDTH = 8
+const BASE_LINE_WIDTH = 6
 /** Highlighted line width multiplier */
 const HIGHLIGHT_MULTIPLIER = 2
+/** Default opacity for lines */
+const LINE_OPACITY = 0.9
 
 /**
  * Hook to calculate zoom-based line width scaling
@@ -41,10 +50,11 @@ function useZoomScale(): number {
     // Scale: closer = thicker, farther = thinner
     // At distance 300 (default overview), scale = 1
     // At distance 100, scale = 1.5 (closer, thicker)
-    // At distance 600, scale = 0.7 (farther, thinner)
-    const newScale = Math.max(0.5, Math.min(2, 300 / distance))
+    // At distance 1000, scale = 0.3 (farther, much thinner)
+    // At distance 2000, scale = 0.15 (very far, very thin)
+    const newScale = Math.max(0.15, Math.min(2, 300 / distance))
     // Only update if significantly different to avoid re-renders
-    if (Math.abs(newScale - scale) > 0.05) {
+    if (Math.abs(newScale - scale) > 0.02) {
       setScale(newScale)
     }
   })
@@ -134,7 +144,7 @@ function PisteLine({ coordinates, difficulty, isHovered, isSelected, elevationGr
       points={points}
       color={color}
       lineWidth={lineWidth}
-      opacity={isHighlighted ? 1 : 0.85}
+      opacity={isHighlighted ? 1 : LINE_OPACITY}
       transparent
       // Pointer events now handled by ProximitySelector for better UX
       raycast={() => null}

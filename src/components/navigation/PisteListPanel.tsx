@@ -13,10 +13,10 @@ import { useState, useMemo } from 'react'
 import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
 import { useMapStore } from '@/stores/useMapStore'
+import { type Difficulty } from '@/stores/useNavigationStore'
 import type { Piste, Lift } from '@/lib/api/overpass'
 
 type Tab = 'pistes' | 'lifts'
-type Difficulty = 'blue' | 'red' | 'black'
 
 const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string; bg: string; border: string }> = {
   blue: { label: 'Easy', color: 'text-blue-700', bg: 'bg-blue-100', border: 'border-blue-300' },
