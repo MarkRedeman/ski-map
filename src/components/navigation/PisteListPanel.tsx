@@ -183,7 +183,7 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
   }
 
   return (
-    <div className="overflow-y-auto max-h-[400px]">
+    <div className="overflow-y-auto flex-1">
       {filteredPistes.map((piste) => (
         <PisteListItem
           key={piste.id}
@@ -292,7 +292,7 @@ function LiftList({ searchQuery }: LiftListProps) {
   }
 
   return (
-    <div className="overflow-y-auto max-h-[400px]">
+    <div className="overflow-y-auto flex-1">
       {filteredLifts.map((lift) => (
         <LiftListItem
           key={lift.id}
