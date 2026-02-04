@@ -118,8 +118,9 @@ export const useMapStore = create<MapState>((set) => ({
       }
     }),
   
-  // All lift types visible by default
-  visibleLiftTypes: new Set(ALL_LIFT_TYPES),
+  // Only main lift types visible by default (Gondola, Cable Car, Chair Lift)
+  // Drag lifts (T-Bar, Button, Drag, Magic Carpet) hidden by default - useful for snowboarders
+  visibleLiftTypes: new Set<LiftType>(['Gondola', 'Cable Car', 'Chair Lift', 'Lift']),
   
   toggleLiftType: (liftType) =>
     set((state) => {

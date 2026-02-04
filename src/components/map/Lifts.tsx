@@ -7,46 +7,50 @@ import { useTerrainStore } from '@/store/terrainStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
 import { sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid'
 
-/** Lift type color configuration */
+/** 
+ * Lift type color configuration
+ * Color scheme: Yellow (gondolas) → Orange → Pink (chair lifts) → Magenta → Light Green (drag lifts)
+ * This avoids conflicts with piste difficulty colors (blue, red, black)
+ */
 export const LIFT_TYPE_CONFIG: Record<LiftType, { color: string; colorHighlight: string; icon: string }> = {
   'Gondola': {
-    color: '#22c55e',      // Green
-    colorHighlight: '#4ade80',
+    color: '#eab308',      // Yellow
+    colorHighlight: '#facc15',
     icon: '🚡',
   },
-  'Chair Lift': {
-    color: '#3b82f6',      // Blue
-    colorHighlight: '#60a5fa',
-    icon: '🪑',
-  },
   'Cable Car': {
-    color: '#a855f7',      // Purple
-    colorHighlight: '#c084fc',
+    color: '#f59e0b',      // Amber/Orange-Yellow
+    colorHighlight: '#fbbf24',
     icon: '🚠',
   },
+  'Chair Lift': {
+    color: '#ec4899',      // Pink
+    colorHighlight: '#f472b6',
+    icon: '🪑',
+  },
   'T-Bar': {
-    color: '#ef4444',      // Red
-    colorHighlight: '#f87171',
+    color: '#d946ef',      // Magenta/Fuchsia
+    colorHighlight: '#e879f9',
     icon: '⏸️',
   },
   'Button Lift': {
-    color: '#f97316',      // Orange
-    colorHighlight: '#fb923c',
+    color: '#c026d3',      // Dark Magenta
+    colorHighlight: '#d946ef',
     icon: '🔘',
   },
   'Drag Lift': {
-    color: '#f97316',      // Orange
-    colorHighlight: '#fb923c',
+    color: '#a855f7',      // Purple (between magenta and green)
+    colorHighlight: '#c084fc',
     icon: '↗️',
   },
   'Magic Carpet': {
-    color: '#ec4899',      // Pink
-    colorHighlight: '#f472b6',
+    color: '#84cc16',      // Light Green/Lime
+    colorHighlight: '#a3e635',
     icon: '🟰',
   },
   'Lift': {
-    color: '#f59e0b',      // Amber (default)
-    colorHighlight: '#fcd34d',
+    color: '#f59e0b',      // Amber (default, matches Cable Car)
+    colorHighlight: '#fbbf24',
     icon: '🎿',
   },
 }
