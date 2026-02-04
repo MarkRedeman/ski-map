@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type * as THREE from 'three'
-import type { ElevationGrid } from '@/lib/geo/elevationGrid'
+import type { ElevationGrid, ChunkElevationMap } from '@/lib/geo/elevationGrid'
 
 interface MapState {
   // Terrain mesh reference for raycasting (legacy, kept for compatibility)
@@ -11,9 +11,13 @@ interface MapState {
   terrainGroup: THREE.Group | null
   setTerrainGroup: (group: THREE.Group | null) => void
   
-  // Elevation grid for fast O(1) terrain height lookups
+  // Elevation grid for fast O(1) terrain height lookups (legacy single grid)
   elevationGrid: ElevationGrid | null
   setElevationGrid: (grid: ElevationGrid | null) => void
+  
+  // Chunk-based elevation map for dynamic terrain
+  chunkElevationMap: ChunkElevationMap | null
+  setChunkElevationMap: (map: ChunkElevationMap | null) => void
   
   // Camera
   cameraPosition: [number, number, number]
@@ -64,9 +68,13 @@ export const useMapStore = create<MapState>((set) => ({
   terrainGroup: null,
   setTerrainGroup: (group) => set({ terrainGroup: group }),
   
-  // Elevation grid for fast lookups
+  // Elevation grid for fast lookups (legacy single grid)
   elevationGrid: null,
   setElevationGrid: (grid) => set({ elevationGrid: grid }),
+  
+  // Chunk-based elevation map
+  chunkElevationMap: null,
+  setChunkElevationMap: (map) => set({ chunkElevationMap: map }),
   
   // Default camera looking at Sölden from above
   cameraPosition: [0, 500, 300],

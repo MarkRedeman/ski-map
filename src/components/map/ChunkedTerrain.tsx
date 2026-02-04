@@ -15,13 +15,27 @@ import { useRef, useMemo, useEffect, useState, useCallback } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useMapStore } from '@/stores/useMapStore'
-import { createChunkElevationGrid, mergeElevationGrids } from './terrainUtils'
+import { createChunkElevationGrid, addChunkToMap, removeChunkFromMap } from './terrainUtils'
+import type { ChunkElevationMap } from '@/lib/geo/elevationGrid'
 
 /** Size of each terrain chunk in world units */
 export const CHUNK_SIZE = 200
 
-/** How many chunks to render around the camera */
-const VIEW_DISTANCE_CHUNKS = 4
+/** Minimum chunks to render around the camera */
+const MIN_VIEW_DISTANCE_CHUNKS = 4
+
+/** Maximum chunks to render (performance limit) */
+const MAX_VIEW_DISTANCE_CHUNKS = 15
+
+/**
+ * Calculate dynamic view distance based on camera height
+ * Higher camera = need to see more chunks
+ */
+function calculateViewDistance(cameraY: number): number {
+  // Base: 4 chunks at ground level, +1 chunk per 100 units of height
+  const heightBasedDistance = MIN_VIEW_DISTANCE_CHUNKS + Math.floor(cameraY / 100)
+  return Math.min(MAX_VIEW_DISTANCE_CHUNKS, Math.max(MIN_VIEW_DISTANCE_CHUNKS, heightBasedDistance))
+}
 
 /** Segments per chunk (resolution) */
 const CHUNK_SEGMENTS = 32
@@ -133,7 +147,8 @@ export function ChunkedTerrain() {
   const lastUpdateRef = useRef(0)
   const setTerrainMesh = useMapStore((s) => s.setTerrainMesh)
   const setTerrainGroup = useMapStore((s) => s.setTerrainGroup)
-  const setElevationGrid = useMapStore((s) => s.setElevationGrid)
+  const setChunkElevationMap = useMapStore((s) => s.setChunkElevationMap)
+  const chunkElevationMapRef = useRef<ChunkElevationMap>({ chunks: new Map(), chunkSize: CHUNK_SIZE })
   const chunksRef = useRef<Map<string, THREE.Mesh>>(new Map())
   const groupRef = useRef<THREE.Group>(null)
   
@@ -142,12 +157,15 @@ export function ChunkedTerrain() {
     const cameraPos = camera.position
     const centerChunk = worldToChunkCoords(cameraPos.x, cameraPos.z)
     
+    // Dynamic view distance based on camera height
+    const viewDistanceChunks = calculateViewDistance(cameraPos.y)
+    
     const newVisibleChunks: ChunkKey[] = []
     
-    for (let dx = -VIEW_DISTANCE_CHUNKS; dx <= VIEW_DISTANCE_CHUNKS; dx++) {
-      for (let dz = -VIEW_DISTANCE_CHUNKS; dz <= VIEW_DISTANCE_CHUNKS; dz++) {
+    for (let dx = -viewDistanceChunks; dx <= viewDistanceChunks; dx++) {
+      for (let dz = -viewDistanceChunks; dz <= viewDistanceChunks; dz++) {
         // Circular view distance
-        if (dx * dx + dz * dz <= VIEW_DISTANCE_CHUNKS * VIEW_DISTANCE_CHUNKS) {
+        if (dx * dx + dz * dz <= viewDistanceChunks * viewDistanceChunks) {
           newVisibleChunks.push({
             x: centerChunk.x + dx,
             z: centerChunk.z + dz,
@@ -183,46 +201,66 @@ export function ChunkedTerrain() {
     }
   }, [setTerrainGroup])
   
-  // Update elevation grid when chunks change
+  // Update chunk elevation map when a chunk is added
+  const handleChunkReady = useCallback((chunkKey: string, mesh: THREE.Mesh) => {
+    chunksRef.current.set(chunkKey, mesh)
+    
+    // Create elevation grid for this chunk
+    const grid = createChunkElevationGrid(mesh, CHUNK_SIZE, CHUNK_SEGMENTS)
+    chunkElevationMapRef.current = addChunkToMap(
+      chunkElevationMapRef.current,
+      chunkKey,
+      grid,
+      CHUNK_SIZE
+    )
+    
+    // Update store with new map (creates new reference to trigger updates)
+    setChunkElevationMap({ ...chunkElevationMapRef.current })
+  }, [setChunkElevationMap])
+  
+  // Update chunk elevation map when a chunk is removed
+  const handleChunkRemoved = useCallback((chunkKey: string) => {
+    chunksRef.current.delete(chunkKey)
+    
+    chunkElevationMapRef.current = removeChunkFromMap(
+      chunkElevationMapRef.current,
+      chunkKey,
+      CHUNK_SIZE
+    )
+    
+    // Update store
+    setChunkElevationMap({ ...chunkElevationMapRef.current })
+  }, [setChunkElevationMap])
+  
+  // Set terrain mesh for raycasting (use first available chunk)
   useEffect(() => {
     if (chunksRef.current.size > 0) {
-      // Use the first chunk as terrain mesh for raycasting (simplified)
       const firstChunk = chunksRef.current.values().next().value
       if (firstChunk) {
         setTerrainMesh(firstChunk)
-      }
-      
-      // Create merged elevation grid from all chunks
-      const grids = Array.from(chunksRef.current.values()).map(mesh => 
-        createChunkElevationGrid(mesh, CHUNK_SIZE, CHUNK_SEGMENTS)
-      )
-      if (grids.length > 0) {
-        const mergedGrid = mergeElevationGrids(grids)
-        setElevationGrid(mergedGrid)
       }
     }
     
     return () => {
       setTerrainMesh(null)
-      setElevationGrid(null)
+      setChunkElevationMap(null)
     }
-  }, [visibleChunks, setTerrainMesh, setElevationGrid])
+  }, [visibleChunks, setTerrainMesh, setChunkElevationMap])
   
   return (
     <group name="chunked-terrain" ref={groupRef}>
-      {visibleChunks.map((chunk) => (
-        <TerrainChunk
-          key={chunkKeyToString(chunk)}
-          chunkX={chunk.x}
-          chunkZ={chunk.z}
-          onMeshReady={(mesh) => {
-            chunksRef.current.set(chunkKeyToString(chunk), mesh)
-          }}
-          onMeshRemoved={() => {
-            chunksRef.current.delete(chunkKeyToString(chunk))
-          }}
-        />
-      ))}
+      {visibleChunks.map((chunk) => {
+        const chunkKey = chunkKeyToString(chunk)
+        return (
+          <TerrainChunk
+            key={chunkKey}
+            chunkX={chunk.x}
+            chunkZ={chunk.z}
+            onMeshReady={(mesh) => handleChunkReady(chunkKey, mesh)}
+            onMeshRemoved={() => handleChunkRemoved(chunkKey)}
+          />
+        )
+      })}
     </group>
   )
 }

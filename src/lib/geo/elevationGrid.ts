@@ -26,6 +26,58 @@ export interface ElevationGrid {
 }
 
 /**
+ * Collection of chunk-based elevation grids for efficient spatial lookup
+ */
+export interface ChunkElevationMap {
+  /** Map of chunk key to elevation grid */
+  chunks: Map<string, ElevationGrid>
+  /** Chunk size in world units */
+  chunkSize: number
+}
+
+/**
+ * Create a chunk key from world coordinates
+ */
+export function worldToChunkKey(x: number, z: number, chunkSize: number): string {
+  const chunkX = Math.floor(x / chunkSize)
+  const chunkZ = Math.floor(z / chunkSize)
+  return `${chunkX},${chunkZ}`
+}
+
+/**
+ * Sample elevation from a chunk-based elevation map
+ * O(1) lookup - finds the right chunk and samples from it
+ */
+export function sampleElevationFromChunks(
+  chunkMap: ChunkElevationMap,
+  x: number,
+  z: number
+): number {
+  const key = worldToChunkKey(x, z, chunkMap.chunkSize)
+  const grid = chunkMap.chunks.get(key)
+  
+  if (!grid) {
+    // Point not in any loaded chunk - try nearby chunks (for edge cases)
+    // Check all 4 adjacent chunks
+    const chunkX = Math.floor(x / chunkMap.chunkSize)
+    const chunkZ = Math.floor(z / chunkMap.chunkSize)
+    
+    const offsets: [number, number][] = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]
+    for (const [dx, dz] of offsets) {
+      const nearbyKey = `${chunkX + dx},${chunkZ + dz}`
+      const nearbyGrid = chunkMap.chunks.get(nearbyKey)
+      if (nearbyGrid && x >= nearbyGrid.minX && x <= nearbyGrid.maxX && 
+          z >= nearbyGrid.minZ && z <= nearbyGrid.maxZ) {
+        return sampleElevation(nearbyGrid, x, z)
+      }
+    }
+    return 0
+  }
+  
+  return sampleElevation(grid, x, z)
+}
+
+/**
  * Extract elevation grid from a PlaneGeometry-based terrain mesh
  * 
  * @param terrainMesh - Mesh with PlaneGeometry (rotated to XZ plane)
@@ -176,5 +228,24 @@ export function projectVectorsOnGrid(
   return points.map((p) => {
     const terrainY = sampleElevation(grid, p.x, p.z)
     return new THREE.Vector3(p.x, terrainY + offset, p.z)
+  })
+}
+
+/**
+ * Project an array of 3D points onto terrain using chunk-based elevation map
+ * 
+ * @param chunkMap - Chunk-based elevation map
+ * @param points - Array of [x, y, z] coordinates (y will be replaced)
+ * @param offset - Height offset above the terrain surface
+ * @returns New array with Y values sampled from terrain
+ */
+export function projectPointsOnChunks(
+  chunkMap: ChunkElevationMap,
+  points: [number, number, number][],
+  offset: number = 2
+): [number, number, number][] {
+  return points.map(([x, , z]) => {
+    const terrainY = sampleElevationFromChunks(chunkMap, x, z)
+    return [x, terrainY + offset, z]
   })
 }

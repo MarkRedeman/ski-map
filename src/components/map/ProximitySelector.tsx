@@ -14,7 +14,7 @@ import { useLifts } from '@/hooks/useLifts'
 import { useNavigationStore } from '@/stores/useNavigationStore'
 import { useMapStore } from '@/stores/useMapStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
-import { projectPointsOnGrid } from '@/lib/geo/elevationGrid'
+import { projectPointsOnChunks } from '@/lib/geo/elevationGrid'
 import { featureSpatialIndex } from '@/lib/geo/spatialIndex'
 
 /** Maximum distance (in scene units) to select a feature */
@@ -27,7 +27,7 @@ export function ProximitySelector() {
   const { camera, gl } = useThree()
   const terrainMesh = useMapStore((s) => s.terrainMesh)
   const terrainGroup = useMapStore((s) => s.terrainGroup)
-  const elevationGrid = useMapStore((s) => s.elevationGrid)
+  const chunkElevationMap = useMapStore((s) => s.chunkElevationMap)
   const setHoveredPiste = useMapStore((s) => s.setHoveredPiste)
   const setHoveredLift = useMapStore((s) => s.setHoveredLift)
   const setSelectedPiste = useMapStore((s) => s.setSelectedPiste)
@@ -44,7 +44,7 @@ export function ProximitySelector() {
   
   // Build spatial index when data changes
   useEffect(() => {
-    if (!elevationGrid) return
+    if (!chunkElevationMap) return
     
     featureSpatialIndex.clear()
     
@@ -54,7 +54,7 @@ export function ProximitySelector() {
         if (!enabledDifficulties.has(piste.difficulty)) continue
         
         const localCoords = coordsToLocal(piste.coordinates, 0)
-        const projectedPoints = projectPointsOnGrid(elevationGrid, localCoords, 2)
+        const projectedPoints = projectPointsOnChunks(chunkElevationMap, localCoords, 2)
         
         featureSpatialIndex.addFeature({
           id: piste.id,
@@ -68,7 +68,7 @@ export function ProximitySelector() {
     if (lifts && showLifts) {
       for (const lift of lifts) {
         const localCoords = coordsToLocal(lift.coordinates, 0)
-        const projectedPoints = projectPointsOnGrid(elevationGrid, localCoords, 10)
+        const projectedPoints = projectPointsOnChunks(chunkElevationMap, localCoords, 10)
         
         featureSpatialIndex.addFeature({
           id: lift.id,
@@ -77,7 +77,7 @@ export function ProximitySelector() {
         })
       }
     }
-  }, [pistes, lifts, elevationGrid, enabledDifficulties, showPistes, showLifts])
+  }, [pistes, lifts, chunkElevationMap, enabledDifficulties, showPistes, showLifts])
   
   // Get terrain intersection point from mouse position
   const getTerrainPoint = useCallback((event: PointerEvent): THREE.Vector3 | null => {

@@ -9,7 +9,7 @@ import { useMapStore } from '@/stores/useMapStore'
 import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
 import { coordsToLocal } from '@/lib/geo/coordinates'
-import { sampleElevation } from '@/lib/geo/elevationGrid'
+import { sampleElevationFromChunks } from '@/lib/geo/elevationGrid'
 
 const DIFFICULTY_LABELS = {
   blue: { label: 'Easy', color: 'text-blue-100', bg: 'bg-blue-500' },
@@ -40,7 +40,7 @@ function calculateLength(coordinates: [number, number][]): number {
 export function InfoTooltip() {
   const hoveredPisteId = useMapStore((s) => s.hoveredPisteId)
   const hoveredLiftId = useMapStore((s) => s.hoveredLiftId)
-  const elevationGrid = useMapStore((s) => s.elevationGrid)
+  const chunkElevationMap = useMapStore((s) => s.chunkElevationMap)
   const { data: pistes } = usePistes()
   const { data: lifts } = useLifts()
 
@@ -59,7 +59,7 @@ export function InfoTooltip() {
   // Calculate tooltip position (middle of the path)
   const position = useMemo(() => {
     const item = hoveredPiste || hoveredLift
-    if (!item || !elevationGrid) return null
+    if (!item || !chunkElevationMap) return null
 
     const coords = item.coordinates
     const midIndex = Math.floor(coords.length / 2)
@@ -67,9 +67,9 @@ export function InfoTooltip() {
     if (!midCoord) return null
 
     const [x, , z] = coordsToLocal([[midCoord[0], midCoord[1]]], 0)[0]!
-    const y = sampleElevation(elevationGrid, x, z) + 20
+    const y = sampleElevationFromChunks(chunkElevationMap, x, z) + 20
     return [x, y, z] as [number, number, number]
-  }, [hoveredPiste, hoveredLift, elevationGrid])
+  }, [hoveredPiste, hoveredLift, chunkElevationMap])
 
   if (!position) return null
 

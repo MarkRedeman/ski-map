@@ -4,7 +4,7 @@ import { usePistes, filterPistesByDifficulty } from '@/hooks/usePistes'
 import { useNavigationStore, type Difficulty } from '@/stores/useNavigationStore'
 import { useMapStore } from '@/stores/useMapStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
-import { projectPointsOnGrid, type ElevationGrid } from '@/lib/geo/elevationGrid'
+import { projectPointsOnChunks, type ChunkElevationMap } from '@/lib/geo/elevationGrid'
 
 const DIFFICULTY_COLORS: Record<Difficulty, string> = {
   blue: '#3b82f6',
@@ -21,14 +21,14 @@ export function Pistes() {
   const showPistes = useMapStore((s) => s.showPistes)
   const hoveredPisteId = useMapStore((s) => s.hoveredPisteId)
   const selectedPisteId = useMapStore((s) => s.selectedPisteId)
-  const elevationGrid = useMapStore((s) => s.elevationGrid)
+  const chunkElevationMap = useMapStore((s) => s.chunkElevationMap)
 
   const filteredPistes = useMemo(
     () => filterPistesByDifficulty(pistes, enabledDifficulties),
     [pistes, enabledDifficulties]
   )
 
-  if (!showPistes || isLoading || !filteredPistes.length || !elevationGrid) {
+  if (!showPistes || isLoading || !filteredPistes.length || !chunkElevationMap) {
     return null
   }
 
@@ -42,7 +42,7 @@ export function Pistes() {
           difficulty={piste.difficulty}
           isHovered={hoveredPisteId === piste.id}
           isSelected={selectedPisteId === piste.id}
-          elevationGrid={elevationGrid}
+          chunkElevationMap={chunkElevationMap}
         />
       ))}
     </group>
@@ -55,16 +55,16 @@ interface PisteLineProps {
   difficulty: Difficulty
   isHovered: boolean
   isSelected: boolean
-  elevationGrid: ElevationGrid
+  chunkElevationMap: ChunkElevationMap
 }
 
-function PisteLine({ coordinates, difficulty, isHovered, isSelected, elevationGrid }: PisteLineProps) {
+function PisteLine({ coordinates, difficulty, isHovered, isSelected, chunkElevationMap }: PisteLineProps) {
   // Convert geo coordinates to local 3D coordinates and project onto terrain
   const points = useMemo(() => {
     const localCoords = coordsToLocal(coordinates, 0)
     // Project points onto terrain with 2m offset above surface (O(1) per point!)
-    return projectPointsOnGrid(elevationGrid, localCoords, 2)
-  }, [coordinates, elevationGrid])
+    return projectPointsOnChunks(chunkElevationMap, localCoords, 2)
+  }, [coordinates, chunkElevationMap])
 
   if (points.length < 2) return null
 

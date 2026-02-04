@@ -11,7 +11,7 @@ import type { SkiRun, RunPoint } from '@/lib/garmin/types'
 import { geoToLocal } from '@/lib/geo/coordinates'
 import { formatSpeed } from '@/lib/garmin/parser'
 import { useMapStore } from '@/stores/useMapStore'
-import { sampleElevation } from '@/lib/geo/elevationGrid'
+import { sampleElevationFromChunks } from '@/lib/geo/elevationGrid'
 
 interface RunPathProps {
   run: SkiRun
@@ -49,9 +49,9 @@ function getSpeedColor(speed: number): THREE.Color {
 
 export function RunPath({ run, showMarkers = true, animate = true }: RunPathProps) {
   const { coordinates } = run
-  const elevationGrid = useMapStore((s) => s.elevationGrid)
+  const chunkElevationMap = useMapStore((s) => s.chunkElevationMap)
   
-  if (coordinates.length < 2 || !elevationGrid) {
+  if (coordinates.length < 2 || !chunkElevationMap) {
     return null
   }
   
@@ -63,13 +63,13 @@ export function RunPath({ run, showMarkers = true, animate = true }: RunPathProp
     for (const coord of coordinates) {
       const [x, , z] = geoToLocal(coord.lat, coord.lon, 0)
       // Sample terrain and add offset (O(1) per point!)
-      const terrainY = sampleElevation(elevationGrid, x, z)
+      const terrainY = sampleElevationFromChunks(chunkElevationMap, x, z)
       points.push(new THREE.Vector3(x, terrainY + 3, z))
       colors.push(getSpeedColor(coord.speed ?? 0))
     }
     
     return { points, colors }
-  }, [coordinates, elevationGrid])
+  }, [coordinates, chunkElevationMap])
   
   // Create segments for color-coded line
   const segments = useMemo(() => {
