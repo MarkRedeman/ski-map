@@ -68,7 +68,6 @@ export function SkiMap3D() {
 
         {/* Sky / Environment */}
         <Environment preset="dawn" />
-        <fog attach="fog" args={["#87ceeb", 500, 2500]} />
 
         {/* 3D Content */}
         <Suspense fallback={null}>
