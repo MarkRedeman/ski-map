@@ -9,11 +9,11 @@ export function Sidebar() {
   const { selectedRoute } = useNavigationStore()
 
   return (
-    <aside className="w-80 flex-shrink-0 overflow-y-auto border-r border-slate-200 bg-white">
-      <div className="p-4 space-y-6">
+    <aside className="w-80 flex-shrink-0 overflow-y-auto bg-black/60 backdrop-blur-sm">
+      <div className="p-4 space-y-4">
         {/* My Location */}
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/50">
             My Location
           </h2>
           <LocationButton />
@@ -21,7 +21,7 @@ export function Sidebar() {
 
         {/* Search / Navigation Panel */}
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/50">
             Navigate
           </h2>
           <SearchPanel />
@@ -29,7 +29,7 @@ export function Sidebar() {
 
         {/* Difficulty Filter */}
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/50">
             Difficulty Filter
           </h2>
           <DifficultyFilter />
@@ -38,7 +38,7 @@ export function Sidebar() {
         {/* Route Results */}
         {selectedRoute && (
           <section>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/50">
               Route
             </h2>
             <RouteCard route={selectedRoute} />
@@ -47,8 +47,8 @@ export function Sidebar() {
       </div>
 
       {/* Piste/Lift Browser */}
-      <section className="border-t border-slate-200">
-        <h2 className="px-4 py-3 text-sm font-semibold uppercase tracking-wide text-slate-500 bg-slate-50">
+      <section className="border-t border-white/10">
+        <h2 className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/50 bg-white/5">
           Browse Slopes & Lifts
         </h2>
         <PisteListPanel />

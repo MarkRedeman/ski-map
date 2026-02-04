@@ -14,14 +14,15 @@ import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
 import { useMapStore } from '@/stores/useMapStore'
 import { type Difficulty } from '@/stores/useNavigationStore'
+import { LIFT_TYPE_CONFIG } from '@/components/map/Lifts'
 import type { Piste, Lift } from '@/lib/api/overpass'
 
 type Tab = 'pistes' | 'lifts'
 
-const DIFFICULTY_CONFIG: Record<Difficulty, { label: string; color: string; bg: string; border: string }> = {
-  blue: { label: 'Easy', color: 'text-blue-700', bg: 'bg-blue-100', border: 'border-blue-300' },
-  red: { label: 'Medium', color: 'text-red-700', bg: 'bg-red-100', border: 'border-red-300' },
-  black: { label: 'Expert', color: 'text-gray-900', bg: 'bg-gray-200', border: 'border-gray-400' },
+const DIFFICULTY_COLORS: Record<Difficulty, string> = {
+  blue: '#3b82f6',
+  red: '#ef4444',
+  black: '#1e293b',
 }
 
 /**
@@ -53,13 +54,13 @@ export function PisteListPanel() {
   return (
     <div className="flex flex-col">
       {/* Tabs */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex border-b border-white/10">
         <button
           onClick={() => setActiveTab('pistes')}
           className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
             activeTab === 'pistes'
-              ? 'border-b-2 border-blue-500 text-blue-600'
-              : 'text-slate-500 hover:text-slate-700'
+              ? 'border-b-2 border-blue-400 text-blue-400'
+              : 'text-white/50 hover:text-white/70'
           }`}
         >
           Pistes
@@ -68,8 +69,8 @@ export function PisteListPanel() {
           onClick={() => setActiveTab('lifts')}
           className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
             activeTab === 'lifts'
-              ? 'border-b-2 border-amber-500 text-amber-600'
-              : 'text-slate-500 hover:text-slate-700'
+              ? 'border-b-2 border-amber-400 text-amber-400'
+              : 'text-white/50 hover:text-white/70'
           }`}
         >
           Lifts
@@ -77,21 +78,20 @@ export function PisteListPanel() {
       </div>
 
       {/* Search Input */}
-      <div className="p-3 border-b border-slate-100">
+      <div className="p-3 border-b border-white/10">
         <input
           type="text"
           placeholder={`Search ${activeTab}...`}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm placeholder:text-slate-400 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          className="w-full rounded bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:bg-white/20 focus:outline-none focus:ring-1 focus:ring-white/30"
         />
       </div>
 
       {/* Difficulty Filters (only for pistes) */}
       {activeTab === 'pistes' && (
-        <div className="flex gap-2 p-3 border-b border-slate-100">
+        <div className="flex gap-1.5 p-3 border-b border-white/10">
           {(['blue', 'red', 'black'] as Difficulty[]).map((difficulty) => {
-            const config = DIFFICULTY_CONFIG[difficulty]
             const isEnabled = enabledDifficulties.has(difficulty)
             return (
               <button
@@ -107,13 +107,17 @@ export function PisteListPanel() {
                     return next
                   })
                 }}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-all ${
                   isEnabled
-                    ? `${config.bg} ${config.color} ${config.border}`
-                    : 'border-slate-200 bg-slate-50 text-slate-400'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-white/5 text-white/40 hover:bg-white/10'
                 }`}
               >
-                {config.label}
+                <div
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: DIFFICULTY_COLORS[difficulty], opacity: isEnabled ? 1 : 0.4 }}
+                />
+                {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
               </button>
             )
           })}
@@ -163,8 +167,8 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8 text-slate-400">
-        <div className="animate-spin h-5 w-5 border-2 border-slate-300 border-t-blue-500 rounded-full" />
+      <div className="flex items-center justify-center p-8 text-white/40">
+        <div className="animate-spin h-5 w-5 border-2 border-white/20 border-t-blue-400 rounded-full" />
         <span className="ml-2 text-sm">Loading pistes...</span>
       </div>
     )
@@ -172,7 +176,7 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
 
   if (filteredPistes.length === 0) {
     return (
-      <div className="p-8 text-center text-sm text-slate-400">
+      <div className="p-8 text-center text-sm text-white/40">
         No pistes found
       </div>
     )
@@ -210,43 +214,38 @@ function PisteListItem({ piste, isHovered, isSelected, onHover, onSelect }: Pist
       onMouseEnter={() => onHover(piste.id)}
       onMouseLeave={() => onHover(null)}
       onClick={() => onSelect(piste.id)}
-      className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-slate-50 transition-colors ${
+      className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-white/5 transition-colors ${
         isSelected
-          ? 'bg-blue-50'
+          ? 'bg-white/20'
           : isHovered
-          ? 'bg-slate-50'
-          : 'hover:bg-slate-50'
+          ? 'bg-white/10'
+          : 'hover:bg-white/10'
       }`}
     >
       {/* Difficulty indicator */}
       <div
-        className={`w-3 h-3 rounded-full flex-shrink-0 ${
-          piste.difficulty === 'blue'
-            ? 'bg-blue-500'
-            : piste.difficulty === 'red'
-            ? 'bg-red-500'
-            : 'bg-gray-800'
-        }`}
+        className="w-3 h-3 rounded-full flex-shrink-0"
+        style={{ backgroundColor: DIFFICULTY_COLORS[piste.difficulty] }}
       />
 
       {/* Name and details */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-slate-700 truncate">
+          <span className="text-sm font-medium text-white truncate">
             {piste.name}
           </span>
           {piste.ref && (
-            <span className="text-xs text-slate-400">#{piste.ref}</span>
+            <span className="text-xs text-white/40">#{piste.ref}</span>
           )}
         </div>
-        <div className="text-xs text-slate-400">
+        <div className="text-xs text-white/40">
           {(length / 1000).toFixed(1)} km
         </div>
       </div>
 
       {/* Selection indicator */}
       {isSelected && (
-        <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
+        <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
       )}
     </div>
   )
@@ -277,8 +276,8 @@ function LiftList({ searchQuery }: LiftListProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8 text-slate-400">
-        <div className="animate-spin h-5 w-5 border-2 border-slate-300 border-t-amber-500 rounded-full" />
+      <div className="flex items-center justify-center p-8 text-white/40">
+        <div className="animate-spin h-5 w-5 border-2 border-white/20 border-t-amber-400 rounded-full" />
         <span className="ml-2 text-sm">Loading lifts...</span>
       </div>
     )
@@ -286,7 +285,7 @@ function LiftList({ searchQuery }: LiftListProps) {
 
   if (filteredLifts.length === 0) {
     return (
-      <div className="p-8 text-center text-sm text-slate-400">
+      <div className="p-8 text-center text-sm text-white/40">
         No lifts found
       </div>
     )
@@ -318,33 +317,35 @@ interface LiftListItemProps {
 
 function LiftListItem({ lift, isHovered, isSelected, onHover, onSelect }: LiftListItemProps) {
   const length = useMemo(() => calculateLength(lift.coordinates), [lift.coordinates])
+  const config = LIFT_TYPE_CONFIG[lift.type as keyof typeof LIFT_TYPE_CONFIG] ?? LIFT_TYPE_CONFIG['Lift']
 
   return (
     <div
       onMouseEnter={() => onHover(lift.id)}
       onMouseLeave={() => onHover(null)}
       onClick={() => onSelect(lift.id)}
-      className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-slate-50 transition-colors ${
+      className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-white/5 transition-colors ${
         isSelected
-          ? 'bg-amber-50'
+          ? 'bg-white/20'
           : isHovered
-          ? 'bg-slate-50'
-          : 'hover:bg-slate-50'
+          ? 'bg-white/10'
+          : 'hover:bg-white/10'
       }`}
     >
       {/* Lift type icon */}
-      <div className="w-6 h-6 rounded bg-amber-100 flex items-center justify-center flex-shrink-0">
-        <span className="text-amber-600 text-xs">
-          {lift.type === 'Gondola' ? '🚡' : lift.type === 'Chair Lift' ? '🪑' : '🚠'}
-        </span>
+      <div
+        className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0"
+        style={{ backgroundColor: `${config.color}30` }}
+      >
+        <span className="text-sm">{config.icon}</span>
       </div>
 
       {/* Name and details */}
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-slate-700 truncate">
+        <div className="text-sm font-medium text-white truncate">
           {lift.name}
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-400">
+        <div className="flex items-center gap-2 text-xs text-white/40">
           <span>{lift.type}</span>
           <span>•</span>
           <span>{(length / 1000).toFixed(1)} km</span>
@@ -359,7 +360,7 @@ function LiftListItem({ lift, isHovered, isSelected, onHover, onSelect }: LiftLi
 
       {/* Selection indicator */}
       {isSelected && (
-        <div className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" />
+        <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
       )}
     </div>
   )

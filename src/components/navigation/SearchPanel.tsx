@@ -124,7 +124,7 @@ export function SearchPanel() {
   const canCalculate = fromLocation && toLocation && isReady && !isCalculating
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* From Input */}
       <div className="relative">
         <div className="absolute left-3 top-1/2 -translate-y-1/2">
@@ -139,7 +139,7 @@ export function SearchPanel() {
             if (fromLocation) setFromLocation(null)
           }}
           onFocus={() => setActiveInput('from')}
-          className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+          className="w-full rounded bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/40 focus:bg-white/20 focus:outline-none focus:ring-1 focus:ring-white/30"
         />
       </div>
 
@@ -147,7 +147,7 @@ export function SearchPanel() {
       <div className="flex justify-center">
         <button
           onClick={swapLocations}
-          className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+          className="rounded-full p-1 text-white/40 hover:bg-white/10 hover:text-white transition-colors"
           title="Swap locations"
         >
           <ArrowRightLeft className="h-4 w-4" />
@@ -168,26 +168,26 @@ export function SearchPanel() {
             if (toLocation) setToLocation(null)
           }}
           onFocus={() => setActiveInput('to')}
-          className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+          className="w-full rounded bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/40 focus:bg-white/20 focus:outline-none focus:ring-1 focus:ring-white/30"
         />
       </div>
 
       {/* Location Suggestions */}
       {activeInput && (
-        <div className="rounded-lg border border-slate-200 bg-white shadow-lg max-h-48 overflow-y-auto">
+        <div className="rounded bg-black/80 backdrop-blur-sm max-h-48 overflow-y-auto border border-white/10">
           {filteredLocations.length > 0 ? (
             filteredLocations.map((location) => (
               <button
                 key={location.id}
                 onClick={() => handleSelectLocation(location)}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-sky-50 transition-colors"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
               >
                 <LocationIcon type={location.type} />
-                <span>{location.name}</span>
+                <span className="truncate">{location.name}</span>
               </button>
             ))
           ) : (
-            <div className="px-3 py-2 text-sm text-slate-400">
+            <div className="px-3 py-2 text-sm text-white/40">
               No locations found
             </div>
           )}
@@ -196,7 +196,7 @@ export function SearchPanel() {
 
       {/* Error Message */}
       {routeError && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600">
+        <div className="rounded bg-red-500/20 px-3 py-2 text-xs text-red-300">
           {routeError}
         </div>
       )}
@@ -206,10 +206,10 @@ export function SearchPanel() {
         onClick={handleGetDirections}
         disabled={!canCalculate}
         className={cn(
-          'flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all',
+          'flex w-full items-center justify-center gap-2 rounded py-2 text-sm font-medium transition-all',
           canCalculate
-            ? 'bg-sky-600 text-white hover:bg-sky-700'
-            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+            ? 'bg-sky-500 text-white hover:bg-sky-600'
+            : 'bg-white/10 text-white/30 cursor-not-allowed'
         )}
       >
         {isCalculating ? (
@@ -231,12 +231,12 @@ export function SearchPanel() {
 function LocationIcon({ type }: { type: Location['type'] }) {
   switch (type) {
     case 'lift_station':
-      return <div className="h-3 w-3 rounded bg-amber-500" />
+      return <div className="h-3 w-3 rounded bg-amber-500 flex-shrink-0" />
     case 'piste_start':
-      return <div className="h-3 w-3 rounded-full bg-green-500" />
+      return <div className="h-3 w-3 rounded-full bg-green-500 flex-shrink-0" />
     case 'piste_end':
-      return <div className="h-3 w-3 rounded-full bg-red-500" />
+      return <div className="h-3 w-3 rounded-full bg-red-500 flex-shrink-0" />
     default:
-      return <MapPin className="h-3 w-3 text-slate-400" />
+      return <MapPin className="h-3 w-3 text-white/40 flex-shrink-0" />
   }
 }

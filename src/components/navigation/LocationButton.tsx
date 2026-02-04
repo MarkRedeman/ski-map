@@ -29,27 +29,26 @@ export function LocationButton() {
       <button
         onClick={handleClick}
         className={cn(
-          'flex w-full items-center gap-3 rounded-lg border px-3 py-3 transition-all',
-          'hover:shadow-md active:scale-[0.98]',
+          'flex w-full items-center gap-3 rounded px-3 py-2.5 transition-all',
           error
-            ? 'border-red-200 bg-red-50 text-red-700'
+            ? 'bg-red-500/20 text-red-300'
             : isTracking
-              ? 'border-blue-300 bg-blue-50 text-blue-700'
-              : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+              ? 'bg-blue-500/20 text-blue-300'
+              : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
         )}
       >
         {/* Icon with pulsing animation when active */}
         <div className="relative">
           {error ? (
-            <AlertCircle className="h-5 w-5 text-red-500" />
+            <AlertCircle className="h-5 w-5 text-red-400" />
           ) : isTracking ? (
             <>
-              <Locate className="h-5 w-5 text-blue-600" />
+              <Locate className="h-5 w-5 text-blue-400" />
               {/* Pulsing ring animation */}
-              <span className="absolute inset-0 animate-ping rounded-full bg-blue-400 opacity-75" />
+              <span className="absolute inset-0 animate-ping rounded-full bg-blue-400 opacity-50" />
             </>
           ) : (
-            <LocateOff className="h-5 w-5 text-slate-400" />
+            <LocateOff className="h-5 w-5 text-white/50" />
           )}
         </div>
 
@@ -65,7 +64,7 @@ export function LocationButton() {
           
           {/* Accuracy indicator when tracking */}
           {isTracking && accuracy !== null && !error && (
-            <div className="text-xs text-blue-500">
+            <div className="text-xs text-blue-400">
               Accuracy: {formatAccuracy(accuracy)} ({Math.round(accuracy)}m)
             </div>
           )}
@@ -75,7 +74,7 @@ export function LocationButton() {
         <div
           className={cn(
             'h-4 w-8 rounded-full transition-colors',
-            isTracking ? 'bg-blue-500' : 'bg-slate-300'
+            isTracking ? 'bg-blue-500' : 'bg-white/20'
           )}
         >
           <div
@@ -89,14 +88,14 @@ export function LocationButton() {
 
       {/* Error message */}
       {error && (
-        <div className="rounded-md bg-red-50 p-2 text-xs text-red-600">
+        <div className="rounded bg-red-500/20 p-2 text-xs text-red-300">
           {error.message}
         </div>
       )}
 
       {/* Info text */}
       {!error && !isTracking && (
-        <p className="text-xs text-slate-400">
+        <p className="text-[11px] text-white/40 px-1">
           Track your location on the map in real-time. Requires GPS access.
         </p>
       )}

@@ -1,81 +1,90 @@
 import { Clock, TrendingDown, TrendingUp, Route as RouteIcon } from 'lucide-react'
 import type { Route, Difficulty } from '@/stores/useNavigationStore'
-import { cn } from '@/lib/utils'
 
 interface RouteCardProps {
   route: Route
 }
 
 const difficultyColors: Record<Difficulty, string> = {
-  blue: 'bg-blue-500',
-  red: 'bg-red-500',
-  black: 'bg-slate-800',
+  blue: '#3b82f6',
+  red: '#ef4444',
+  black: '#1e293b',
 }
 
 export function RouteCard({ route }: RouteCardProps) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+    <div className="rounded-lg bg-white/10 overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-sky-500 to-sky-600 px-4 py-3 text-white">
+      <div className="bg-sky-500/30 px-3 py-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <RouteIcon className="h-4 w-4" />
-            <span className="font-medium">Route Found</span>
+            <RouteIcon className="h-4 w-4 text-sky-300" />
+            <span className="text-sm font-medium text-white">Route Found</span>
           </div>
-          <div className={cn('px-2 py-0.5 rounded text-xs font-medium', difficultyColors[route.maxDifficulty])}>
-            {route.maxDifficulty.toUpperCase()}
+          <div
+            className="px-2 py-0.5 rounded text-[10px] font-bold text-white uppercase"
+            style={{ backgroundColor: difficultyColors[route.maxDifficulty] }}
+          >
+            {route.maxDifficulty}
           </div>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 p-3 border-b border-slate-100">
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-1 text-slate-400">
+      <div className="grid grid-cols-3 gap-1 p-2 border-b border-white/10">
+        <div className="text-center rounded bg-white/5 py-2">
+          <div className="flex items-center justify-center text-white/50">
             <Clock className="h-3 w-3" />
           </div>
-          <div className="text-lg font-semibold text-slate-800">{route.estimatedTime}</div>
-          <div className="text-xs text-slate-400">min</div>
+          <div className="text-base font-semibold text-white">{route.estimatedTime}</div>
+          <div className="text-[10px] text-white/50">min</div>
         </div>
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-1 text-green-500">
+        <div className="text-center rounded bg-white/5 py-2">
+          <div className="flex items-center justify-center text-green-400">
             <TrendingDown className="h-3 w-3" />
           </div>
-          <div className="text-lg font-semibold text-slate-800">{route.totalElevationDown}</div>
-          <div className="text-xs text-slate-400">m down</div>
+          <div className="text-base font-semibold text-white">{route.totalElevationDown}</div>
+          <div className="text-[10px] text-white/50">m down</div>
         </div>
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-1 text-amber-500">
+        <div className="text-center rounded bg-white/5 py-2">
+          <div className="flex items-center justify-center text-amber-400">
             <TrendingUp className="h-3 w-3" />
           </div>
-          <div className="text-lg font-semibold text-slate-800">{route.totalElevationUp}</div>
-          <div className="text-xs text-slate-400">m up (lift)</div>
+          <div className="text-base font-semibold text-white">{route.totalElevationUp}</div>
+          <div className="text-[10px] text-white/50">m up</div>
         </div>
       </div>
 
       {/* Steps */}
-      <div className="p-3 space-y-2">
-        <div className="text-xs font-medium text-slate-500 uppercase">Route Steps</div>
-        {route.steps.map((step, index) => (
-          <div key={index} className="flex items-center gap-2 text-sm">
-            {step.type === 'piste' ? (
-              <div className={cn('h-3 w-3 rounded-full', difficultyColors[step.difficulty || 'blue'])} />
-            ) : (
-              <div className="h-3 w-3 rounded bg-amber-500" />
-            )}
-            <span className="flex-1 truncate">{step.name}</span>
-            <span className="text-xs text-slate-400">{step.distance}m</span>
-          </div>
-        ))}
+      <div className="p-2 space-y-1">
+        <div className="text-[10px] font-medium text-white/50 uppercase">Route Steps</div>
+        <div className="max-h-32 overflow-y-auto space-y-1">
+          {route.steps.map((step, index) => (
+            <div key={index} className="flex items-center gap-2 text-xs">
+              {step.type === 'piste' ? (
+                <div
+                  className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: difficultyColors[step.difficulty || 'blue'] }}
+                />
+              ) : (
+                <div className="h-2.5 w-2.5 rounded bg-amber-500 flex-shrink-0" />
+              )}
+              <span className="flex-1 truncate text-white/80">{step.name}</span>
+              <span className="text-[10px] text-white/40">{step.distance}m</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* From / To */}
-      <div className="bg-slate-50 px-3 py-2 text-xs text-slate-500">
-        <div className="flex items-center gap-2">
-          <span className="font-medium">From:</span> {route.from.name}
+      <div className="bg-white/5 px-2 py-1.5 text-[10px] text-white/50">
+        <div className="flex items-center gap-1">
+          <span className="font-medium text-white/60">From:</span>
+          <span className="truncate">{route.from.name}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="font-medium">To:</span> {route.to.name}
+        <div className="flex items-center gap-1">
+          <span className="font-medium text-white/60">To:</span>
+          <span className="truncate">{route.to.name}</span>
         </div>
       </div>
     </div>
