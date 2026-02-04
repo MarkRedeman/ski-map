@@ -76,7 +76,7 @@ export function generateContours(
   // Extract contour lines
   return contourPolygons.map((polygon) => ({
     elevation: polygon.value,
-    coordinates: polygon.coordinates as unknown as number[][][],
+    coordinates: polygon.coordinates as number[][][][],
   }))
 }
 

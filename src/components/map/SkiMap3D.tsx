@@ -4,10 +4,10 @@ import {
   Environment,
   GizmoHelper,
   GizmoViewport,
-  Grid,
 } from "@react-three/drei";
 import { Suspense } from "react";
 import { ContourTerrain } from "./ContourTerrain";
+import { SatelliteGround } from "./SatelliteGround";
 import { Pistes } from "./Pistes";
 import { Lifts } from "./Lifts";
 import { UserMarker } from "./UserMarker";
@@ -56,21 +56,7 @@ export function SkiMap3D() {
         <Environment preset="dawn" />
         <fog attach="fog" args={["#87ceeb", 500, 2500]} />
 
-        {/* Debug Grid - shows coordinate system */}
-        <Grid
-          position={[0, 0, 0]}
-          args={[1000, 1000]}
-          cellSize={50}
-          cellThickness={0.5}
-          cellColor="#6b7280"
-          sectionSize={200}
-          sectionThickness={1.5}
-          sectionColor="#374151"
-          fadeDistance={2000}
-          infiniteGrid
-        />
-
-        {/* Origin marker */}
+        {/* Origin marker (for debugging) */}
         <mesh position={[0, 10, 0]}>
           <sphereGeometry args={[5, 16, 16]} />
           <meshStandardMaterial color="#22c55e" />
@@ -78,6 +64,9 @@ export function SkiMap3D() {
 
         {/* 3D Content */}
         <Suspense fallback={null}>
+          {/* Satellite imagery as ground layer */}
+          <SatelliteGround yPosition={0} zoom={12} />
+          {/* Contour lines on top */}
           <ContourTerrain />
           <Pistes />
           <Lifts />

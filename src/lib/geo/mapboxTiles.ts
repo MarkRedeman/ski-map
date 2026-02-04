@@ -74,7 +74,6 @@ export function getTilesForBounds(
 
 /**
  * Generate Mapbox Terrain RGB tile URL
- * Using @2x for higher resolution and .png instead of .pngraw for better compatibility
  */
 export function getMapboxTerrainRGBUrl(
   x: number,
@@ -83,6 +82,18 @@ export function getMapboxTerrainRGBUrl(
   accessToken: string
 ): string {
   return `https://api.mapbox.com/v4/mapbox.terrain-rgb/${z}/${x}/${y}.png?access_token=${accessToken}`
+}
+
+/**
+ * Generate Mapbox Satellite tile URL
+ */
+export function getMapboxSatelliteUrl(
+  x: number,
+  y: number,
+  z: number,
+  accessToken: string
+): string {
+  return `https://api.mapbox.com/v4/mapbox.satellite/${z}/${x}/${y}@2x.jpg?access_token=${accessToken}`
 }
 
 /**
@@ -126,18 +137,7 @@ export async function fetchTerrainTile(
   }
   
   ctx.drawImage(img, 0, 0)
-  const imageData = ctx.getImageData(0, 0, img.width, img.height)
-  
-  // Debug: log first tile's data to verify we're getting real elevation data
-  if (x % 10 === 0 && y % 10 === 0) {
-    const sample = imageData.data.slice(0, 12) // First 3 pixels (RGBA each)
-    console.log(`[Tile ${z}/${x}/${y}] Size: ${img.width}x${img.height}, Sample RGB:`, 
-      `(${sample[0]},${sample[1]},${sample[2]})`,
-      `(${sample[4]},${sample[5]},${sample[6]})`,
-      `(${sample[8]},${sample[9]},${sample[10]})`)
-  }
-  
-  return imageData
+  return ctx.getImageData(0, 0, img.width, img.height)
 }
 
 /**
@@ -243,6 +243,98 @@ export async function buildElevationGridFromTiles(
     elevations,
     width,
     height,
+    bounds: { minLon, maxLon, minLat, maxLat },
+  }
+}
+
+/**
+ * Fetch satellite tiles and combine them into a single canvas/texture
+ */
+export async function buildSatelliteImageFromTiles(
+  tiles: TileCoord[],
+  accessToken: string,
+  onProgress?: (loaded: number, total: number) => void
+): Promise<{
+  canvas: HTMLCanvasElement
+  bounds: { minLon: number; maxLon: number; minLat: number; maxLat: number }
+}> {
+  if (tiles.length === 0) {
+    throw new Error('No tiles provided')
+  }
+
+  const zoom = tiles[0]!.z
+  const tileSize = 512 // @2x tiles are 512x512
+  
+  // Calculate grid dimensions
+  const minTileX = Math.min(...tiles.map((t) => t.x))
+  const maxTileX = Math.max(...tiles.map((t) => t.x))
+  const minTileY = Math.min(...tiles.map((t) => t.y))
+  const maxTileY = Math.max(...tiles.map((t) => t.y))
+  
+  const numTilesX = maxTileX - minTileX + 1
+  const numTilesY = maxTileY - minTileY + 1
+  const width = numTilesX * tileSize
+  const height = numTilesY * tileSize
+  
+  // Calculate geographic bounds
+  const minLon = tile2lon(minTileX, zoom)
+  const maxLon = tile2lon(maxTileX + 1, zoom)
+  const maxLat = tile2lat(minTileY, zoom) // North edge
+  const minLat = tile2lat(maxTileY + 1, zoom) // South edge
+  
+  // Create combined canvas
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    throw new Error('Failed to get 2D context')
+  }
+  
+  // Fetch all tiles
+  let loaded = 0
+  const BATCH_SIZE = 4
+  
+  for (let i = 0; i < tiles.length; i += BATCH_SIZE) {
+    const batch = tiles.slice(i, i + BATCH_SIZE)
+    
+    await Promise.all(batch.map(async (tile) => {
+      try {
+        const url = getMapboxSatelliteUrl(tile.x, tile.y, tile.z, accessToken)
+        
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const image = new Image()
+          image.crossOrigin = 'anonymous'
+          image.onload = () => resolve(image)
+          image.onerror = (e) => reject(new Error(`Failed to load satellite tile ${tile.z}/${tile.x}/${tile.y}: ${e}`))
+          image.src = url
+        })
+        
+        // Calculate position in combined canvas
+        const offsetX = (tile.x - minTileX) * tileSize
+        const offsetY = (tile.y - minTileY) * tileSize
+        
+        ctx.drawImage(img, offsetX, offsetY, tileSize, tileSize)
+        
+        loaded++
+        onProgress?.(loaded, tiles.length)
+      } catch (err) {
+        console.warn(`Failed to fetch satellite tile ${tile.z}/${tile.x}/${tile.y}:`, err)
+        // Fill with gray for failed tiles
+        const offsetX = (tile.x - minTileX) * tileSize
+        const offsetY = (tile.y - minTileY) * tileSize
+        ctx.fillStyle = '#4a5568'
+        ctx.fillRect(offsetX, offsetY, tileSize, tileSize)
+        loaded++
+        onProgress?.(loaded, tiles.length)
+      }
+    }))
+  }
+  
+  console.log(`[Satellite] Built ${width}x${height} image from ${tiles.length} tiles`)
+  
+  return {
+    canvas,
     bounds: { minLon, maxLon, minLat, maxLat },
   }
 }
