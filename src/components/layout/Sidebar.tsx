@@ -9,7 +9,7 @@ export function Sidebar() {
   const { selectedRoute } = useNavigationStore()
 
   return (
-    <aside className="w-80 flex-shrink-0 overflow-y-auto bg-black/60 backdrop-blur-sm">
+    <aside className="w-80 flex-shrink-0 overflow-y-auto bg-black/80 backdrop-blur-md">
       <div className="p-4 space-y-4">
         {/* My Location */}
         <section>

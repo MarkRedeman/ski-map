@@ -12,7 +12,7 @@ import { PISTE_DIFFICULTY_CONFIG } from './Pistes'
 
 export function MapLegend() {
   return (
-    <div className="absolute bottom-4 left-4 flex flex-col gap-3 rounded-lg bg-black/60 p-3 backdrop-blur-sm">
+    <div className="absolute bottom-4 left-4 flex flex-col gap-3 rounded-lg bg-black/80 p-3 backdrop-blur-md">
       <PisteLegend />
       <div className="h-px bg-white/20" />
       <LiftLegend />

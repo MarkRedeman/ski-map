@@ -79,7 +79,7 @@ export function InfoPanel() {
     const length = calculateLength(selectedPiste.coordinates)
 
     return (
-      <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/60 backdrop-blur-sm">
+      <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/80 backdrop-blur-md">
         {/* Header */}
         <div className="flex items-start justify-between gap-2 p-3 border-b border-white/10">
           <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export function InfoPanel() {
     const length = calculateLength(selectedLift.coordinates)
 
     return (
-      <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/60 backdrop-blur-sm">
+      <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/80 backdrop-blur-md">
         {/* Header */}
         <div className="flex items-start justify-between gap-2 p-3 border-b border-white/10">
           <div className="flex items-center gap-2">
