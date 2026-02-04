@@ -3,15 +3,16 @@
  * 
  * Features:
  * - Badge-style labels with mountain icon and elevation
+ * - Only shows peaks near ski lifts (within proximity radius)
  * - Smart distance-based filtering: shows more peaks when zoomed in
  * - Uses terrain elevation sampling for accurate Y positioning
- * - Occlusion: labels hide when behind terrain
  */
 
 import { useMemo, useState } from 'react'
 import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { usePeaks } from '@/hooks/usePeaks'
+import { useLifts } from '@/hooks/useLifts'
 import { useTerrainStore } from '@/store/terrainStore'
 import { useMapStore } from '@/stores/useMapStore'
 import { geoToLocal, SOLDEN_CENTER } from '@/lib/geo/coordinates'
@@ -19,25 +20,35 @@ import { sampleElevation } from '@/lib/geo/elevationGrid'
 
 const SCALE = 0.1 // Same scale factor as coordinates.ts
 
+/** Only show peaks within this distance (meters) of a lift */
+const PEAK_PROXIMITY_RADIUS = 500
+
+/**
+ * Calculate approximate distance between two geo points in meters
+ */
+function geoDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const latDiff = (lat2 - lat1) * 111000 // ~111km per degree latitude
+  const lonDiff = (lon2 - lon1) * 111000 * Math.cos(lat1 * Math.PI / 180)
+  return Math.sqrt(latDiff * latDiff + lonDiff * lonDiff)
+}
+
 /**
  * Get minimum elevation threshold based on camera distance
  * Closer camera = show more peaks, farther camera = show only highest peaks
  */
 function getMinElevation(cameraDistance: number): number {
-  if (cameraDistance < 500) return 0        // Show all peaks
-  if (cameraDistance < 1000) return 2500    // Major peaks (includes Gigijoch at 2520m)
-  if (cameraDistance < 2000) return 2800    // High peaks
-  return 3000                                // Only the highest peaks
+  if (cameraDistance < 400) return 0        // Close: all nearby peaks
+  if (cameraDistance < 800) return 2600     // Medium: higher peaks
+  return 2900                                // Far: only major peaks
 }
 
 /**
  * Quantize camera distance to threshold levels to avoid constant re-renders
  */
 function getDistanceLevel(distance: number): number {
-  if (distance < 500) return 0
-  if (distance < 1000) return 1
-  if (distance < 2000) return 2
-  return 3
+  if (distance < 400) return 0
+  if (distance < 800) return 1
+  return 2
 }
 
 interface PeakLabelProps {
@@ -51,15 +62,14 @@ function PeakLabel({ name, elevation, position }: PeakLabelProps) {
     <Html
       position={position}
       center
-      distanceFactor={150}
-      occlude
+      distanceFactor={200}
       zIndexRange={[50, 0]}
     >
-      <div className="pointer-events-none flex items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 backdrop-blur-sm shadow-lg">
-        <span className="text-sm">⛰️</span>
+      <div className="pointer-events-none flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 backdrop-blur-sm shadow-lg">
+        <span className="text-base">⛰️</span>
         <div className="flex flex-col leading-tight">
-          <span className="text-xs font-semibold text-white whitespace-nowrap">{name}</span>
-          <span className="text-[10px] text-white/70">{elevation.toLocaleString()}m</span>
+          <span className="text-sm font-semibold text-white whitespace-nowrap">{name}</span>
+          <span className="text-xs text-white/70">{elevation.toLocaleString()}m</span>
         </div>
       </div>
     </Html>
@@ -68,6 +78,7 @@ function PeakLabel({ name, elevation, position }: PeakLabelProps) {
 
 export function PeakLabels() {
   const { data: peaks } = usePeaks()
+  const { data: lifts } = useLifts()
   const elevationGrid = useTerrainStore((s) => s.elevationGrid)
   const showLabels = useMapStore((s) => s.showLabels)
   
@@ -83,13 +94,30 @@ export function PeakLabels() {
     }
   })
   
-  // Filter and position peaks based on camera distance
+  // Get all lift coordinates (all points along lift lines, not just stations)
+  const liftPoints = useMemo(() => {
+    if (!lifts) return []
+    return lifts.flatMap(lift => 
+      lift.coordinates.map(([lon, lat]) => ({ lat, lon }))
+    )
+  }, [lifts])
+  
+  // Filter peaks to only those near lifts, then by elevation
   const visiblePeaks = useMemo(() => {
-    if (!peaks || !showLabels) return []
+    if (!peaks || !showLabels || liftPoints.length === 0) return []
     
-    const minElevation = getMinElevation(distanceLevel === 0 ? 0 : distanceLevel === 1 ? 750 : distanceLevel === 2 ? 1500 : 2500)
+    const minElevation = getMinElevation(
+      distanceLevel === 0 ? 0 : distanceLevel === 1 ? 600 : 1500
+    )
     
     return peaks
+      // First filter by proximity to lifts
+      .filter((peak) => 
+        liftPoints.some(point => 
+          geoDistance(peak.lat, peak.lon, point.lat, point.lon) < PEAK_PROXIMITY_RADIUS
+        )
+      )
+      // Then filter by elevation threshold
       .filter((peak) => peak.elevation >= minElevation)
       .map((peak) => {
         // Convert geo coordinates to local 3D position
@@ -111,7 +139,7 @@ export function PeakLabels() {
           position: [x, y, z] as [number, number, number],
         }
       })
-  }, [peaks, elevationGrid, showLabels, distanceLevel])
+  }, [peaks, liftPoints, elevationGrid, showLabels, distanceLevel])
   
   if (!showLabels || visiblePeaks.length === 0) return null
   

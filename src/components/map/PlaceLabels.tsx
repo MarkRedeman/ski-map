@@ -3,21 +3,33 @@
  * 
  * Features:
  * - Badge-style labels with building icon
- * - Smart distance-based filtering: towns always visible, villages/hamlets filtered
+ * - Smart distance-based filtering: towns always visible, villages/hamlets filtered by proximity to lifts
  * - Uses terrain elevation sampling for accurate Y positioning
- * - Occlusion: labels hide when behind terrain
  */
 
 import { useMemo, useState } from 'react'
 import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { usePlaces } from '@/hooks/usePlaces'
+import { useLifts } from '@/hooks/useLifts'
 import { useTerrainStore } from '@/store/terrainStore'
 import { useMapStore } from '@/stores/useMapStore'
 import { geoToLocal } from '@/lib/geo/coordinates'
 import { sampleElevation } from '@/lib/geo/elevationGrid'
 
 type PlaceType = 'town' | 'village' | 'hamlet'
+
+/** Only show villages/hamlets within this distance (meters) of a lift */
+const PLACE_PROXIMITY_RADIUS = 1000
+
+/**
+ * Calculate approximate distance between two geo points in meters
+ */
+function geoDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const latDiff = (lat2 - lat1) * 111000 // ~111km per degree latitude
+  const lonDiff = (lon2 - lon1) * 111000 * Math.cos(lat1 * Math.PI / 180)
+  return Math.sqrt(latDiff * latDiff + lonDiff * lonDiff)
+}
 
 /**
  * Get which place types to show based on camera distance
@@ -68,21 +80,20 @@ function PlaceLabel({ name, type, position }: PlaceLabelProps) {
     <Html
       position={position}
       center
-      distanceFactor={isTown ? 200 : 150}
-      occlude
+      distanceFactor={isTown ? 250 : 200}
       zIndexRange={[40, 0]}
     >
       <div className={`
-        pointer-events-none flex items-center gap-1.5 rounded-full backdrop-blur-sm shadow-lg
+        pointer-events-none flex items-center gap-2 rounded-full backdrop-blur-sm shadow-lg
         ${isTown 
-          ? 'bg-amber-900/80 px-3 py-1.5' 
-          : 'bg-black/70 px-2.5 py-1'
+          ? 'bg-amber-900/80 px-4 py-2' 
+          : 'bg-black/70 px-3 py-1.5'
         }
       `}>
-        <span className={isTown ? 'text-base' : 'text-sm'}>{getPlaceIcon(type)}</span>
+        <span className={isTown ? 'text-lg' : 'text-base'}>{getPlaceIcon(type)}</span>
         <span className={`
           font-semibold text-white whitespace-nowrap
-          ${isTown ? 'text-sm' : 'text-xs'}
+          ${isTown ? 'text-base' : 'text-sm'}
         `}>
           {name}
         </span>
@@ -93,6 +104,7 @@ function PlaceLabel({ name, type, position }: PlaceLabelProps) {
 
 export function PlaceLabels() {
   const { data: places } = usePlaces()
+  const { data: lifts } = useLifts()
   const elevationGrid = useTerrainStore((s) => s.elevationGrid)
   const showLabels = useMapStore((s) => s.showLabels)
   
@@ -108,7 +120,15 @@ export function PlaceLabels() {
     }
   })
   
-  // Filter and position places based on camera distance
+  // Get all lift coordinates for proximity filtering
+  const liftPoints = useMemo(() => {
+    if (!lifts) return []
+    return lifts.flatMap(lift => 
+      lift.coordinates.map(([lon, lat]) => ({ lat, lon }))
+    )
+  }, [lifts])
+  
+  // Filter and position places based on camera distance and lift proximity
   const visiblePlaces = useMemo(() => {
     if (!places || !showLabels) return []
     
@@ -118,6 +138,14 @@ export function PlaceLabels() {
     
     return places
       .filter((place) => visibleTypes.has(place.type))
+      // Towns are always visible; villages/hamlets only if near lifts
+      .filter((place) => {
+        if (place.type === 'town') return true
+        if (liftPoints.length === 0) return true
+        return liftPoints.some(point => 
+          geoDistance(place.lat, place.lon, point.lat, point.lon) < PLACE_PROXIMITY_RADIUS
+        )
+      })
       .map((place) => {
         // Convert geo coordinates to local 3D position
         const [x, , z] = geoToLocal(place.lat, place.lon, 0)
@@ -135,7 +163,7 @@ export function PlaceLabels() {
           position: [x, y, z] as [number, number, number],
         }
       })
-  }, [places, elevationGrid, showLabels, distanceLevel])
+  }, [places, liftPoints, elevationGrid, showLabels, distanceLevel])
   
   if (!showLabels || visiblePlaces.length === 0) return null
   
