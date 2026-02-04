@@ -16,9 +16,9 @@ import { PISTE_DIFFICULTY_CONFIG } from './Pistes'
 import { LIFT_TYPE_CONFIG } from './Lifts'
 
 /**
- * Calculate approximate length from coordinates in meters
+ * Calculate approximate length of a single segment in meters
  */
-function calculateLength(coordinates: [number, number][]): number {
+function calculateSegmentLength(coordinates: [number, number][]): number {
   let length = 0
   for (let i = 1; i < coordinates.length; i++) {
     const [lon1, lat1] = coordinates[i - 1]!
@@ -35,9 +35,36 @@ function calculateLength(coordinates: [number, number][]): number {
   return length
 }
 
+/**
+ * Calculate total length of all segments
+ */
+function calculateTotalLength(segments: [number, number][][]): number {
+  return segments.reduce((total, seg) => total + calculateSegmentLength(seg), 0)
+}
+
+/**
+ * Get the longest segment from a multi-segment piste
+ */
+function getLongestSegment(segments: [number, number][][]): [number, number][] {
+  let longest = segments[0] ?? []
+  let longestLen = calculateSegmentLength(longest)
+  
+  for (const seg of segments) {
+    const len = calculateSegmentLength(seg)
+    if (len > longestLen) {
+      longestLen = len
+      longest = seg
+    }
+  }
+  
+  return longest
+}
+
 export function InfoTooltip() {
   const hoveredPisteId = useMapStore((s) => s.hoveredPisteId)
   const hoveredLiftId = useMapStore((s) => s.hoveredLiftId)
+  const setSelectedPiste = useMapStore((s) => s.setSelectedPiste)
+  const setSelectedLift = useMapStore((s) => s.setSelectedLift)
   const elevationGrid = useTerrainStore((s) => s.elevationGrid)
   const { data: pistes } = usePistes()
   const { data: lifts } = useLifts()
@@ -56,17 +83,35 @@ export function InfoTooltip() {
 
   // Calculate tooltip position (middle of the path)
   const position = useMemo(() => {
-    const item = hoveredPiste || hoveredLift
-    if (!item || !elevationGrid) return null
+    if (!elevationGrid) return null
 
-    const coords = item.coordinates
-    const midIndex = Math.floor(coords.length / 2)
-    const midCoord = coords[midIndex]
-    if (!midCoord) return null
+    // Handle piste (multi-segment)
+    if (hoveredPiste) {
+      const longestSeg = getLongestSegment(hoveredPiste.coordinates)
+      if (longestSeg.length === 0) return null
+      
+      const midIndex = Math.floor(longestSeg.length / 2)
+      const midCoord = longestSeg[midIndex]
+      if (!midCoord) return null
 
-    const [x, , z] = coordsToLocal([[midCoord[0], midCoord[1]]], 0)[0]!
-    const y = sampleElevation(elevationGrid, x, z) + 20
-    return [x, y, z] as [number, number, number]
+      const [x, , z] = coordsToLocal([[midCoord[0], midCoord[1]]], 0)[0]!
+      const y = sampleElevation(elevationGrid, x, z) + 20
+      return [x, y, z] as [number, number, number]
+    }
+
+    // Handle lift (single segment)
+    if (hoveredLift) {
+      const coords = hoveredLift.coordinates
+      const midIndex = Math.floor(coords.length / 2)
+      const midCoord = coords[midIndex]
+      if (!midCoord) return null
+
+      const [x, , z] = coordsToLocal([[midCoord[0], midCoord[1]]], 0)[0]!
+      const y = sampleElevation(elevationGrid, x, z) + 20
+      return [x, y, z] as [number, number, number]
+    }
+
+    return null
   }, [hoveredPiste, hoveredLift, elevationGrid])
 
   if (!position) return null
@@ -74,11 +119,18 @@ export function InfoTooltip() {
   // Render piste tooltip
   if (hoveredPiste) {
     const config = PISTE_DIFFICULTY_CONFIG[hoveredPiste.difficulty]
-    const length = calculateLength(hoveredPiste.coordinates)
+    const length = hoveredPiste.length ?? calculateTotalLength(hoveredPiste.coordinates)
+
+    const handleClick = () => {
+      setSelectedPiste(hoveredPiste.id)
+    }
 
     return (
       <Html position={position} center zIndexRange={[100, 0]}>
-        <div className="pointer-events-none flex min-w-[140px] flex-col gap-1.5 rounded-lg bg-black/80 p-3 backdrop-blur-md">
+        <div 
+          onClick={handleClick}
+          className="cursor-pointer flex min-w-[140px] flex-col gap-1.5 rounded-lg bg-black/80 p-3 backdrop-blur-md transition-colors hover:bg-black/90"
+        >
           {/* Header with color dot and name */}
           <div className="flex items-center gap-2">
             <div
@@ -108,11 +160,18 @@ export function InfoTooltip() {
   // Render lift tooltip
   if (hoveredLift) {
     const config = LIFT_TYPE_CONFIG[hoveredLift.type as keyof typeof LIFT_TYPE_CONFIG] ?? LIFT_TYPE_CONFIG['Lift']
-    const length = calculateLength(hoveredLift.coordinates)
+    const length = calculateSegmentLength(hoveredLift.coordinates)
+
+    const handleClick = () => {
+      setSelectedLift(hoveredLift.id)
+    }
 
     return (
       <Html position={position} center zIndexRange={[100, 0]}>
-        <div className="pointer-events-none flex min-w-[140px] flex-col gap-1.5 rounded-lg bg-black/80 p-3 backdrop-blur-md">
+        <div 
+          onClick={handleClick}
+          className="cursor-pointer flex min-w-[140px] flex-col gap-1.5 rounded-lg bg-black/80 p-3 backdrop-blur-md transition-colors hover:bg-black/90"
+        >
           {/* Header with icon and name */}
           <div className="flex items-center gap-2">
             <div

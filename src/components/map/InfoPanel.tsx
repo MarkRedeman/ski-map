@@ -1,19 +1,21 @@
 /**
- * InfoPanel component - displays detailed info for selected piste/lift
- * Shows when a piste or lift is clicked, styled to match the map legend
+ * InfoPanel component - displays detailed info for selected piste/lift/peak/place
+ * Shows when an item is clicked, styled to match the map legend
  */
 
 import { useMemo } from 'react'
-import { X, Mountain, Ruler, Users, Navigation, ArrowUp, ArrowDown } from 'lucide-react'
+import { X, Mountain, Ruler, Users, Navigation, ArrowUp, ArrowDown, MapPin } from 'lucide-react'
 import { useMapStore } from '@/stores/useMapStore'
 import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
+import { usePeaks } from '@/hooks/usePeaks'
+import { usePlaces } from '@/hooks/usePlaces'
 import { useNavigationStore } from '@/stores/useNavigationStore'
 import { LIFT_TYPE_CONFIG } from './Lifts'
 import { PISTE_DIFFICULTY_CONFIG } from './Pistes'
 
 /**
- * Calculate approximate length from coordinates in meters
+ * Calculate approximate length from single-segment coordinates in meters
  */
 function calculateLength(coordinates: [number, number][]): number {
   let length = 0
@@ -31,13 +33,24 @@ function calculateLength(coordinates: [number, number][]): number {
   return length
 }
 
+/**
+ * Calculate total length of all segments in a multi-segment piste
+ */
+function calculateTotalLength(segments: [number, number][][]): number {
+  return segments.reduce((total, seg) => total + calculateLength(seg), 0)
+}
+
 export function InfoPanel() {
   const selectedPisteId = useMapStore((s) => s.selectedPisteId)
   const selectedLiftId = useMapStore((s) => s.selectedLiftId)
+  const selectedPeakId = useMapStore((s) => s.selectedPeakId)
+  const selectedPlaceId = useMapStore((s) => s.selectedPlaceId)
   const clearSelection = useMapStore((s) => s.clearSelection)
   const setDestination = useNavigationStore((s) => s.setDestination)
   const { data: pistes } = usePistes()
   const { data: lifts } = useLifts()
+  const { data: peaks } = usePeaks()
+  const { data: places } = usePlaces()
 
   // Find selected piste
   const selectedPiste = useMemo(() => {
@@ -51,7 +64,19 @@ export function InfoPanel() {
     return lifts.find((l) => l.id === selectedLiftId) ?? null
   }, [selectedLiftId, lifts])
 
-  if (!selectedPiste && !selectedLift) return null
+  // Find selected peak
+  const selectedPeak = useMemo(() => {
+    if (!selectedPeakId || !peaks) return null
+    return peaks.find((p) => p.id === selectedPeakId) ?? null
+  }, [selectedPeakId, peaks])
+
+  // Find selected place
+  const selectedPlace = useMemo(() => {
+    if (!selectedPlaceId || !places) return null
+    return places.find((p) => p.id === selectedPlaceId) ?? null
+  }, [selectedPlaceId, places])
+
+  if (!selectedPiste && !selectedLift && !selectedPeak && !selectedPlace) return null
 
   // Handle navigate to
   const handleNavigateTo = () => {
@@ -76,7 +101,7 @@ export function InfoPanel() {
   // Render piste info
   if (selectedPiste) {
     const config = PISTE_DIFFICULTY_CONFIG[selectedPiste.difficulty]
-    const length = calculateLength(selectedPiste.coordinates)
+    const length = selectedPiste.length ?? calculateTotalLength(selectedPiste.coordinates)
 
     return (
       <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/80 backdrop-blur-md">
@@ -225,6 +250,105 @@ export function InfoPanel() {
             <Navigation className="h-3.5 w-3.5" />
             Navigate to Top
           </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Render peak info
+  if (selectedPeak) {
+    return (
+      <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/80 backdrop-blur-md">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-2 p-3 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⛰️</span>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-white truncate">{selectedPeak.name}</h2>
+              <p className="text-xs text-white/60">Mountain Peak</p>
+            </div>
+          </div>
+          <button
+            onClick={clearSelection}
+            className="rounded p-1 transition-colors hover:bg-white/20 flex-shrink-0"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4 text-white/70" />
+          </button>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-2 p-3">
+          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+            <Mountain className="h-4 w-4 text-white/50" />
+            <div>
+              <p className="text-[10px] text-white/50">Elevation</p>
+              <p className="text-xs font-medium text-white">{selectedPeak.elevation.toLocaleString()} m</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+            <MapPin className="h-4 w-4 text-white/50" />
+            <div>
+              <p className="text-[10px] text-white/50">Coordinates</p>
+              <p className="text-xs font-medium text-white">
+                {selectedPeak.lat.toFixed(4)}°
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Render place info
+  if (selectedPlace) {
+    const getPlaceIcon = () => {
+      switch (selectedPlace.type) {
+        case 'town': return '🏘️'
+        case 'village': return '🏠'
+        case 'hamlet': return '🏡'
+      }
+    }
+
+    const getPlaceTypeLabel = () => {
+      switch (selectedPlace.type) {
+        case 'town': return 'Town'
+        case 'village': return 'Village'
+        case 'hamlet': return 'Hamlet'
+      }
+    }
+
+    return (
+      <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/80 backdrop-blur-md">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-2 p-3 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{getPlaceIcon()}</span>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-white truncate">{selectedPlace.name}</h2>
+              <p className="text-xs text-white/60">{getPlaceTypeLabel()}</p>
+            </div>
+          </div>
+          <button
+            onClick={clearSelection}
+            className="rounded p-1 transition-colors hover:bg-white/20 flex-shrink-0"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4 text-white/70" />
+          </button>
+        </div>
+
+        {/* Stats */}
+        <div className="p-3">
+          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+            <MapPin className="h-4 w-4 text-white/50" />
+            <div>
+              <p className="text-[10px] text-white/50">Location</p>
+              <p className="text-xs font-medium text-white">
+                {selectedPlace.lat.toFixed(4)}°N, {selectedPlace.lon.toFixed(4)}°E
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     )

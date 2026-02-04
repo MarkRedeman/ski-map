@@ -80,5 +80,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 /** Hook to get computed terrain settings */
 export function useTerrainSettings() {
   const resolution = useSettingsStore((s) => s.resolution)
+  // Return stable reference - RESOLUTION_PRESETS entries are static objects
   return RESOLUTION_PRESETS[resolution]
 }

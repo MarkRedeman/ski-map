@@ -18,10 +18,50 @@ export function ResolutionControl() {
   const setResolution = useSettingsStore((s) => s.setResolution)
   const isLoading = useTerrainStore((s) => s.isLoading)
   const showLabels = useMapStore((s) => s.showLabels)
+  const showPistes = useMapStore((s) => s.showPistes)
+  const showLifts = useMapStore((s) => s.showLifts)
   const toggleLayer = useMapStore((s) => s.toggleLayer)
 
   return (
     <div className="absolute bottom-4 right-4 flex items-center gap-3 rounded-lg bg-black/60 px-3 py-2 backdrop-blur-sm">
+      {/* Pistes toggle */}
+      <button
+        onClick={() => toggleLayer('pistes')}
+        className={`
+          flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors
+          ${showPistes
+            ? 'bg-blue-500 text-white'
+            : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
+          }
+        `}
+        title={showPistes ? 'Hide pistes' : 'Show pistes'}
+      >
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M4 20L12 4l8 16" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span>Pistes</span>
+      </button>
+
+      {/* Lifts toggle */}
+      <button
+        onClick={() => toggleLayer('lifts')}
+        className={`
+          flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors
+          ${showLifts
+            ? 'bg-pink-500 text-white'
+            : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
+          }
+        `}
+        title={showLifts ? 'Hide lifts' : 'Show lifts'}
+      >
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="6" cy="6" r="2" />
+          <circle cx="18" cy="18" r="2" />
+          <path d="M6 8v8M18 8v8M6 6h12" strokeLinecap="round" />
+        </svg>
+        <span>Lifts</span>
+      </button>
+
       {/* Labels toggle */}
       <button
         onClick={() => toggleLayer('labels')}
@@ -34,7 +74,11 @@ export function ResolutionControl() {
         `}
         title={showLabels ? 'Hide labels' : 'Show labels'}
       >
-        <span>🏷️</span>
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5z" />
+          <path d="M2 17l10 5 10-5" />
+          <path d="M2 12l10 5 10-5" />
+        </svg>
         <span>Labels</span>
       </button>
 

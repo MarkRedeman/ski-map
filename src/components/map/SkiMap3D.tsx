@@ -13,6 +13,9 @@ import { Lifts } from "./Lifts";
 import { UserMarker } from "./UserMarker";
 import { RouteOverlay } from "./RouteOverlay";
 import { RunPath } from "./RunPath";
+import { PlayerMarker } from "./PlayerMarker";
+import { PlaybackCameraFollow } from "./PlaybackCameraFollow";
+import { PlaybackManager } from "./PlaybackManager";
 import { InfoTooltip } from "./InfoTooltip";
 import { InfoPanel } from "./InfoPanel";
 import { ProximitySelector } from "./ProximitySelector";
@@ -22,6 +25,8 @@ import { CompassController, CompassUI } from "./Compass";
 import { PeakLabels } from "./PeakLabels";
 import { PlaceLabels } from "./PlaceLabels";
 import { MapLegend } from "./MapLegend";
+import { CameraNavigator } from "./CameraNavigator";
+import { SkiAreaBoundary } from "./SkiAreaBoundary";
 import { useSelectedRun } from "@/hooks/useRuns";
 
 export function SkiMap3D() {
@@ -83,17 +88,30 @@ export function SkiMap3D() {
           <RouteOverlay />
           {/* Render selected ski run if available */}
           {selectedRun && <RunPath run={selectedRun} />}
+          {/* Render player marker for ride playback */}
+          {selectedRun && <PlayerMarker ride={selectedRun} />}
           {/* Hover tooltip */}
           <InfoTooltip />
           {/* Peak and place labels */}
           <PeakLabels />
           <PlaceLabels />
+          {/* Ski area boundary polygon (shown on hover) */}
+          <SkiAreaBoundary />
           {/* Proximity-based selection handler */}
           <ProximitySelector />
         </Suspense>
 
         {/* Keyboard Controls */}
         <KeyboardControls />
+        
+        {/* Camera Navigator (handles animated focus on selection) */}
+        <CameraNavigator />
+        
+        {/* Playback Camera Follow (follows player during ride playback) */}
+        <PlaybackCameraFollow ride={selectedRun} />
+        
+        {/* Playback Manager (advances time during playback) */}
+        <PlaybackManager ride={selectedRun} />
         
         {/* Compass Controller (updates rotation state) */}
         <CompassController 

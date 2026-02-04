@@ -31,6 +31,10 @@ interface MapState {
   setCameraPosition: (position: [number, number, number]) => void
   setCameraTarget: (target: [number, number, number]) => void
   
+  // Camera focus target (for animated navigation)
+  cameraFocusTarget: { position: [number, number, number]; distance: number } | null
+  setCameraFocusTarget: (target: { position: [number, number, number]; distance: number } | null) => void
+  
   // View mode
   viewMode: 'overview' | 'follow' | 'free'
   setViewMode: (mode: 'overview' | 'follow' | 'free') => void
@@ -41,6 +45,8 @@ interface MapState {
   showLifts: boolean
   showLabels: boolean
   toggleLayer: (layer: 'terrain' | 'pistes' | 'lifts' | 'labels') => void
+  setShowPistes: (show: boolean) => void
+  setShowLifts: (show: boolean) => void
   
   // Lift type filter - which lift types are visible
   visibleLiftTypes: Set<LiftType>
@@ -58,6 +64,22 @@ interface MapState {
   selectedLiftId: string | null
   setHoveredLift: (id: string | null) => void
   setSelectedLift: (id: string | null) => void
+  
+  // Selection - Peaks
+  hoveredPeakId: string | null
+  selectedPeakId: string | null
+  setHoveredPeak: (id: string | null) => void
+  setSelectedPeak: (id: string | null) => void
+  
+  // Selection - Places
+  hoveredPlaceId: string | null
+  selectedPlaceId: string | null
+  setHoveredPlace: (id: string | null) => void
+  setSelectedPlace: (id: string | null) => void
+  
+  // Ski Area hover (for polygon visualization)
+  hoveredSkiAreaId: string | null
+  setHoveredSkiArea: (id: string | null) => void
   
   // Clear all selection
   clearSelection: () => void
@@ -93,6 +115,10 @@ export const useMapStore = create<MapState>((set) => ({
   setCameraPosition: (position) => set({ cameraPosition: position }),
   setCameraTarget: (target) => set({ cameraTarget: target }),
   
+  // Camera focus target for animated navigation
+  cameraFocusTarget: null,
+  setCameraFocusTarget: (target) => set({ cameraFocusTarget: target }),
+  
   viewMode: 'overview',
   setViewMode: (mode) => set({ viewMode: mode }),
   
@@ -118,6 +144,9 @@ export const useMapStore = create<MapState>((set) => ({
       }
     }),
   
+  setShowPistes: (show) => set({ showPistes: show }),
+  setShowLifts: (show) => set({ showLifts: show }),
+  
   // Only main lift types visible by default (Gondola, Cable Car, Chair Lift)
   // Drag lifts (T-Bar, Button, Drag, Magic Carpet) hidden by default - useful for snowboarders
   visibleLiftTypes: new Set<LiftType>(['Gondola', 'Cable Car', 'Chair Lift', 'Lift']),
@@ -141,14 +170,57 @@ export const useMapStore = create<MapState>((set) => ({
   hoveredPisteId: null,
   selectedPisteId: null,
   setHoveredPiste: (id) => set({ hoveredPisteId: id }),
-  setSelectedPiste: (id) => set({ selectedPisteId: id, selectedLiftId: null }), // Clear lift when selecting piste
+  setSelectedPiste: (id) => set({ 
+    selectedPisteId: id, 
+    selectedLiftId: null,
+    selectedPeakId: null,
+    selectedPlaceId: null,
+  }),
   
   hoveredLiftId: null,
   selectedLiftId: null,
   setHoveredLift: (id) => set({ hoveredLiftId: id }),
-  setSelectedLift: (id) => set({ selectedLiftId: id, selectedPisteId: null }), // Clear piste when selecting lift
+  setSelectedLift: (id) => set({ 
+    selectedLiftId: id, 
+    selectedPisteId: null,
+    selectedPeakId: null,
+    selectedPlaceId: null,
+  }),
   
-  clearSelection: () => set({ selectedPisteId: null, selectedLiftId: null, hoveredPisteId: null, hoveredLiftId: null }),
+  hoveredPeakId: null,
+  selectedPeakId: null,
+  setHoveredPeak: (id) => set({ hoveredPeakId: id }),
+  setSelectedPeak: (id) => set({ 
+    selectedPeakId: id, 
+    selectedPisteId: null,
+    selectedLiftId: null,
+    selectedPlaceId: null,
+  }),
+  
+  hoveredPlaceId: null,
+  selectedPlaceId: null,
+  setHoveredPlace: (id) => set({ hoveredPlaceId: id }),
+  setSelectedPlace: (id) => set({ 
+    selectedPlaceId: id, 
+    selectedPisteId: null,
+    selectedLiftId: null,
+    selectedPeakId: null,
+  }),
+  
+  hoveredSkiAreaId: null,
+  setHoveredSkiArea: (id) => set({ hoveredSkiAreaId: id }),
+  
+  clearSelection: () => set({ 
+    selectedPisteId: null, 
+    selectedLiftId: null, 
+    selectedPeakId: null,
+    selectedPlaceId: null,
+    hoveredPisteId: null, 
+    hoveredLiftId: null,
+    hoveredPeakId: null,
+    hoveredPlaceId: null,
+    cameraFocusTarget: null,
+  }),
   
   isLoadingTerrain: true,
   setIsLoadingTerrain: (loading) => set({ isLoadingTerrain: loading }),

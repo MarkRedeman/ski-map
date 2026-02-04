@@ -14,8 +14,10 @@ import {
   type Peak, 
   type Place,
   type SkiArea,
+  type SkiAreaPolygon,
 } from '@/lib/api/overpass'
 import { mergePisteSegments } from '@/lib/api/mergePistes'
+import { assignSkiAreas } from '@/lib/api/assignSkiAreas'
 
 /**
  * Processed ski data with merged piste segments
@@ -23,7 +25,7 @@ import { mergePisteSegments } from '@/lib/api/mergePistes'
 export interface ProcessedSkiData {
   pistes: Piste[]
   lifts: Lift[]
-  skiAreas: SkiArea[]
+  skiAreas: SkiAreaPolygon[] // All ski areas with polygon boundaries
   peaks: Peak[]
   places: Place[]
 }
@@ -31,6 +33,7 @@ export interface ProcessedSkiData {
 /**
  * Query options for fetching all ski data
  * - Single Overpass API request for all data types
+ * - Assigns ski areas via spatial containment
  * - Merges fragmented piste segments
  * - Caches for 1 hour (ski data is relatively static)
  */
@@ -39,13 +42,20 @@ export const skiDataQueryOptions = queryOptions({
   queryFn: async (): Promise<ProcessedSkiData> => {
     const data = await fetchAllSkiData()
     
+    // Assign ski areas to pistes and lifts using spatial containment
+    const { pistes: pistesWithAreas, lifts: liftsWithAreas } = assignSkiAreas(
+      data.pistes,
+      data.lifts,
+      data.skiAreaPolygons
+    )
+    
     // Merge fragmented piste segments
-    const mergedPistes = mergePisteSegments(data.pistes)
+    const mergedPistes = mergePisteSegments(pistesWithAreas)
     
     return {
       pistes: mergedPistes,
-      lifts: data.lifts,
-      skiAreas: data.skiAreas,
+      lifts: liftsWithAreas,
+      skiAreas: data.skiAreaPolygons, // Now includes all ski areas with polygon data
       peaks: data.peaks,
       places: data.places,
     }
@@ -99,4 +109,4 @@ export function usePlacesFromSkiData() {
 }
 
 // Re-export types for convenience
-export type { Piste, Lift, Peak, Place, SkiArea, SkiData }
+export type { Piste, Lift, Peak, Place, SkiArea, SkiAreaPolygon, SkiData }

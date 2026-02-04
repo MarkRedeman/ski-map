@@ -1,24 +1,27 @@
 /**
- * PisteListPanel - Sidebar panel for browsing and selecting pistes/lifts
+ * PisteListPanel - Sidebar panel for browsing and selecting pistes/lifts/peaks/villages
  * 
  * Features:
- * - Tabs to switch between Pistes and Lifts
+ * - Tabs to switch between Pistes, Lifts, Peaks, and Villages
  * - Difficulty filter chips (for pistes)
  * - Search input for filtering by name
- * - Grouping by ski area with collapsible sections
+ * - Grouping by ski area with collapsible sections (pistes/lifts)
  * - Scrollable list with hover → highlight in 3D view
- * - Click → select and show info panel
+ * - Click → select, show info panel, and navigate camera
  */
 
 import { useState, useMemo } from 'react'
 import { usePistes, groupPistesBySkiArea } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
-import { useMapStore } from '@/stores/useMapStore'
-import { type Difficulty } from '@/stores/useNavigationStore'
+import { usePeaks } from '@/hooks/usePeaks'
+import { usePlaces } from '@/hooks/usePlaces'
+import { useMapStore, ALL_LIFT_TYPES, type LiftType } from '@/stores/useMapStore'
+import { useNavigationStore, type Difficulty } from '@/stores/useNavigationStore'
 import { LIFT_TYPE_CONFIG } from '@/components/map/Lifts'
-import type { Piste, Lift } from '@/lib/api/overpass'
+import { geoToLocal } from '@/lib/geo/coordinates'
+import type { Piste, Lift, Peak, Place } from '@/lib/api/overpass'
 
-type Tab = 'pistes' | 'lifts'
+type Tab = 'pistes' | 'lifts' | 'peaks' | 'villages'
 
 const DIFFICULTY_COLORS: Record<Difficulty, string> = {
   blue: '#3b82f6',
@@ -26,10 +29,18 @@ const DIFFICULTY_COLORS: Record<Difficulty, string> = {
   black: '#1e293b',
 }
 
+// Camera distances for different item types (higher = further away)
+const CAMERA_DISTANCES = {
+  piste: 800,    // Far enough to see the full piste
+  lift: 700,     // Good distance to see lift line
+  peak: 600,     // Moderate distance to appreciate the peak
+  place: 640,    // Good distance to see the village area
+}
+
 /**
- * Calculate approximate length from coordinates in meters
+ * Calculate approximate length from single-segment coordinates in meters
  */
-function calculateLength(coordinates: [number, number][]): number {
+function calculateSegmentLength(coordinates: [number, number][]): number {
   let length = 0
   for (let i = 1; i < coordinates.length; i++) {
     const [lon1, lat1] = coordinates[i - 1]!
@@ -45,20 +56,74 @@ function calculateLength(coordinates: [number, number][]): number {
   return length
 }
 
+/**
+ * Calculate total length of all segments in a multi-segment piste
+ */
+function calculateTotalLength(segments: [number, number][][]): number {
+  return segments.reduce((total, seg) => total + calculateSegmentLength(seg), 0)
+}
+
+/**
+ * Calculate center position of a piste (average of all coordinates)
+ */
+function getPisteCenter(piste: Piste): [number, number, number] {
+  const allCoords = piste.coordinates.flat()
+  if (allCoords.length === 0) return [0, 0, 0]
+  
+  let sumLon = 0, sumLat = 0
+  for (const [lon, lat] of allCoords) {
+    sumLon += lon
+    sumLat += lat
+  }
+  const avgLon = sumLon / allCoords.length
+  const avgLat = sumLat / allCoords.length
+  
+  return geoToLocal(avgLat, avgLon, 0)
+}
+
+/**
+ * Calculate center position of a lift (average of all coordinates)
+ */
+function getLiftCenter(lift: Lift): [number, number, number] {
+  if (lift.coordinates.length === 0) return [0, 0, 0]
+  
+  let sumLon = 0, sumLat = 0
+  for (const [lon, lat] of lift.coordinates) {
+    sumLon += lon
+    sumLat += lat
+  }
+  const avgLon = sumLon / lift.coordinates.length
+  const avgLat = sumLat / lift.coordinates.length
+  
+  return geoToLocal(avgLat, avgLon, 0)
+}
+
 export function PisteListPanel() {
   const [activeTab, setActiveTab] = useState<Tab>('pistes')
   const [searchQuery, setSearchQuery] = useState('')
-  const [enabledDifficulties, setEnabledDifficulties] = useState<Set<Difficulty>>(
-    new Set(['blue', 'red', 'black'])
-  )
+  
+  // Use global stores for filters (synced with MapLegend)
+  const enabledDifficulties = useNavigationStore((s) => s.enabledDifficulties)
+  const toggleDifficulty = useNavigationStore((s) => s.toggleDifficulty)
+  const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes)
+  const toggleLiftType = useMapStore((s) => s.toggleLiftType)
+
+  const getPlaceholder = () => {
+    switch (activeTab) {
+      case 'pistes': return 'Search pistes...'
+      case 'lifts': return 'Search lifts...'
+      case 'peaks': return 'Search peaks...'
+      case 'villages': return 'Search villages...'
+    }
+  }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col h-full">
       {/* Tabs */}
       <div className="flex border-b border-white/10">
         <button
           onClick={() => setActiveTab('pistes')}
-          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+          className={`flex-1 px-2 py-2 text-xs font-medium transition-colors ${
             activeTab === 'pistes'
               ? 'border-b-2 border-blue-400 text-blue-400'
               : 'text-white/50 hover:text-white/70'
@@ -68,7 +133,7 @@ export function PisteListPanel() {
         </button>
         <button
           onClick={() => setActiveTab('lifts')}
-          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+          className={`flex-1 px-2 py-2 text-xs font-medium transition-colors ${
             activeTab === 'lifts'
               ? 'border-b-2 border-amber-400 text-amber-400'
               : 'text-white/50 hover:text-white/70'
@@ -76,13 +141,33 @@ export function PisteListPanel() {
         >
           Lifts
         </button>
+        <button
+          onClick={() => setActiveTab('peaks')}
+          className={`flex-1 px-2 py-2 text-xs font-medium transition-colors ${
+            activeTab === 'peaks'
+              ? 'border-b-2 border-purple-400 text-purple-400'
+              : 'text-white/50 hover:text-white/70'
+          }`}
+        >
+          Peaks
+        </button>
+        <button
+          onClick={() => setActiveTab('villages')}
+          className={`flex-1 px-2 py-2 text-xs font-medium transition-colors ${
+            activeTab === 'villages'
+              ? 'border-b-2 border-orange-400 text-orange-400'
+              : 'text-white/50 hover:text-white/70'
+          }`}
+        >
+          Villages
+        </button>
       </div>
 
       {/* Search Input */}
       <div className="p-3 border-b border-white/10">
         <input
           type="text"
-          placeholder={`Search ${activeTab}...`}
+          placeholder={getPlaceholder()}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full rounded bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:bg-white/20 focus:outline-none focus:ring-1 focus:ring-white/30"
@@ -97,17 +182,7 @@ export function PisteListPanel() {
             return (
               <button
                 key={difficulty}
-                onClick={() => {
-                  setEnabledDifficulties((prev) => {
-                    const next = new Set(prev)
-                    if (next.has(difficulty)) {
-                      next.delete(difficulty)
-                    } else {
-                      next.add(difficulty)
-                    }
-                    return next
-                  })
-                }}
+                onClick={() => toggleDifficulty(difficulty)}
                 className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-all ${
                   isEnabled
                     ? 'bg-white/20 text-white'
@@ -125,15 +200,42 @@ export function PisteListPanel() {
         </div>
       )}
 
-      {/* List Content */}
-      {activeTab === 'pistes' ? (
-        <PisteList
-          searchQuery={searchQuery}
-          enabledDifficulties={enabledDifficulties}
-        />
-      ) : (
-        <LiftList searchQuery={searchQuery} />
+      {/* Lift Type Filters (only for lifts) */}
+      {activeTab === 'lifts' && (
+        <div className="flex flex-wrap gap-1.5 p-3 border-b border-white/10">
+          {ALL_LIFT_TYPES.map((liftType) => {
+            const isEnabled = visibleLiftTypes.has(liftType)
+            const config = LIFT_TYPE_CONFIG[liftType as keyof typeof LIFT_TYPE_CONFIG] ?? LIFT_TYPE_CONFIG['Lift']
+            return (
+              <button
+                key={liftType}
+                onClick={() => toggleLiftType(liftType)}
+                className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium transition-all ${
+                  isEnabled
+                    ? 'bg-white/20 text-white'
+                    : 'bg-white/5 text-white/40 hover:bg-white/10'
+                }`}
+              >
+                <span className="text-xs">{config.icon}</span>
+                <span className="hidden sm:inline">{liftType}</span>
+              </button>
+            )
+          })}
+        </div>
       )}
+
+      {/* List Content */}
+      <div className="flex-1 overflow-y-auto">
+        {activeTab === 'pistes' && (
+          <PisteList
+            searchQuery={searchQuery}
+            enabledDifficulties={enabledDifficulties}
+          />
+        )}
+        {activeTab === 'lifts' && <LiftList searchQuery={searchQuery} visibleLiftTypes={visibleLiftTypes} />}
+        {activeTab === 'peaks' && <PeakList searchQuery={searchQuery} />}
+        {activeTab === 'villages' && <PlaceList searchQuery={searchQuery} />}
+      </div>
     </div>
   )
 }
@@ -149,6 +251,8 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
   const selectedPisteId = useMapStore((s) => s.selectedPisteId)
   const setHoveredPiste = useMapStore((s) => s.setHoveredPiste)
   const setSelectedPiste = useMapStore((s) => s.setSelectedPiste)
+  const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
+  const setHoveredSkiArea = useMapStore((s) => s.setHoveredSkiArea)
   
   // Track collapsed ski areas
   const [collapsedAreas, setCollapsedAreas] = useState<Set<string>>(new Set())
@@ -186,6 +290,13 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
     })
   }
 
+  const handleSelectPiste = (piste: Piste) => {
+    setSelectedPiste(piste.id)
+    // Set camera focus target
+    const position = getPisteCenter(piste)
+    setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.piste })
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8 text-white/40">
@@ -209,7 +320,7 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
   const hasMultipleAreas = groupedPistes.length > 1
 
   return (
-    <div className="overflow-y-auto flex-1">
+    <>
       {groupedPistes.map(({ skiArea, pistes: areaPistes }) => {
         const areaId = skiArea?.id ?? 'unknown'
         const areaName = skiArea?.name ?? 'Other Pistes'
@@ -221,6 +332,8 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
             {hasMultipleAreas && (
               <button
                 onClick={() => toggleArea(areaId)}
+                onMouseEnter={() => setHoveredSkiArea(areaId)}
+                onMouseLeave={() => setHoveredSkiArea(null)}
                 className="w-full flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 border-b border-white/10 transition-colors"
               >
                 <span className="text-white/60 text-xs">
@@ -243,13 +356,13 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
                 isHovered={hoveredPisteId === piste.id}
                 isSelected={selectedPisteId === piste.id}
                 onHover={setHoveredPiste}
-                onSelect={setSelectedPiste}
+                onSelect={() => handleSelectPiste(piste)}
               />
             ))}
           </div>
         )
       })}
-    </div>
+    </>
   )
 }
 
@@ -258,18 +371,18 @@ interface PisteListItemProps {
   isHovered: boolean
   isSelected: boolean
   onHover: (id: string | null) => void
-  onSelect: (id: string | null) => void
+  onSelect: () => void
 }
 
 function PisteListItem({ piste, isHovered, isSelected, onHover, onSelect }: PisteListItemProps) {
-  // Use pre-calculated length if available, otherwise calculate
-  const length = piste.length ?? calculateLength(piste.coordinates)
+  // Use pre-calculated length if available, otherwise calculate from multi-segment coordinates
+  const length = piste.length ?? calculateTotalLength(piste.coordinates)
 
   return (
     <div
       onMouseEnter={() => onHover(piste.id)}
       onMouseLeave={() => onHover(null)}
-      onClick={() => onSelect(piste.id)}
+      onClick={onSelect}
       className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-white/5 transition-colors ${
         isSelected
           ? 'bg-white/20'
@@ -309,26 +422,35 @@ function PisteListItem({ piste, isHovered, isSelected, onHover, onSelect }: Pist
 
 interface LiftListProps {
   searchQuery: string
+  visibleLiftTypes: Set<LiftType>
 }
 
-function LiftList({ searchQuery }: LiftListProps) {
+function LiftList({ searchQuery, visibleLiftTypes }: LiftListProps) {
   const { data: lifts, isLoading } = useLifts()
   const hoveredLiftId = useMapStore((s) => s.hoveredLiftId)
   const selectedLiftId = useMapStore((s) => s.selectedLiftId)
   const setHoveredLift = useMapStore((s) => s.setHoveredLift)
   const setSelectedLift = useMapStore((s) => s.setSelectedLift)
+  const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
 
   const filteredLifts = useMemo(() => {
     if (!lifts) return []
     
     return lifts
+      .filter((lift) => visibleLiftTypes.has(lift.type as LiftType))
       .filter((lift) => {
         if (!searchQuery) return true
         const query = searchQuery.toLowerCase()
         return lift.name.toLowerCase().includes(query)
       })
       .sort((a, b) => a.name.localeCompare(b.name))
-  }, [lifts, searchQuery])
+  }, [lifts, searchQuery, visibleLiftTypes])
+
+  const handleSelectLift = (lift: Lift) => {
+    setSelectedLift(lift.id)
+    const position = getLiftCenter(lift)
+    setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.lift })
+  }
 
   if (isLoading) {
     return (
@@ -348,7 +470,7 @@ function LiftList({ searchQuery }: LiftListProps) {
   }
 
   return (
-    <div className="overflow-y-auto flex-1">
+    <>
       {filteredLifts.map((lift) => (
         <LiftListItem
           key={lift.id}
@@ -356,10 +478,10 @@ function LiftList({ searchQuery }: LiftListProps) {
           isHovered={hoveredLiftId === lift.id}
           isSelected={selectedLiftId === lift.id}
           onHover={setHoveredLift}
-          onSelect={setSelectedLift}
+          onSelect={() => handleSelectLift(lift)}
         />
       ))}
-    </div>
+    </>
   )
 }
 
@@ -368,18 +490,18 @@ interface LiftListItemProps {
   isHovered: boolean
   isSelected: boolean
   onHover: (id: string | null) => void
-  onSelect: (id: string | null) => void
+  onSelect: () => void
 }
 
 function LiftListItem({ lift, isHovered, isSelected, onHover, onSelect }: LiftListItemProps) {
-  const length = useMemo(() => calculateLength(lift.coordinates), [lift.coordinates])
+  const length = useMemo(() => calculateSegmentLength(lift.coordinates), [lift.coordinates])
   const config = LIFT_TYPE_CONFIG[lift.type as keyof typeof LIFT_TYPE_CONFIG] ?? LIFT_TYPE_CONFIG['Lift']
 
   return (
     <div
       onMouseEnter={() => onHover(lift.id)}
       onMouseLeave={() => onHover(null)}
-      onClick={() => onSelect(lift.id)}
+      onClick={onSelect}
       className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-white/5 transition-colors ${
         isSelected
           ? 'bg-white/20'
@@ -417,6 +539,245 @@ function LiftListItem({ lift, isHovered, isSelected, onHover, onSelect }: LiftLi
       {/* Selection indicator */}
       {isSelected && (
         <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+      )}
+    </div>
+  )
+}
+
+interface PeakListProps {
+  searchQuery: string
+}
+
+function PeakList({ searchQuery }: PeakListProps) {
+  const { data: peaks, isLoading } = usePeaks()
+  const hoveredPeakId = useMapStore((s) => s.hoveredPeakId)
+  const selectedPeakId = useMapStore((s) => s.selectedPeakId)
+  const setHoveredPeak = useMapStore((s) => s.setHoveredPeak)
+  const setSelectedPeak = useMapStore((s) => s.setSelectedPeak)
+  const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
+
+  const filteredPeaks = useMemo(() => {
+    if (!peaks) return []
+    
+    return peaks
+      .filter((peak) => {
+        if (!searchQuery) return true
+        const query = searchQuery.toLowerCase()
+        return peak.name.toLowerCase().includes(query)
+      })
+      // Sort by elevation descending (highest first)
+      .sort((a, b) => b.elevation - a.elevation)
+  }, [peaks, searchQuery])
+
+  const handleSelectPeak = (peak: Peak) => {
+    setSelectedPeak(peak.id)
+    const position = geoToLocal(peak.lat, peak.lon, peak.elevation)
+    setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.peak })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8 text-white/40">
+        <div className="animate-spin h-5 w-5 border-2 border-white/20 border-t-purple-400 rounded-full" />
+        <span className="ml-2 text-sm">Loading peaks...</span>
+      </div>
+    )
+  }
+
+  if (filteredPeaks.length === 0) {
+    return (
+      <div className="p-8 text-center text-sm text-white/40">
+        No peaks found
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {filteredPeaks.map((peak) => (
+        <PeakListItem
+          key={peak.id}
+          peak={peak}
+          isHovered={hoveredPeakId === peak.id}
+          isSelected={selectedPeakId === peak.id}
+          onHover={setHoveredPeak}
+          onSelect={() => handleSelectPeak(peak)}
+        />
+      ))}
+    </>
+  )
+}
+
+interface PeakListItemProps {
+  peak: Peak
+  isHovered: boolean
+  isSelected: boolean
+  onHover: (id: string | null) => void
+  onSelect: () => void
+}
+
+function PeakListItem({ peak, isHovered, isSelected, onHover, onSelect }: PeakListItemProps) {
+  return (
+    <div
+      onMouseEnter={() => onHover(peak.id)}
+      onMouseLeave={() => onHover(null)}
+      onClick={onSelect}
+      className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-white/5 transition-colors ${
+        isSelected
+          ? 'bg-white/20'
+          : isHovered
+          ? 'bg-white/10'
+          : 'hover:bg-white/10'
+      }`}
+    >
+      {/* Peak icon */}
+      <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0 bg-purple-500/20">
+        <span className="text-sm">⛰️</span>
+      </div>
+
+      {/* Name and details */}
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-white truncate">
+          {peak.name}
+        </div>
+        <div className="text-xs text-white/40">
+          {peak.elevation.toLocaleString()} m
+        </div>
+      </div>
+
+      {/* Selection indicator */}
+      {isSelected && (
+        <div className="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0" />
+      )}
+    </div>
+  )
+}
+
+interface PlaceListProps {
+  searchQuery: string
+}
+
+function PlaceList({ searchQuery }: PlaceListProps) {
+  const { data: places, isLoading } = usePlaces()
+  const hoveredPlaceId = useMapStore((s) => s.hoveredPlaceId)
+  const selectedPlaceId = useMapStore((s) => s.selectedPlaceId)
+  const setHoveredPlace = useMapStore((s) => s.setHoveredPlace)
+  const setSelectedPlace = useMapStore((s) => s.setSelectedPlace)
+  const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
+
+  const filteredPlaces = useMemo(() => {
+    if (!places) return []
+    
+    return places
+      .filter((place) => {
+        if (!searchQuery) return true
+        const query = searchQuery.toLowerCase()
+        return place.name.toLowerCase().includes(query)
+      })
+      // Sort: towns first, then villages, then hamlets
+      .sort((a, b) => {
+        const typeOrder = { town: 0, village: 1, hamlet: 2 }
+        const orderDiff = typeOrder[a.type] - typeOrder[b.type]
+        if (orderDiff !== 0) return orderDiff
+        return a.name.localeCompare(b.name)
+      })
+  }, [places, searchQuery])
+
+  const handleSelectPlace = (place: Place) => {
+    setSelectedPlace(place.id)
+    const position = geoToLocal(place.lat, place.lon, 0)
+    setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.place })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8 text-white/40">
+        <div className="animate-spin h-5 w-5 border-2 border-white/20 border-t-orange-400 rounded-full" />
+        <span className="ml-2 text-sm">Loading villages...</span>
+      </div>
+    )
+  }
+
+  if (filteredPlaces.length === 0) {
+    return (
+      <div className="p-8 text-center text-sm text-white/40">
+        No villages found
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {filteredPlaces.map((place) => (
+        <PlaceListItem
+          key={place.id}
+          place={place}
+          isHovered={hoveredPlaceId === place.id}
+          isSelected={selectedPlaceId === place.id}
+          onHover={setHoveredPlace}
+          onSelect={() => handleSelectPlace(place)}
+        />
+      ))}
+    </>
+  )
+}
+
+interface PlaceListItemProps {
+  place: Place
+  isHovered: boolean
+  isSelected: boolean
+  onHover: (id: string | null) => void
+  onSelect: () => void
+}
+
+function PlaceListItem({ place, isHovered, isSelected, onHover, onSelect }: PlaceListItemProps) {
+  const getIcon = () => {
+    switch (place.type) {
+      case 'town': return '🏘️'
+      case 'village': return '🏠'
+      case 'hamlet': return '🏡'
+    }
+  }
+
+  const getTypeLabel = () => {
+    switch (place.type) {
+      case 'town': return 'Town'
+      case 'village': return 'Village'
+      case 'hamlet': return 'Hamlet'
+    }
+  }
+
+  return (
+    <div
+      onMouseEnter={() => onHover(place.id)}
+      onMouseLeave={() => onHover(null)}
+      onClick={onSelect}
+      className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-white/5 transition-colors ${
+        isSelected
+          ? 'bg-white/20'
+          : isHovered
+          ? 'bg-white/10'
+          : 'hover:bg-white/10'
+      }`}
+    >
+      {/* Place icon */}
+      <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0 bg-orange-500/20">
+        <span className="text-sm">{getIcon()}</span>
+      </div>
+
+      {/* Name and details */}
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-white truncate">
+          {place.name}
+        </div>
+        <div className="text-xs text-white/40">
+          {getTypeLabel()}
+        </div>
+      </div>
+
+      {/* Selection indicator */}
+      {isSelected && (
+        <div className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />
       )}
     </div>
   )

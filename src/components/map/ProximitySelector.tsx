@@ -52,19 +52,23 @@ export function ProximitySelector() {
     
     featureSpatialIndex.clear()
     
-    // Add pistes (filtered by difficulty)
+    // Add pistes (filtered by difficulty) - index ALL segments with same piste ID
     if (pistes && showPistes) {
       for (const piste of pistes) {
         if (!enabledDifficulties.has(piste.difficulty)) continue
         
-        const localCoords = coordsToLocal(piste.coordinates, 0)
-        const projectedPoints = projectPointsOnGrid(elevationGrid, localCoords, 2)
-        
-        featureSpatialIndex.addFeature({
-          id: piste.id,
-          type: 'piste',
-          points: projectedPoints
-        })
+        // Add each segment to the index with the same piste ID
+        // This way hovering any segment will highlight the whole piste
+        for (const segmentCoords of piste.coordinates) {
+          const localCoords = coordsToLocal(segmentCoords, 0)
+          const projectedPoints = projectPointsOnGrid(elevationGrid, localCoords, 2)
+          
+          featureSpatialIndex.addFeature({
+            id: piste.id,
+            type: 'piste',
+            points: projectedPoints
+          })
+        }
       }
     }
     

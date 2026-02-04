@@ -84,7 +84,7 @@ export function buildGraph(pistes: Piste[], lifts: Lift[]): SkiGraph {
   // Create nodes and edges for pistes
   for (const piste of pistes) {
     if (!piste.startPoint || !piste.endPoint) continue
-    if (piste.coordinates.length < 2) continue
+    if (piste.coordinates.length === 0) continue
     
     // Create start node (top of piste)
     const startNodeId = generateNodeId('piste_start', piste.id)
@@ -106,15 +106,20 @@ export function buildGraph(pistes: Piste[], lifts: Lift[]): SkiGraph {
     }
     nodes.set(endNodeId, endNode)
     
-    // Calculate distance along the piste
+    // Calculate distance along all segments of the piste
     let totalDistance = 0
-    for (let i = 0; i < piste.coordinates.length - 1; i++) {
-      const coord1 = piste.coordinates[i]
-      const coord2 = piste.coordinates[i + 1]
-      if (coord1 && coord2) {
-        totalDistance += distanceMeters(coord1[1], coord1[0], coord2[1], coord2[0])
+    for (const segment of piste.coordinates) {
+      for (let i = 0; i < segment.length - 1; i++) {
+        const coord1 = segment[i]
+        const coord2 = segment[i + 1]
+        if (coord1 && coord2) {
+          totalDistance += distanceMeters(coord1[1], coord1[0], coord2[1], coord2[0])
+        }
       }
     }
+    
+    // Flatten all segments for edge coordinates (for rendering route)
+    const flattenedCoords: [number, number][] = piste.coordinates.flat()
     
     // Calculate elevation change
     const elevationChange = piste.endPoint[2] - piste.startPoint[2]
@@ -126,11 +131,11 @@ export function buildGraph(pistes: Piste[], lifts: Lift[]): SkiGraph {
       to: endNodeId,
       type: 'piste',
       difficulty: piste.difficulty,
-      distance: totalDistance || 500, // Default to 500m if calculation fails
+      distance: totalDistance || piste.length || 500, // Use pre-calculated length or default
       elevationChange,
-      weight: calculatePisteWeight(totalDistance || 500, piste.difficulty),
+      weight: calculatePisteWeight(totalDistance || piste.length || 500, piste.difficulty),
       name: piste.name,
-      coordinates: piste.coordinates,
+      coordinates: flattenedCoords,
     }
     addEdge(pisteEdge)
   }

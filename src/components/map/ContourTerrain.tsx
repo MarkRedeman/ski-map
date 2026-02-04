@@ -6,7 +6,7 @@
  * Minor contours (every 50m) are thinner and lighter.
  */
 
-import { useMemo } from 'react'
+import { useMemo, memo } from 'react'
 import { Line } from '@react-three/drei'
 import { useContourLines } from '@/hooks/useContourLines'
 import { useTerrainStore } from '@/store/terrainStore'
@@ -32,7 +32,7 @@ interface ContourTerrainProps {
   majorColor?: string
 }
 
-export function ContourTerrain({
+export const ContourTerrain = memo(function ContourTerrain({
   interval = 50,
   majorInterval = 100,
   minorColor = '#9ca3af',
@@ -98,15 +98,8 @@ export function ContourTerrain({
   }
 
   if (!contours || contours.length === 0) {
-    console.log('[ContourTerrain] No contours to render')
     return null
   }
-
-  console.log(`[ContourTerrain] Rendering ${contours.length} contour levels, major: ${majorContours.length}, minor: ${minorContours.length}`)
-  
-  // Count total rings
-  const totalRings = contours.reduce((acc, c) => acc + c.rings.length, 0)
-  console.log(`[ContourTerrain] Total rings to render: ${totalRings}`)
 
   return (
     <group name="contour-terrain">
@@ -145,4 +138,6 @@ export function ContourTerrain({
       )}
     </group>
   )
-}
+})
+
+ContourTerrain.displayName = 'ContourTerrain'

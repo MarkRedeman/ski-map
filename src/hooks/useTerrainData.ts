@@ -168,11 +168,15 @@ export function useTerrainData({
   // Use isFetching to detect when refetching for a new resolution
   useEffect(() => {
     setIsLoading(query.isFetching)
+  }, [query.isFetching, setIsLoading])
+  
+  // Separate effect for elevation grid to avoid retriggering on isFetching changes
+  useEffect(() => {
     if (query.data && !query.isPlaceholderData) {
       setElevationGrid(query.data.elevationGrid)
       console.log('[TerrainData] Elevation grid stored for other components')
     }
-  }, [query.data, query.isFetching, query.isPlaceholderData, setElevationGrid, setIsLoading])
+  }, [query.data, query.isPlaceholderData, setElevationGrid])
 
   return query
 }

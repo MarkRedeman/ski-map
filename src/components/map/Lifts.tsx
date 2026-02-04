@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, memo } from 'react'
 import { Line } from '@react-three/drei'
 import { useThree, useFrame } from '@react-three/fiber'
 import { useLifts } from '@/hooks/useLifts'
@@ -149,7 +149,7 @@ interface LiftLineProps {
   zoomScale: number
 }
 
-function LiftLine({ type, coordinates, isHovered, isSelected, elevationGrid, zoomScale }: LiftLineProps) {
+const LiftLine = memo(function LiftLine({ type, coordinates, isHovered, isSelected, elevationGrid, zoomScale }: LiftLineProps) {
   const config = getLiftConfig(type)
   
   // Convert geo coordinates to local 3D coordinates with terrain elevation
@@ -221,7 +221,7 @@ function LiftLine({ type, coordinates, isHovered, isSelected, elevationGrid, zoo
       )}
     </group>
   )
-}
+})
 
 /**
  * Returns the appropriate station geometry based on lift type

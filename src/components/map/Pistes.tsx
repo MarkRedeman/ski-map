@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, memo } from 'react'
 import { Line } from '@react-three/drei'
 import { useThree, useFrame } from '@react-three/fiber'
 import { useState } from 'react'
@@ -65,6 +65,7 @@ function useZoomScale(): number {
 
 /**
  * Renders all ski pistes as 3D lines that follow terrain elevation
+ * Each piste may have multiple segments (coordinate arrays)
  */
 export function Pistes() {
   const { data: pistes, isLoading } = usePistes()
@@ -87,10 +88,10 @@ export function Pistes() {
   return (
     <group name="pistes">
       {filteredPistes.map((piste) => (
-        <PisteLine
+        <PisteLines
           key={piste.id}
           id={piste.id}
-          coordinates={piste.coordinates}
+          segments={piste.coordinates}
           difficulty={piste.difficulty}
           isHovered={hoveredPisteId === piste.id}
           isSelected={selectedPisteId === piste.id}
@@ -102,9 +103,9 @@ export function Pistes() {
   )
 }
 
-interface PisteLineProps {
+interface PisteLinesProps {
   id: string
-  coordinates: [number, number][]
+  segments: [number, number][][] // Array of segments, each segment is [lon, lat][]
   difficulty: Difficulty
   isHovered: boolean
   isSelected: boolean
@@ -115,7 +116,44 @@ interface PisteLineProps {
 /** Height offset above terrain surface (in scene units, ~20m real) */
 const PISTE_OFFSET = 2
 
-function PisteLine({ coordinates, difficulty, isHovered, isSelected, elevationGrid, zoomScale }: PisteLineProps) {
+/**
+ * Renders all segments of a piste as separate Line components
+ * All segments share the same hover/selection state
+ */
+const PisteLines = memo(function PisteLines({ segments, difficulty, isHovered, isSelected, elevationGrid, zoomScale }: PisteLinesProps) {
+  const isHighlighted = isHovered || isSelected
+  const baseWidth = BASE_LINE_WIDTH * zoomScale
+  const lineWidth = isHighlighted ? baseWidth * HIGHLIGHT_MULTIPLIER : baseWidth
+  const color = isHighlighted ? DIFFICULTY_COLORS_HIGHLIGHT[difficulty] : DIFFICULTY_COLORS[difficulty]
+
+  return (
+    <>
+      {segments.map((segmentCoords, index) => (
+        <PisteSegment
+          key={index}
+          coordinates={segmentCoords}
+          color={color}
+          lineWidth={lineWidth}
+          opacity={isHighlighted ? 1 : LINE_OPACITY}
+          elevationGrid={elevationGrid}
+        />
+      ))}
+    </>
+  )
+})
+
+interface PisteSegmentProps {
+  coordinates: [number, number][]
+  color: string
+  lineWidth: number
+  opacity: number
+  elevationGrid: ElevationGrid | null
+}
+
+/**
+ * Renders a single segment of a piste as a 3D line
+ */
+const PisteSegment = memo(function PisteSegment({ coordinates, color, lineWidth, opacity, elevationGrid }: PisteSegmentProps) {
   // Convert geo coordinates to local 3D coordinates with terrain elevation
   const points = useMemo(() => {
     return coordinates.map(([lon, lat]) => {
@@ -135,20 +173,15 @@ function PisteLine({ coordinates, difficulty, isHovered, isSelected, elevationGr
 
   if (points.length < 2) return null
 
-  const isHighlighted = isHovered || isSelected
-  const baseWidth = BASE_LINE_WIDTH * zoomScale
-  const lineWidth = isHighlighted ? baseWidth * HIGHLIGHT_MULTIPLIER : baseWidth
-  const color = isHighlighted ? DIFFICULTY_COLORS_HIGHLIGHT[difficulty] : DIFFICULTY_COLORS[difficulty]
-
   return (
     <Line
       points={points}
       color={color}
       lineWidth={lineWidth}
-      opacity={isHighlighted ? 1 : LINE_OPACITY}
+      opacity={opacity}
       transparent
       // Pointer events now handled by ProximitySelector for better UX
       raycast={() => null}
     />
   )
-}
+})

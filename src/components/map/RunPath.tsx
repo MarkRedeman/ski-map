@@ -1,101 +1,89 @@
 /**
  * RunPath component renders a ski run as a 3D path on the terrain
- * Color-coded by speed with optional playback animation
+ * Color-coded by segment type: skiing (piste difficulty), lift (lift type), idle (gray)
  */
 
-import { useRef, useMemo, useState } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useMemo } from 'react'
 import { Line, Sphere, Html } from '@react-three/drei'
 import * as THREE from 'three'
-import type { SkiRun, RunPoint } from '@/lib/garmin/types'
-import { geoToLocal } from '@/lib/geo/coordinates'
-import { formatSpeed } from '@/lib/garmin/parser'
-import { useMapStore } from '@/stores/useMapStore'
-import { sampleElevationFromChunks } from '@/lib/geo/elevationGrid'
+import type { SkiRun } from '@/lib/garmin/types'
+import { geoToLocal, SOLDEN_CENTER } from '@/lib/geo/coordinates'
+import { useTerrainStore } from '@/store/terrainStore'
+import { sampleElevation } from '@/lib/geo/elevationGrid'
+import { useRideSegments } from '@/hooks/useRideSegments'
+import { getSegmentColor } from '@/lib/garmin/pisteMatch'
+import type { RideSegment } from '@/lib/garmin/segments'
 
 interface RunPathProps {
   run: SkiRun
   showMarkers?: boolean
-  animate?: boolean
 }
 
-// Speed thresholds for color coding (m/s)
-const SPEED_SLOW = 5 // ~18 km/h
-const SPEED_MEDIUM = 15 // ~54 km/h
-
-// Colors for speed segments
-const COLOR_SLOW = new THREE.Color('#22c55e') // Green
-const COLOR_MEDIUM = new THREE.Color('#eab308') // Yellow
-const COLOR_FAST = new THREE.Color('#ef4444') // Red
+// Colors for start/end markers
 const COLOR_START = new THREE.Color('#22c55e') // Green
 const COLOR_END = new THREE.Color('#ef4444') // Red
 
-/**
- * Get color based on speed
- */
-function getSpeedColor(speed: number): THREE.Color {
-  if (speed < SPEED_SLOW) {
-    return COLOR_SLOW
-  } else if (speed < SPEED_MEDIUM) {
-    // Interpolate between green and yellow
-    const t = (speed - SPEED_SLOW) / (SPEED_MEDIUM - SPEED_SLOW)
-    return COLOR_SLOW.clone().lerp(COLOR_MEDIUM, t)
-  } else {
-    // Interpolate between yellow and red
-    const t = Math.min(1, (speed - SPEED_MEDIUM) / SPEED_MEDIUM)
-    return COLOR_MEDIUM.clone().lerp(COLOR_FAST, t)
-  }
-}
+/** Height offset above terrain so path renders above pistes */
+const PATH_HEIGHT_OFFSET = 5
 
-export function RunPath({ run, showMarkers = true, animate = true }: RunPathProps) {
+/** Line width configuration */
+const LINE_WIDTH_SKIING = 4
+const LINE_WIDTH_LIFT = 3
+const LINE_WIDTH_IDLE = 2
+
+export function RunPath({ run, showMarkers = true }: RunPathProps) {
   const { coordinates } = run
-  const chunkElevationMap = useMapStore((s) => s.chunkElevationMap)
+  const elevationGrid = useTerrainStore((s) => s.elevationGrid)
+  const rideSegments = useRideSegments(run)
   
-  if (coordinates.length < 2 || !chunkElevationMap) {
+  if (coordinates.length < 2) {
     return null
   }
   
-  // Convert coordinates to 3D points with color data, projected onto terrain
-  const pathData = useMemo(() => {
+  // Convert all coordinates to 3D points, projected onto terrain
+  const allPoints = useMemo(() => {
     const points: THREE.Vector3[] = []
-    const colors: THREE.Color[] = []
     
     for (const coord of coordinates) {
       const [x, , z] = geoToLocal(coord.lat, coord.lon, 0)
-      // Sample terrain and add offset (O(1) per point!)
-      const terrainY = sampleElevationFromChunks(chunkElevationMap, x, z)
-      points.push(new THREE.Vector3(x, terrainY + 3, z))
-      colors.push(getSpeedColor(coord.speed ?? 0))
+      // Sample terrain elevation, fall back to GPS elevation if grid not loaded
+      const terrainY = elevationGrid
+        ? sampleElevation(elevationGrid, x, z)
+        : (coord.elevation - SOLDEN_CENTER.elevation) * 0.015
+      // Add height offset so path renders above pistes
+      points.push(new THREE.Vector3(x, terrainY + PATH_HEIGHT_OFFSET, z))
     }
     
-    return { points, colors }
-  }, [coordinates, chunkElevationMap])
+    return points
+  }, [coordinates, elevationGrid])
   
-  // Create segments for color-coded line
-  const segments = useMemo(() => {
-    const segs: Array<{
-      points: [THREE.Vector3, THREE.Vector3]
-      color: THREE.Color
-    }> = []
-    
-    for (let i = 0; i < pathData.points.length - 1; i++) {
-      const p1 = pathData.points[i]
-      const p2 = pathData.points[i + 1]
-      const c = pathData.colors[i + 1]
-      if (p1 && p2 && c) {
-        segs.push({
-          points: [p1, p2],
-          color: c, // Use color of destination point
-        })
-      }
+  // Create renderable segment data
+  const segmentLines = useMemo(() => {
+    if (rideSegments.length === 0 || allPoints.length === 0) {
+      return []
     }
     
-    return segs
-  }, [pathData])
+    return rideSegments.map(segment => {
+      // Extract points for this segment
+      const segmentPoints: THREE.Vector3[] = []
+      for (let i = segment.startIndex; i <= segment.endIndex && i < allPoints.length; i++) {
+        const point = allPoints[i]
+        if (point) {
+          segmentPoints.push(point)
+        }
+      }
+      
+      return {
+        segment,
+        points: segmentPoints,
+        color: getSegmentColor(segment),
+      }
+    }).filter(s => s.points.length >= 2)
+  }, [rideSegments, allPoints])
   
   // Start and end positions
-  const startPos = pathData.points[0]
-  const endPos = pathData.points[pathData.points.length - 1]
+  const startPos = allPoints[0]
+  const endPos = allPoints[allPoints.length - 1]
   
   // Don't render if we don't have valid positions
   if (!startPos || !endPos) {
@@ -104,26 +92,26 @@ export function RunPath({ run, showMarkers = true, animate = true }: RunPathProp
   
   return (
     <group name="run-path">
-      {/* Main path - color-coded segments */}
-      {segments.map((segment, i) => (
-        <Line
+      {/* Render each segment with appropriate styling */}
+      {segmentLines.map((segLine, i) => (
+        <SegmentLine
           key={i}
-          points={segment.points}
-          color={segment.color}
+          segment={segLine.segment}
+          points={segLine.points}
+          color={segLine.color}
+        />
+      ))}
+      
+      {/* Fallback: if no segments yet, render simple line */}
+      {segmentLines.length === 0 && allPoints.length >= 2 && (
+        <Line
+          points={allPoints}
+          color="#6b7280"
           lineWidth={3}
           opacity={0.9}
           transparent
         />
-      ))}
-      
-      {/* Glow effect - single color */}
-      <Line
-        points={pathData.points}
-        color="#3b82f6"
-        lineWidth={6}
-        opacity={0.2}
-        transparent
-      />
+      )}
       
       {/* Start marker */}
       {showMarkers && (
@@ -170,86 +158,65 @@ export function RunPath({ run, showMarkers = true, animate = true }: RunPathProp
           </Html>
         </group>
       )}
-      
-      {/* Animated playback marker */}
-      {animate && <PlaybackMarker points={pathData.points} coordinates={coordinates} />}
     </group>
   )
 }
 
-interface PlaybackMarkerProps {
+interface SegmentLineProps {
+  segment: RideSegment
   points: THREE.Vector3[]
-  coordinates: RunPoint[]
+  color: string
 }
 
 /**
- * Animated marker that travels along the path showing speed
+ * Render a single segment with appropriate styling
  */
-function PlaybackMarker({ points, coordinates }: PlaybackMarkerProps) {
-  const meshRef = useRef<THREE.Mesh>(null)
-  const materialRef = useRef<THREE.MeshStandardMaterial>(null)
-  const progressRef = useRef(0)
-  const currentSpeedRef = useRef(0)
-  const [showInfo, setShowInfo] = useState(false)
+function SegmentLine({ segment, points, color }: SegmentLineProps) {
+  if (points.length < 2) return null
   
-  // Create smooth curve from points
-  const curve = useMemo(() => {
-    if (points.length < 2) return null
-    return new THREE.CatmullRomCurve3(points)
-  }, [points])
+  const lineWidth = segment.type === 'skiing' 
+    ? LINE_WIDTH_SKIING 
+    : segment.type === 'lift' 
+      ? LINE_WIDTH_LIFT 
+      : LINE_WIDTH_IDLE
   
-  // Animate along the path - no setState calls!
-  useFrame((_, delta) => {
-    if (!meshRef.current || !curve || !materialRef.current) return
-    
-    // Update progress (complete loop in ~10 seconds)
-    progressRef.current = (progressRef.current + delta * 0.1) % 1
-    
-    // Get position on curve
-    const point = curve.getPoint(progressRef.current)
-    meshRef.current.position.copy(point)
-    
-    // Get speed at current position and update material color directly
-    const coordIndex = Math.floor(progressRef.current * (coordinates.length - 1))
-    const coord = coordinates[coordIndex]
-    if (coord?.speed !== undefined) {
-      currentSpeedRef.current = coord.speed
-      const color = getSpeedColor(coord.speed)
-      materialRef.current.color.copy(color)
-      materialRef.current.emissive.copy(color)
-    }
-  })
+  // Lift segments get dashed lines
+  if (segment.type === 'lift') {
+    return (
+      <Line
+        points={points}
+        color={color}
+        lineWidth={lineWidth}
+        opacity={0.9}
+        transparent
+        dashed
+        dashSize={3}
+        gapSize={2}
+      />
+    )
+  }
   
-  if (!curve || points.length < 2) return null
+  // Idle segments get thin solid lines
+  if (segment.type === 'idle') {
+    return (
+      <Line
+        points={points}
+        color={color}
+        lineWidth={lineWidth}
+        opacity={0.6}
+        transparent
+      />
+    )
+  }
   
+  // Skiing segments get solid lines
   return (
-    <group>
-      <mesh
-        ref={meshRef}
-        onPointerEnter={() => setShowInfo(true)}
-        onPointerLeave={() => setShowInfo(false)}
-      >
-        <sphereGeometry args={[3, 16, 16]} />
-        <meshStandardMaterial
-          ref={materialRef}
-          color={COLOR_SLOW}
-          emissive={COLOR_SLOW}
-          emissiveIntensity={0.5}
-        />
-      </mesh>
-      
-      {/* Speed info tooltip - only shown on hover */}
-      {showInfo && meshRef.current && (
-        <Html
-          position={meshRef.current.position.toArray()}
-          center
-          distanceFactor={150}
-        >
-          <div className="whitespace-nowrap rounded bg-slate-800 px-2 py-1 text-xs font-medium text-white shadow-lg">
-            {formatSpeed(currentSpeedRef.current)}
-          </div>
-        </Html>
-      )}
-    </group>
+    <Line
+      points={points}
+      color={color}
+      lineWidth={lineWidth}
+      opacity={0.9}
+      transparent
+    />
   )
 }

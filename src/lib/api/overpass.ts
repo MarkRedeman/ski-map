@@ -154,17 +154,41 @@ export interface SkiArea {
   url?: string
 }
 
+/**
+ * Ski area with polygon boundary for spatial containment tests
+ */
+export interface SkiAreaPolygon extends SkiArea {
+  polygon: [number, number][] // Boundary coordinates [lon, lat][]
+  centroid: [number, number]  // Center point [lon, lat]
+}
+
 export interface Piste {
   id: string
   name: string
   difficulty: Difficulty
   ref?: string // Piste number/reference
-  coordinates: [number, number][] // [lon, lat] pairs
+  coordinates: [number, number][][] // Array of line segments, each segment is [lon, lat][] pairs
   startPoint?: [number, number, number] // [lat, lon, elevation]
   endPoint?: [number, number, number]
-  length?: number // meters
+  length?: number // meters (total of all segments)
   skiArea?: SkiArea // Which ski resort this piste belongs to
   osmWayIds?: number[] // Original OSM way IDs (for merged pistes)
+}
+
+/**
+ * Raw piste data before merging (single segment with OSM way ID)
+ * This is different from Piste which has multi-segment coordinates
+ */
+export interface RawPiste {
+  id: string
+  osmWayId: number
+  name: string
+  difficulty: Difficulty
+  ref?: string
+  coordinates: [number, number][] // Single segment: [lon, lat][] pairs
+  startPoint?: [number, number, number]
+  endPoint?: [number, number, number]
+  skiArea?: SkiArea
 }
 
 export interface Lift {
@@ -177,6 +201,7 @@ export interface Lift {
     coordinates: [number, number, number] // [lat, lon, elevation]
   }[]
   capacity?: number
+  skiArea?: SkiArea // Which ski resort this lift belongs to
 }
 
 export interface Peak {
@@ -197,8 +222,9 @@ export interface Place {
 
 /**
  * Fetch and parse ski pistes from OSM
+ * @deprecated Use fetchAllSkiData() + mergePisteSegments() instead
  */
-export async function fetchPistes(): Promise<Piste[]> {
+export async function fetchPistes(): Promise<RawPiste[]> {
   const query = buildPistesQuery()
   const response = await executeQuery(query)
   
@@ -211,7 +237,7 @@ export async function fetchPistes(): Promise<Piste[]> {
   })
 
   // Parse ways into pistes
-  const pistes: Piste[] = []
+  const pistes: RawPiste[] = []
   
   response.elements.forEach((el) => {
     if (el.type === 'way' && el.tags) {
@@ -230,6 +256,7 @@ export async function fetchPistes(): Promise<Piste[]> {
         
         pistes.push({
           id: `piste-${el.id}`,
+          osmWayId: el.id,
           name: el.tags.name || el.tags.ref || `Piste ${el.tags['piste:ref'] || el.id}`,
           difficulty: parseDifficulty(el.tags['piste:difficulty']),
           ref: el.tags.ref || el.tags['piste:ref'],
@@ -419,13 +446,6 @@ export async function fetchSkiAreaMemberships(): Promise<{
 }
 
 /**
- * Raw piste data before merging (includes OSM way ID)
- */
-export interface RawPiste extends Piste {
-  osmWayId: number
-}
-
-/**
  * Fetch and parse ski pistes from OSM with ski area assignment
  * Returns raw pistes (before segment merging)
  */
@@ -491,7 +511,8 @@ export async function fetchPistesWithSkiAreas(): Promise<RawPiste[]> {
  * Build a combined Overpass QL query for ALL ski data:
  * - Pistes (downhill ways and relations)
  * - Lifts (aerialway ways)
- * - Ski area relations (site=piste)
+ * - Ski area polygons (landuse=winter_sports)
+ * - Ski area relations (site=piste) - for backwards compatibility
  * - Mountain peaks
  * - Villages/towns/hamlets
  */
@@ -505,7 +526,10 @@ function buildCombinedQuery(): string {
   relation["piste:type"="downhill"](${south},${west},${north},${east});
   // Lifts
   way["aerialway"](${south},${west},${north},${east});
-  // Ski area relations
+  // Ski area polygons (landuse=winter_sports)
+  way["landuse"="winter_sports"](${south},${west},${north},${east});
+  relation["landuse"="winter_sports"](${south},${west},${north},${east});
+  // Ski area relations (for backwards compatibility with site=piste)
   relation["site"="piste"](${south},${west},${north},${east});
   // Peaks
   node["natural"="peak"](${south},${west},${north},${east});
@@ -525,6 +549,7 @@ export interface SkiData {
   pistes: RawPiste[]
   lifts: Lift[]
   skiAreas: SkiArea[]
+  skiAreaPolygons: SkiAreaPolygon[] // Ski areas with polygon boundaries
   peaks: Peak[]
   places: Place[]
 }
@@ -547,7 +572,8 @@ export async function fetchAllSkiData(): Promise<SkiData> {
     }
   })
   
-  // First pass: extract ski area relations and build wayId -> SkiArea mapping
+  // First pass: extract ski area relations (site=piste) and build wayId -> SkiArea mapping
+  // This is for backwards compatibility - spatial containment will override this
   const skiAreas: SkiArea[] = []
   const wayToSkiArea = new Map<number, SkiArea>()
   
@@ -564,6 +590,94 @@ export async function fetchAllSkiData(): Promise<SkiData> {
       for (const member of el.members) {
         if (member.type === 'way') {
           wayToSkiArea.set(member.ref, skiArea)
+        }
+      }
+    }
+  })
+  
+  // Parse ski area polygons (landuse=winter_sports ways and relations)
+  const skiAreaPolygons: SkiAreaPolygon[] = []
+  
+  response.elements.forEach((el) => {
+    if (el.tags?.landuse === 'winter_sports' && el.tags?.name) {
+      if (el.type === 'way') {
+        // Parse way as polygon
+        const polygon: [number, number][] = []
+        
+        el.nodes.forEach((nodeId) => {
+          const node = nodes.get(nodeId)
+          if (node) {
+            polygon.push([node.lon, node.lat])
+          }
+        })
+        
+        if (polygon.length >= 3) {
+          // Calculate centroid
+          let cx = 0, cy = 0
+          for (const [lon, lat] of polygon) {
+            cx += lon
+            cy += lat
+          }
+          cx /= polygon.length
+          cy /= polygon.length
+          
+          skiAreaPolygons.push({
+            id: `skiarea-poly-${el.id}`,
+            name: el.tags.name,
+            url: el.tags.url,
+            polygon,
+            centroid: [cx, cy],
+          })
+        }
+      } else if (el.type === 'relation') {
+        // Parse relation - combine outer ways into a single polygon
+        // For simplicity, we'll use the first outer way or combine them
+        const outerWayIds: number[] = []
+        
+        for (const member of el.members) {
+          if (member.type === 'way' && (member.role === 'outer' || member.role === '')) {
+            outerWayIds.push(member.ref)
+          }
+        }
+        
+        // Find the way elements and build polygon
+        // Note: Ways in relations need to be resolved from the response
+        const polygon: [number, number][] = []
+        
+        // For relations, we need to find the way elements first
+        // They should be in the response due to our > recursion
+        const wayElements = response.elements.filter(
+          (way): way is OSMWay => 
+            way.type === 'way' && outerWayIds.includes(way.id)
+        )
+        
+        // Combine all outer ways into a single polygon
+        for (const way of wayElements) {
+          for (const nodeId of way.nodes) {
+            const node = nodes.get(nodeId)
+            if (node) {
+              polygon.push([node.lon, node.lat])
+            }
+          }
+        }
+        
+        if (polygon.length >= 3) {
+          // Calculate centroid
+          let cx = 0, cy = 0
+          for (const [lon, lat] of polygon) {
+            cx += lon
+            cy += lat
+          }
+          cx /= polygon.length
+          cy /= polygon.length
+          
+          skiAreaPolygons.push({
+            id: `skiarea-poly-${el.id}`,
+            name: el.tags.name,
+            url: el.tags.url,
+            polygon,
+            centroid: [cx, cy],
+          })
         }
       }
     }
@@ -591,6 +705,7 @@ export async function fetchAllSkiData(): Promise<SkiData> {
         if (coordinates.length > 0) {
           const firstCoord = coordinates[0]
           const lastCoord = coordinates[coordinates.length - 1]
+          // Keep site=piste assignment for now, spatial containment will override later
           const skiArea = wayToSkiArea.get(el.id)
           
           pistes.push({
@@ -668,7 +783,7 @@ export async function fetchAllSkiData(): Promise<SkiData> {
     }
   })
   
-  console.log(`[Overpass] Combined query fetched: ${pistes.length} pistes, ${lifts.length} lifts, ${skiAreas.length} ski areas, ${peaks.length} peaks, ${places.length} places`)
+  console.log(`[Overpass] Combined query fetched: ${pistes.length} pistes, ${lifts.length} lifts, ${skiAreaPolygons.length} ski area polygons, ${peaks.length} peaks, ${places.length} places`)
   
-  return { pistes, lifts, skiAreas, peaks, places }
+  return { pistes, lifts, skiAreas, skiAreaPolygons, peaks, places }
 }
