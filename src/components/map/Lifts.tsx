@@ -61,7 +61,7 @@ const LIFT_CABLE_OFFSET = 10
 const LIFT_STATION_OFFSET = 3
 
 /** Base line width for lifts (in pixels) */
-const BASE_LINE_WIDTH = 6
+const BASE_LINE_WIDTH = 4
 /** Highlighted line width multiplier */
 const HIGHLIGHT_MULTIPLIER = 2
 /** Default opacity for lines */
@@ -77,11 +77,13 @@ function useZoomScale(): number {
   
   useFrame(() => {
     const distance = camera.position.length()
-    // Scale: closer = thicker, farther = thinner
+    // Scale: closer = much thicker, farther = thinner
+    // At distance 50, scale = 4 (very close, very thick)
+    // At distance 150, scale = 2 (close, thick)
     // At distance 300 (default overview), scale = 1
-    // At distance 1000, scale = 0.3 (farther, much thinner)
+    // At distance 1000, scale = 0.3 (far, thin)
     // At distance 2000, scale = 0.15 (very far, very thin)
-    const newScale = Math.max(0.15, Math.min(2, 300 / distance))
+    const newScale = Math.max(0.15, Math.min(4, 300 / distance))
     if (Math.abs(newScale - scale) > 0.02) {
       setScale(newScale)
     }
