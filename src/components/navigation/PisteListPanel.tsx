@@ -8,9 +8,11 @@
  * - Grouping by ski area with collapsible sections (pistes/lifts)
  * - Scrollable list with hover → highlight in 3D view
  * - Click → select, show info panel, and navigate camera
+ * - URL-based selection for shareable links
  */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
+import { Link, useSearch } from '@tanstack/react-router'
 import { usePistes, groupPistesBySkiArea } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
 import { usePeaks } from '@/hooks/usePeaks'
@@ -20,6 +22,7 @@ import { useNavigationStore, type Difficulty } from '@/stores/useNavigationStore
 import { LIFT_TYPE_CONFIG } from '@/components/map/Lifts'
 import { geoToLocal } from '@/lib/geo/coordinates'
 import type { Piste, Lift, Peak, Place } from '@/lib/api/overpass'
+import type { SearchParams } from '@/lib/url/searchSchema'
 
 type Tab = 'pistes' | 'lifts' | 'peaks' | 'villages'
 
@@ -250,9 +253,11 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
   const hoveredPisteId = useMapStore((s) => s.hoveredPisteId)
   const selectedPisteId = useMapStore((s) => s.selectedPisteId)
   const setHoveredPiste = useMapStore((s) => s.setHoveredPiste)
-  const setSelectedPiste = useMapStore((s) => s.setSelectedPiste)
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
   const setHoveredSkiArea = useMapStore((s) => s.setHoveredSkiArea)
+  
+  // Get current search params to preserve other params when selecting
+  const currentSearch = useSearch({ strict: false }) as SearchParams
   
   // Track collapsed ski areas
   const [collapsedAreas, setCollapsedAreas] = useState<Set<string>>(new Set())
@@ -290,12 +295,20 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
     })
   }
 
-  const handleSelectPiste = (piste: Piste) => {
-    setSelectedPiste(piste.id)
-    // Set camera focus target
+  // Generate Link search params for a piste
+  const getSelectSearch = useCallback((piste: Piste) => {
+    const pisteOsmId = piste.id.replace('piste-', '')
+    return {
+      ...currentSearch,
+      select: `piste:${pisteOsmId}`,
+    }
+  }, [currentSearch])
+
+  // Handle camera focus when clicking (Link handles selection)
+  const handleCameraFocus = useCallback((piste: Piste) => {
     const position = getPisteCenter(piste)
     setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.piste })
-  }
+  }, [setCameraFocusTarget])
 
   if (isLoading) {
     return (
@@ -356,7 +369,8 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
                 isHovered={hoveredPisteId === piste.id}
                 isSelected={selectedPisteId === piste.id}
                 onHover={setHoveredPiste}
-                onSelect={() => handleSelectPiste(piste)}
+                searchParams={getSelectSearch(piste)}
+                onCameraFocus={() => handleCameraFocus(piste)}
               />
             ))}
           </div>
@@ -371,18 +385,21 @@ interface PisteListItemProps {
   isHovered: boolean
   isSelected: boolean
   onHover: (id: string | null) => void
-  onSelect: () => void
+  searchParams: SearchParams
+  onCameraFocus: () => void
 }
 
-function PisteListItem({ piste, isHovered, isSelected, onHover, onSelect }: PisteListItemProps) {
+function PisteListItem({ piste, isHovered, isSelected, onHover, searchParams, onCameraFocus }: PisteListItemProps) {
   // Use pre-calculated length if available, otherwise calculate from multi-segment coordinates
   const length = piste.length ?? calculateTotalLength(piste.coordinates)
 
   return (
-    <div
+    <Link
+      to="/"
+      search={searchParams}
+      onClick={onCameraFocus}
       onMouseEnter={() => onHover(piste.id)}
       onMouseLeave={() => onHover(null)}
-      onClick={onSelect}
       className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-white/5 transition-colors ${
         isSelected
           ? 'bg-white/20'
@@ -416,7 +433,7 @@ function PisteListItem({ piste, isHovered, isSelected, onHover, onSelect }: Pist
       {isSelected && (
         <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
       )}
-    </div>
+    </Link>
   )
 }
 
@@ -430,8 +447,10 @@ function LiftList({ searchQuery, visibleLiftTypes }: LiftListProps) {
   const hoveredLiftId = useMapStore((s) => s.hoveredLiftId)
   const selectedLiftId = useMapStore((s) => s.selectedLiftId)
   const setHoveredLift = useMapStore((s) => s.setHoveredLift)
-  const setSelectedLift = useMapStore((s) => s.setSelectedLift)
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
+  
+  // Get current search params to preserve other params when selecting
+  const currentSearch = useSearch({ strict: false }) as SearchParams
 
   const filteredLifts = useMemo(() => {
     if (!lifts) return []
@@ -446,11 +465,20 @@ function LiftList({ searchQuery, visibleLiftTypes }: LiftListProps) {
       .sort((a, b) => a.name.localeCompare(b.name))
   }, [lifts, searchQuery, visibleLiftTypes])
 
-  const handleSelectLift = (lift: Lift) => {
-    setSelectedLift(lift.id)
+  // Generate Link search params for a lift
+  const getSelectSearch = useCallback((lift: Lift) => {
+    const liftOsmId = lift.id.replace('lift-', '')
+    return {
+      ...currentSearch,
+      select: `lift:${liftOsmId}`,
+    }
+  }, [currentSearch])
+
+  // Handle camera focus when clicking
+  const handleCameraFocus = useCallback((lift: Lift) => {
     const position = getLiftCenter(lift)
     setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.lift })
-  }
+  }, [setCameraFocusTarget])
 
   if (isLoading) {
     return (
@@ -478,7 +506,8 @@ function LiftList({ searchQuery, visibleLiftTypes }: LiftListProps) {
           isHovered={hoveredLiftId === lift.id}
           isSelected={selectedLiftId === lift.id}
           onHover={setHoveredLift}
-          onSelect={() => handleSelectLift(lift)}
+          searchParams={getSelectSearch(lift)}
+          onCameraFocus={() => handleCameraFocus(lift)}
         />
       ))}
     </>
@@ -490,18 +519,21 @@ interface LiftListItemProps {
   isHovered: boolean
   isSelected: boolean
   onHover: (id: string | null) => void
-  onSelect: () => void
+  searchParams: SearchParams
+  onCameraFocus: () => void
 }
 
-function LiftListItem({ lift, isHovered, isSelected, onHover, onSelect }: LiftListItemProps) {
+function LiftListItem({ lift, isHovered, isSelected, onHover, searchParams, onCameraFocus }: LiftListItemProps) {
   const length = useMemo(() => calculateSegmentLength(lift.coordinates), [lift.coordinates])
   const config = LIFT_TYPE_CONFIG[lift.type as keyof typeof LIFT_TYPE_CONFIG] ?? LIFT_TYPE_CONFIG['Lift']
 
   return (
-    <div
+    <Link
+      to="/"
+      search={searchParams}
+      onClick={onCameraFocus}
       onMouseEnter={() => onHover(lift.id)}
       onMouseLeave={() => onHover(null)}
-      onClick={onSelect}
       className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-white/5 transition-colors ${
         isSelected
           ? 'bg-white/20'
@@ -540,7 +572,7 @@ function LiftListItem({ lift, isHovered, isSelected, onHover, onSelect }: LiftLi
       {isSelected && (
         <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
       )}
-    </div>
+    </Link>
   )
 }
 
@@ -553,8 +585,10 @@ function PeakList({ searchQuery }: PeakListProps) {
   const hoveredPeakId = useMapStore((s) => s.hoveredPeakId)
   const selectedPeakId = useMapStore((s) => s.selectedPeakId)
   const setHoveredPeak = useMapStore((s) => s.setHoveredPeak)
-  const setSelectedPeak = useMapStore((s) => s.setSelectedPeak)
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
+  
+  // Get current search params to preserve other params when selecting
+  const currentSearch = useSearch({ strict: false }) as SearchParams
 
   const filteredPeaks = useMemo(() => {
     if (!peaks) return []
@@ -569,11 +603,20 @@ function PeakList({ searchQuery }: PeakListProps) {
       .sort((a, b) => b.elevation - a.elevation)
   }, [peaks, searchQuery])
 
-  const handleSelectPeak = (peak: Peak) => {
-    setSelectedPeak(peak.id)
+  // Generate Link search params for a peak
+  const getSelectSearch = useCallback((peak: Peak) => {
+    const peakOsmId = peak.id.replace('peak-', '')
+    return {
+      ...currentSearch,
+      select: `peak:${peakOsmId}`,
+    }
+  }, [currentSearch])
+
+  // Handle camera focus when clicking
+  const handleCameraFocus = useCallback((peak: Peak) => {
     const position = geoToLocal(peak.lat, peak.lon, peak.elevation)
     setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.peak })
-  }
+  }, [setCameraFocusTarget])
 
   if (isLoading) {
     return (
@@ -601,7 +644,8 @@ function PeakList({ searchQuery }: PeakListProps) {
           isHovered={hoveredPeakId === peak.id}
           isSelected={selectedPeakId === peak.id}
           onHover={setHoveredPeak}
-          onSelect={() => handleSelectPeak(peak)}
+          searchParams={getSelectSearch(peak)}
+          onCameraFocus={() => handleCameraFocus(peak)}
         />
       ))}
     </>
@@ -613,15 +657,18 @@ interface PeakListItemProps {
   isHovered: boolean
   isSelected: boolean
   onHover: (id: string | null) => void
-  onSelect: () => void
+  searchParams: SearchParams
+  onCameraFocus: () => void
 }
 
-function PeakListItem({ peak, isHovered, isSelected, onHover, onSelect }: PeakListItemProps) {
+function PeakListItem({ peak, isHovered, isSelected, onHover, searchParams, onCameraFocus }: PeakListItemProps) {
   return (
-    <div
+    <Link
+      to="/"
+      search={searchParams}
+      onClick={onCameraFocus}
       onMouseEnter={() => onHover(peak.id)}
       onMouseLeave={() => onHover(null)}
-      onClick={onSelect}
       className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-white/5 transition-colors ${
         isSelected
           ? 'bg-white/20'
@@ -649,7 +696,7 @@ function PeakListItem({ peak, isHovered, isSelected, onHover, onSelect }: PeakLi
       {isSelected && (
         <div className="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0" />
       )}
-    </div>
+    </Link>
   )
 }
 
@@ -662,8 +709,10 @@ function PlaceList({ searchQuery }: PlaceListProps) {
   const hoveredPlaceId = useMapStore((s) => s.hoveredPlaceId)
   const selectedPlaceId = useMapStore((s) => s.selectedPlaceId)
   const setHoveredPlace = useMapStore((s) => s.setHoveredPlace)
-  const setSelectedPlace = useMapStore((s) => s.setSelectedPlace)
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
+  
+  // Get current search params to preserve other params when selecting
+  const currentSearch = useSearch({ strict: false }) as SearchParams
 
   const filteredPlaces = useMemo(() => {
     if (!places) return []
@@ -683,11 +732,20 @@ function PlaceList({ searchQuery }: PlaceListProps) {
       })
   }, [places, searchQuery])
 
-  const handleSelectPlace = (place: Place) => {
-    setSelectedPlace(place.id)
+  // Generate Link search params for a place
+  const getSelectSearch = useCallback((place: Place) => {
+    const placeOsmId = place.id.replace('place-', '')
+    return {
+      ...currentSearch,
+      select: `place:${placeOsmId}`,
+    }
+  }, [currentSearch])
+
+  // Handle camera focus when clicking
+  const handleCameraFocus = useCallback((place: Place) => {
     const position = geoToLocal(place.lat, place.lon, 0)
     setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.place })
-  }
+  }, [setCameraFocusTarget])
 
   if (isLoading) {
     return (
@@ -715,7 +773,8 @@ function PlaceList({ searchQuery }: PlaceListProps) {
           isHovered={hoveredPlaceId === place.id}
           isSelected={selectedPlaceId === place.id}
           onHover={setHoveredPlace}
-          onSelect={() => handleSelectPlace(place)}
+          searchParams={getSelectSearch(place)}
+          onCameraFocus={() => handleCameraFocus(place)}
         />
       ))}
     </>
@@ -727,10 +786,11 @@ interface PlaceListItemProps {
   isHovered: boolean
   isSelected: boolean
   onHover: (id: string | null) => void
-  onSelect: () => void
+  searchParams: SearchParams
+  onCameraFocus: () => void
 }
 
-function PlaceListItem({ place, isHovered, isSelected, onHover, onSelect }: PlaceListItemProps) {
+function PlaceListItem({ place, isHovered, isSelected, onHover, searchParams, onCameraFocus }: PlaceListItemProps) {
   const getIcon = () => {
     switch (place.type) {
       case 'town': return '🏘️'
@@ -748,10 +808,12 @@ function PlaceListItem({ place, isHovered, isSelected, onHover, onSelect }: Plac
   }
 
   return (
-    <div
+    <Link
+      to="/"
+      search={searchParams}
+      onClick={onCameraFocus}
       onMouseEnter={() => onHover(place.id)}
       onMouseLeave={() => onHover(null)}
-      onClick={onSelect}
       className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-white/5 transition-colors ${
         isSelected
           ? 'bg-white/20'
@@ -779,6 +841,6 @@ function PlaceListItem({ place, isHovered, isSelected, onHover, onSelect }: Plac
       {isSelected && (
         <div className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />
       )}
-    </div>
+    </Link>
   )
 }

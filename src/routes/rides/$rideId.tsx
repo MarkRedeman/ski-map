@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { zodValidator } from '@tanstack/zod-adapter'
+import { z } from 'zod'
 import { Suspense, lazy, useEffect, useRef } from 'react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { SidebarToggle } from '@/components/layout/SidebarToggle'
@@ -7,15 +9,19 @@ import { useRunsStore } from '@/stores/useRunsStore'
 import { usePlaybackStore } from '@/stores/usePlaybackStore'
 import { useMapStore } from '@/stores/useMapStore'
 import { useRuns } from '@/hooks/useRuns'
+import { searchSchema } from '@/lib/url/searchSchema'
+import { useURLSync } from '@/hooks/useURLSync'
 
 // Lazy load the 3D map for better initial load
 const SkiMap3D = lazy(() => import('@/components/map/SkiMap3D').then(m => ({ default: m.SkiMap3D })))
 
+// Extend base search schema with ride-specific time parameter
+const rideSearchSchema = searchSchema.extend({
+  t: z.coerce.number().optional().default(0),
+})
+
 export const Route = createFileRoute('/rides/$rideId')({
-  validateSearch: (search: Record<string, unknown>) => ({
-    t: typeof search.t === 'number' ? search.t : 
-       typeof search.t === 'string' ? parseInt(search.t, 10) || 0 : 0
-  }),
+  validateSearch: zodValidator(rideSearchSchema),
   component: RidePage,
 })
 
@@ -23,6 +29,9 @@ function RidePage() {
   const navigate = useNavigate({ from: Route.fullPath })
   const { rideId } = Route.useParams()
   const { t } = Route.useSearch()
+  
+  // Sync URL search params with stores (for filters/selection)
+  useURLSync()
   
   // Ensure runs are loaded (this also triggers load if not already done)
   const { runs, isLoading } = useRuns()

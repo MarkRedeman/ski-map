@@ -1,16 +1,23 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { zodValidator } from '@tanstack/zod-adapter'
 import { Suspense, lazy } from 'react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { SidebarToggle } from '@/components/layout/SidebarToggle'
+import { searchSchema } from '@/lib/url/searchSchema'
+import { useURLSync } from '@/hooks/useURLSync'
 
 // Lazy load the 3D map for better initial load
 const SkiMap3D = lazy(() => import('@/components/map/SkiMap3D').then(m => ({ default: m.SkiMap3D })))
 
 export const Route = createFileRoute('/')({
   component: HomePage,
+  validateSearch: zodValidator(searchSchema),
 })
 
 function HomePage() {
+  // Sync URL search params with stores
+  useURLSync()
+  
   return (
     <div className="flex h-full">
       {/* Sidebar with navigation controls */}

@@ -1,7 +1,7 @@
 /**
  * Settings store for app-wide configuration
  * 
- * Manages resolution settings and persists to URL query parameters
+ * Manages resolution settings. URL persistence is handled by useURLSync hook.
  */
 
 import { create } from 'zustand'
@@ -28,7 +28,7 @@ interface SettingsState {
   getTerrainSegments: () => number
 }
 
-/** Read initial resolution from URL query params */
+/** Read initial resolution from URL query params (for initial load before useURLSync takes over) */
 function getInitialResolution(): ResolutionLevel {
   if (typeof window === 'undefined') return '2x'
   
@@ -42,28 +42,12 @@ function getInitialResolution(): ResolutionLevel {
   return '2x' // Default
 }
 
-/** Update URL query param without page reload */
-function updateUrlParam(resolution: ResolutionLevel) {
-  if (typeof window === 'undefined') return
-  
-  const url = new URL(window.location.href)
-  
-  if (resolution === '2x') {
-    // Remove param if default
-    url.searchParams.delete('resolution')
-  } else {
-    url.searchParams.set('resolution', resolution)
-  }
-  
-  window.history.replaceState({}, '', url.toString())
-}
-
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   resolution: getInitialResolution(),
   
   setResolution: (resolution) => {
     set({ resolution })
-    updateUrlParam(resolution)
+    // URL update is now handled by useURLSync hook
   },
   
   getTerrainZoom: () => {
