@@ -1,29 +1,26 @@
-import { useQuery, queryOptions } from '@tanstack/react-query'
-import { fetchPistesWithSkiAreas, type Piste, type SkiArea } from '@/lib/api/overpass'
-import { mergePisteSegments } from '@/lib/api/mergePistes'
+/**
+ * Hook for accessing piste data
+ * 
+ * Uses the combined ski data query to avoid multiple Overpass API calls.
+ */
+
+import { useSkiData, type Piste, type SkiArea } from './useSkiData'
 import type { Difficulty } from '@/stores/useNavigationStore'
 
 /**
- * Query options for fetching and merging pistes
- * - Fetches raw pistes with ski area assignments
- * - Merges fragmented segments into unified pistes
- * - Caches for 1 hour (piste data is relatively static)
+ * Hook to get pistes from the combined ski data query
  */
-export const pistesQueryOptions = queryOptions({
-  queryKey: ['pistes', 'solden', 'merged'],
-  queryFn: async () => {
-    const rawPistes = await fetchPistesWithSkiAreas()
-    return mergePisteSegments(rawPistes)
-  },
-  staleTime: 1000 * 60 * 60, // 1 hour - piste data is static
-  gcTime: 1000 * 60 * 60 * 24, // 24 hours
-})
-
 export function usePistes() {
-  return useQuery(pistesQueryOptions)
+  const query = useSkiData()
+  return {
+    ...query,
+    data: query.data?.pistes,
+  }
 }
 
-// Helper to filter pistes by difficulty
+/**
+ * Filter pistes by difficulty
+ */
 export function filterPistesByDifficulty(
   pistes: Piste[] | undefined, 
   enabledDifficulties: Set<Difficulty>
@@ -31,9 +28,6 @@ export function filterPistesByDifficulty(
   if (!pistes) return []
   return pistes.filter((piste) => enabledDifficulties.has(piste.difficulty))
 }
-
-// Re-export types for convenience
-export type { Piste, SkiArea }
 
 /**
  * Group pistes by ski area
@@ -70,3 +64,6 @@ export function groupPistesBySkiArea(pistes: Piste[]): {
     return nameA.localeCompare(nameB)
   })
 }
+
+// Re-export types for convenience
+export type { Piste, SkiArea }

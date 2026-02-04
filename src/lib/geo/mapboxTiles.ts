@@ -3,7 +3,17 @@
  * 
  * Fetches terrain tiles from Mapbox and decodes RGB values to elevation.
  * Uses the "slippy map" tile coordinate system (same as OpenStreetMap).
+ * Includes caching via IndexedDB for offline access and reduced API calls.
  */
+
+import {
+  getCachedTerrainTile,
+  setCachedTerrainTile,
+  getCachedSatelliteTile,
+  setCachedSatelliteTile,
+  blobToImage,
+  fetchImageAsBlob,
+} from '../storage/tileCache'
 
 /**
  * Convert longitude to tile X coordinate at a given zoom level
@@ -107,7 +117,7 @@ export function decodeTerrainRGB(r: number, g: number, b: number): number {
 
 /**
  * Fetch a terrain tile and return its pixel data as ImageData
- * Uses Image element with crossOrigin to handle CORS properly
+ * Uses IndexedDB cache for offline access and reduced API calls.
  */
 export async function fetchTerrainTile(
   x: number,
@@ -115,16 +125,23 @@ export async function fetchTerrainTile(
   z: number,
   accessToken: string
 ): Promise<ImageData> {
-  const url = getMapboxTerrainRGBUrl(x, y, z, accessToken)
-  
-  // Load image using Image element (handles CORS better than fetch + createImageBitmap)
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image()
-    image.crossOrigin = 'anonymous'
-    image.onload = () => resolve(image)
-    image.onerror = (e) => reject(new Error(`Failed to load tile ${z}/${x}/${y}: ${e}`))
-    image.src = url
-  })
+  // Try cache first
+  const cachedBlob = await getCachedTerrainTile(z, x, y)
+  let img: HTMLImageElement
+
+  if (cachedBlob) {
+    // Load from cache
+    img = await blobToImage(cachedBlob)
+  } else {
+    // Fetch from network
+    const url = getMapboxTerrainRGBUrl(x, y, z, accessToken)
+    const blob = await fetchImageAsBlob(url)
+    
+    // Store in cache
+    await setCachedTerrainTile(z, x, y, blob)
+    
+    img = await blobToImage(blob)
+  }
   
   // Draw to canvas to get pixel data
   const canvas = document.createElement('canvas')
@@ -249,6 +266,7 @@ export async function buildElevationGridFromTiles(
 
 /**
  * Fetch satellite tiles and combine them into a single canvas/texture
+ * Uses IndexedDB cache for offline access and reduced API calls.
  */
 export async function buildSatelliteImageFromTiles(
   tiles: TileCoord[],
@@ -300,15 +318,23 @@ export async function buildSatelliteImageFromTiles(
     
     await Promise.all(batch.map(async (tile) => {
       try {
-        const url = getMapboxSatelliteUrl(tile.x, tile.y, tile.z, accessToken)
-        
-        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-          const image = new Image()
-          image.crossOrigin = 'anonymous'
-          image.onload = () => resolve(image)
-          image.onerror = (e) => reject(new Error(`Failed to load satellite tile ${tile.z}/${tile.x}/${tile.y}: ${e}`))
-          image.src = url
-        })
+        // Try cache first
+        const cachedBlob = await getCachedSatelliteTile(tile.z, tile.x, tile.y)
+        let img: HTMLImageElement
+
+        if (cachedBlob) {
+          // Load from cache
+          img = await blobToImage(cachedBlob)
+        } else {
+          // Fetch from network
+          const url = getMapboxSatelliteUrl(tile.x, tile.y, tile.z, accessToken)
+          const blob = await fetchImageAsBlob(url)
+          
+          // Store in cache
+          await setCachedSatelliteTile(tile.z, tile.x, tile.y, blob)
+          
+          img = await blobToImage(blob)
+        }
         
         // Calculate position in combined canvas
         const offsetX = (tile.x - minTileX) * tileSize

@@ -1,13 +1,21 @@
-import { useQuery, queryOptions } from '@tanstack/react-query'
-import { fetchLifts } from '@/lib/api/overpass'
+/**
+ * Hook for accessing lift data
+ * 
+ * Uses the combined ski data query to avoid multiple Overpass API calls.
+ */
 
-export const liftsQueryOptions = queryOptions({
-  queryKey: ['lifts', 'solden'],
-  queryFn: fetchLifts,
-  staleTime: 1000 * 60 * 60, // 1 hour - lift data is static
-  gcTime: 1000 * 60 * 60 * 24, // 24 hours
-})
+import { useSkiData, type Lift } from './useSkiData'
 
+/**
+ * Hook to get lifts from the combined ski data query
+ */
 export function useLifts() {
-  return useQuery(liftsQueryOptions)
+  const query = useSkiData()
+  return {
+    ...query,
+    data: query.data?.lifts,
+  }
 }
+
+// Re-export types for convenience
+export type { Lift }

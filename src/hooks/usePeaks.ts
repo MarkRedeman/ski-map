@@ -1,13 +1,21 @@
-import { useQuery, queryOptions } from '@tanstack/react-query'
-import { fetchPeaks } from '@/lib/api/overpass'
+/**
+ * Hook for accessing peak data
+ * 
+ * Uses the combined ski data query to avoid multiple Overpass API calls.
+ */
 
-export const peaksQueryOptions = queryOptions({
-  queryKey: ['peaks', 'solden'],
-  queryFn: fetchPeaks,
-  staleTime: 1000 * 60 * 60 * 24, // 24 hours - peaks don't change
-  gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days
-})
+import { useSkiData, type Peak } from './useSkiData'
 
+/**
+ * Hook to get peaks from the combined ski data query
+ */
 export function usePeaks() {
-  return useQuery(peaksQueryOptions)
+  const query = useSkiData()
+  return {
+    ...query,
+    data: query.data?.peaks,
+  }
 }
+
+// Re-export types for convenience
+export type { Peak }
