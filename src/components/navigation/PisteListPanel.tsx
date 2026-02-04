@@ -5,12 +5,13 @@
  * - Tabs to switch between Pistes and Lifts
  * - Difficulty filter chips (for pistes)
  * - Search input for filtering by name
+ * - Grouping by ski area with collapsible sections
  * - Scrollable list with hover → highlight in 3D view
  * - Click → select and show info panel
  */
 
 import { useState, useMemo } from 'react'
-import { usePistes } from '@/hooks/usePistes'
+import { usePistes, groupPistesBySkiArea } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
 import { useMapStore } from '@/stores/useMapStore'
 import { type Difficulty } from '@/stores/useNavigationStore'
@@ -148,22 +149,42 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
   const selectedPisteId = useMapStore((s) => s.selectedPisteId)
   const setHoveredPiste = useMapStore((s) => s.setHoveredPiste)
   const setSelectedPiste = useMapStore((s) => s.setSelectedPiste)
+  
+  // Track collapsed ski areas
+  const [collapsedAreas, setCollapsedAreas] = useState<Set<string>>(new Set())
 
-  const filteredPistes = useMemo(() => {
+  // Filter and group pistes
+  const groupedPistes = useMemo(() => {
     if (!pistes) return []
     
-    return pistes
+    // First filter by difficulty and search
+    const filtered = pistes
       .filter((piste) => enabledDifficulties.has(piste.difficulty))
       .filter((piste) => {
         if (!searchQuery) return true
         const query = searchQuery.toLowerCase()
         return (
           piste.name.toLowerCase().includes(query) ||
-          piste.ref?.toLowerCase().includes(query)
+          piste.ref?.toLowerCase().includes(query) ||
+          piste.skiArea?.name.toLowerCase().includes(query)
         )
       })
-      .sort((a, b) => a.name.localeCompare(b.name))
+    
+    // Then group by ski area
+    return groupPistesBySkiArea(filtered)
   }, [pistes, enabledDifficulties, searchQuery])
+
+  const toggleArea = (areaId: string) => {
+    setCollapsedAreas((prev) => {
+      const next = new Set(prev)
+      if (next.has(areaId)) {
+        next.delete(areaId)
+      } else {
+        next.add(areaId)
+      }
+      return next
+    })
+  }
 
   if (isLoading) {
     return (
@@ -174,7 +195,9 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
     )
   }
 
-  if (filteredPistes.length === 0) {
+  const totalPistes = groupedPistes.reduce((sum, g) => sum + g.pistes.length, 0)
+
+  if (totalPistes === 0) {
     return (
       <div className="p-8 text-center text-sm text-white/40">
         No pistes found
@@ -182,18 +205,50 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
     )
   }
 
+  // Check if we have multiple ski areas
+  const hasMultipleAreas = groupedPistes.length > 1
+
   return (
     <div className="overflow-y-auto flex-1">
-      {filteredPistes.map((piste) => (
-        <PisteListItem
-          key={piste.id}
-          piste={piste}
-          isHovered={hoveredPisteId === piste.id}
-          isSelected={selectedPisteId === piste.id}
-          onHover={setHoveredPiste}
-          onSelect={setSelectedPiste}
-        />
-      ))}
+      {groupedPistes.map(({ skiArea, pistes: areaPistes }) => {
+        const areaId = skiArea?.id ?? 'unknown'
+        const areaName = skiArea?.name ?? 'Other Pistes'
+        const isCollapsed = collapsedAreas.has(areaId)
+        
+        return (
+          <div key={areaId}>
+            {/* Ski Area Header - only show if multiple areas */}
+            {hasMultipleAreas && (
+              <button
+                onClick={() => toggleArea(areaId)}
+                className="w-full flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 border-b border-white/10 transition-colors"
+              >
+                <span className="text-white/60 text-xs">
+                  {isCollapsed ? '▶' : '▼'}
+                </span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-white/70 flex-1 text-left">
+                  {areaName}
+                </span>
+                <span className="text-xs text-white/40">
+                  {areaPistes.length} pistes
+                </span>
+              </button>
+            )}
+            
+            {/* Piste Items */}
+            {!isCollapsed && areaPistes.map((piste) => (
+              <PisteListItem
+                key={piste.id}
+                piste={piste}
+                isHovered={hoveredPisteId === piste.id}
+                isSelected={selectedPisteId === piste.id}
+                onHover={setHoveredPiste}
+                onSelect={setSelectedPiste}
+              />
+            ))}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -207,7 +262,8 @@ interface PisteListItemProps {
 }
 
 function PisteListItem({ piste, isHovered, isSelected, onHover, onSelect }: PisteListItemProps) {
-  const length = useMemo(() => calculateLength(piste.coordinates), [piste.coordinates])
+  // Use pre-calculated length if available, otherwise calculate
+  const length = piste.length ?? calculateLength(piste.coordinates)
 
   return (
     <div
@@ -234,7 +290,7 @@ function PisteListItem({ piste, isHovered, isSelected, onHover, onSelect }: Pist
           <span className="text-sm font-medium text-white truncate">
             {piste.name}
           </span>
-          {piste.ref && (
+          {piste.ref && piste.ref !== piste.name && (
             <span className="text-xs text-white/40">#{piste.ref}</span>
           )}
         </div>

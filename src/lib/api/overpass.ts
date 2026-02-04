@@ -144,6 +144,12 @@ export function parseLiftType(aerialway?: string): string {
 
 import type { Difficulty } from '@/stores/useNavigationStore'
 
+export interface SkiArea {
+  id: string
+  name: string
+  url?: string
+}
+
 export interface Piste {
   id: string
   name: string
@@ -153,6 +159,8 @@ export interface Piste {
   startPoint?: [number, number, number] // [lat, lon, elevation]
   endPoint?: [number, number, number]
   length?: number // meters
+  skiArea?: SkiArea // Which ski resort this piste belongs to
+  osmWayIds?: number[] // Original OSM way IDs (for merged pistes)
 }
 
 export interface Lift {
@@ -349,4 +357,124 @@ export async function fetchPlaces(): Promise<Place[]> {
       lat: node.lat,
       lon: node.lon,
     }))
+}
+
+/**
+ * Build Overpass QL query for ski area site relations
+ * These relations group pistes by ski resort
+ */
+function buildSkiAreasQuery(): string {
+  const { south, west, north, east } = SOLDEN_BBOX
+  return `
+[out:json][timeout:60];
+relation["site"="piste"](${south},${west},${north},${east});
+out body;
+`.trim()
+}
+
+/**
+ * Ski area data with member way IDs
+ */
+export interface SkiAreaWithMembers extends SkiArea {
+  wayIds: Set<number>
+}
+
+/**
+ * Fetch ski area relations and their member way IDs
+ * Returns a map of wayId -> SkiArea for quick lookup
+ */
+export async function fetchSkiAreaMemberships(): Promise<{
+  skiAreas: SkiArea[]
+  wayToSkiArea: Map<number, SkiArea>
+}> {
+  const query = buildSkiAreasQuery()
+  const response = await executeQuery(query)
+  
+  const skiAreas: SkiArea[] = []
+  const wayToSkiArea = new Map<number, SkiArea>()
+  
+  for (const el of response.elements) {
+    if (el.type === 'relation' && el.tags?.name) {
+      const skiArea: SkiArea = {
+        id: `skiarea-${el.id}`,
+        name: el.tags.name,
+        url: el.tags.url,
+      }
+      skiAreas.push(skiArea)
+      
+      // Map each way member to this ski area
+      for (const member of el.members) {
+        if (member.type === 'way') {
+          wayToSkiArea.set(member.ref, skiArea)
+        }
+      }
+    }
+  }
+  
+  return { skiAreas, wayToSkiArea }
+}
+
+/**
+ * Raw piste data before merging (includes OSM way ID)
+ */
+export interface RawPiste extends Piste {
+  osmWayId: number
+}
+
+/**
+ * Fetch and parse ski pistes from OSM with ski area assignment
+ * Returns raw pistes (before segment merging)
+ */
+export async function fetchPistesWithSkiAreas(): Promise<RawPiste[]> {
+  // Fetch ski area memberships and pistes in parallel
+  const [{ wayToSkiArea }, pistesResponse] = await Promise.all([
+    fetchSkiAreaMemberships(),
+    executeQuery(buildPistesQuery()),
+  ])
+  
+  // Build node lookup for coordinates
+  const nodes = new Map<number, OSMNode>()
+  pistesResponse.elements.forEach((el) => {
+    if (el.type === 'node') {
+      nodes.set(el.id, el)
+    }
+  })
+
+  // Parse ways into pistes with ski area assignment
+  const pistes: RawPiste[] = []
+  
+  pistesResponse.elements.forEach((el) => {
+    if (el.type === 'way' && el.tags) {
+      const coordinates: [number, number][] = []
+      
+      el.nodes.forEach((nodeId) => {
+        const node = nodes.get(nodeId)
+        if (node) {
+          coordinates.push([node.lon, node.lat])
+        }
+      })
+
+      if (coordinates.length > 0) {
+        const firstCoord = coordinates[0]
+        const lastCoord = coordinates[coordinates.length - 1]
+        
+        // Look up ski area for this way
+        const skiArea = wayToSkiArea.get(el.id)
+        
+        pistes.push({
+          id: `piste-${el.id}`,
+          osmWayId: el.id,
+          name: el.tags.name || el.tags.ref || `Piste ${el.tags['piste:ref'] || el.id}`,
+          difficulty: parseDifficulty(el.tags['piste:difficulty']),
+          ref: el.tags.ref || el.tags['piste:ref'],
+          coordinates,
+          startPoint: firstCoord ? [firstCoord[1], firstCoord[0], 0] : undefined,
+          endPoint: lastCoord ? [lastCoord[1], lastCoord[0], 0] : undefined,
+          skiArea,
+        })
+      }
+    }
+  })
+
+  return pistes
 }
