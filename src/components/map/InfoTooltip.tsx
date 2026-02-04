@@ -80,7 +80,7 @@ export function InfoTooltip() {
     const length = calculateLength(hoveredPiste.coordinates)
 
     return (
-      <Html position={position} center distanceFactor={300} zIndexRange={[100, 0]}>
+      <Html position={position} center zIndexRange={[100, 0]}>
         <div className="pointer-events-none flex min-w-[140px] flex-col gap-1 rounded-lg bg-white/95 p-3 shadow-xl backdrop-blur-sm">
           {/* Header with difficulty badge */}
           <div className="flex items-center gap-2">
@@ -112,7 +112,7 @@ export function InfoTooltip() {
     const length = calculateLength(hoveredLift.coordinates)
 
     return (
-      <Html position={position} center distanceFactor={300} zIndexRange={[100, 0]}>
+      <Html position={position} center zIndexRange={[100, 0]}>
         <div className="pointer-events-none flex min-w-[140px] flex-col gap-1 rounded-lg bg-white/95 p-3 shadow-xl backdrop-blur-sm">
           {/* Header with type badge */}
           <div className="flex items-center gap-2">
