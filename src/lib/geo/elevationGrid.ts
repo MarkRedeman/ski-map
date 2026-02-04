@@ -149,9 +149,29 @@ export function sampleElevation(grid: ElevationGrid, x: number, z: number): numb
   
   // Convert world coords to grid coords (0 to cols-1, 0 to rows-1)
   const gridX = ((x - grid.minX) / (grid.maxX - grid.minX)) * (grid.cols - 1)
-  // Z is inverted: PlaneGeometry after rotateX(-PI/2) has row 0 at +Z (south/maxZ)
-  // and last row at -Z (north/minZ), so we invert the mapping
-  const gridZ = ((grid.maxZ - z) / (grid.maxZ - grid.minZ)) * (grid.rows - 1)
+  // Grid row 0 = north (from minTileY tiles), but after Terrain3D fix,
+  // south world positions (maxZ) map to grid row 0, north (minZ) to grid row max
+  // So: z = maxZ (south) -> gridZ = 0, z = minZ (north) -> gridZ = rows-1
+  // Formula: gridZ = ((maxZ - z) / (maxZ - minZ)) * (rows - 1)
+  // Wait, that's what we already have. The issue is the terrain mesh was fixed
+  // to use row/segments directly, which maps mesh row 0 (south) to grid row 0.
+  // But for world coords, south = maxZ, so we need:
+  // z = maxZ -> gridZ = 0, z = minZ -> gridZ = rows-1
+  // Current formula does exactly this, so it should be correct...
+  // 
+  // Actually, let me reconsider. The grid stores:
+  // - Row 0 = data from minTileY = NORTH (highest latitude)
+  // - Row max = data from maxTileY = SOUTH (lowest latitude)
+  // 
+  // World coordinates:
+  // - minZ = NORTH (negative Z)
+  // - maxZ = SOUTH (positive Z)
+  // 
+  // So we want: z = minZ (north) -> gridZ = 0 (north data)
+  //             z = maxZ (south) -> gridZ = rows-1 (south data)
+  // 
+  // Correct formula: gridZ = ((z - minZ) / (maxZ - minZ)) * (rows - 1)
+  const gridZ = ((z - grid.minZ) / (grid.maxZ - grid.minZ)) * (grid.rows - 1)
   
   // Get integer grid cell indices
   const x0 = Math.floor(gridX)
