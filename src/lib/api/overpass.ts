@@ -101,15 +101,19 @@ async function executeQuery(query: string): Promise<OverpassResponse> {
 
 /**
  * Parse OSM difficulty to our difficulty type
+ * European ski slope colors:
+ * - Blue = Easy/Beginner (novice, easy)
+ * - Red = Intermediate (intermediate)
+ * - Black = Expert/Advanced (advanced, expert, freeride)
  */
 export function parseDifficulty(osmDifficulty?: string): 'blue' | 'red' | 'black' {
   switch (osmDifficulty) {
     case 'novice':
     case 'easy':
-    case 'intermediate':
       return 'blue'
-    case 'advanced':
+    case 'intermediate':
       return 'red'
+    case 'advanced':
     case 'expert':
     case 'freeride':
       return 'black'
