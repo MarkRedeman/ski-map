@@ -2,6 +2,12 @@ import { create } from 'zustand'
 import type * as THREE from 'three'
 import type { ElevationGrid, ChunkElevationMap } from '@/lib/geo/elevationGrid'
 
+/** Lift types that can be filtered */
+export type LiftType = 'Gondola' | 'Chair Lift' | 'Cable Car' | 'T-Bar' | 'Button Lift' | 'Drag Lift' | 'Magic Carpet' | 'Lift'
+
+/** All available lift types */
+export const ALL_LIFT_TYPES: LiftType[] = ['Gondola', 'Chair Lift', 'Cable Car', 'T-Bar', 'Button Lift', 'Drag Lift', 'Magic Carpet', 'Lift']
+
 interface MapState {
   // Terrain mesh reference for raycasting (legacy, kept for compatibility)
   terrainMesh: THREE.Mesh | null
@@ -35,6 +41,11 @@ interface MapState {
   showLifts: boolean
   showLabels: boolean
   toggleLayer: (layer: 'terrain' | 'pistes' | 'lifts' | 'labels') => void
+  
+  // Lift type filter - which lift types are visible
+  visibleLiftTypes: Set<LiftType>
+  toggleLiftType: (liftType: LiftType) => void
+  setAllLiftTypesVisible: (visible: boolean) => void
   
   // Selection - Pistes
   hoveredPisteId: string | null
@@ -106,6 +117,25 @@ export const useMapStore = create<MapState>((set) => ({
           return state
       }
     }),
+  
+  // All lift types visible by default
+  visibleLiftTypes: new Set(ALL_LIFT_TYPES),
+  
+  toggleLiftType: (liftType) =>
+    set((state) => {
+      const newSet = new Set(state.visibleLiftTypes)
+      if (newSet.has(liftType)) {
+        newSet.delete(liftType)
+      } else {
+        newSet.add(liftType)
+      }
+      return { visibleLiftTypes: newSet }
+    }),
+  
+  setAllLiftTypesVisible: (visible) =>
+    set(() => ({
+      visibleLiftTypes: visible ? new Set(ALL_LIFT_TYPES) : new Set()
+    })),
   
   hoveredPisteId: null,
   selectedPisteId: null,
