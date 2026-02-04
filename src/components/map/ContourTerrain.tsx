@@ -9,6 +9,8 @@
 import { useMemo } from 'react'
 import { Line } from '@react-three/drei'
 import { useContourLines } from '@/hooks/useContourLines'
+import { useTerrainStore } from '@/store/terrainStore'
+import { sampleElevation } from '@/lib/geo/elevationGrid'
 
 // Sölden ski area bounds (extended for surrounding mountains)
 const SOLDEN_BOUNDS = {
@@ -43,24 +45,41 @@ export function ContourTerrain({
     zoom,
     interval,
   })
+  
+  const elevationGrid = useTerrainStore((s) => s.elevationGrid)
 
   // Separate major and minor contours for different styling
+  // Also project contour points onto actual terrain surface
   const { majorContours, minorContours } = useMemo(() => {
     if (!contours) return { majorContours: [], minorContours: [] }
     
-    const major: typeof contours = []
-    const minor: typeof contours = []
+    const major: Array<{ elevation: number; rings: Array<Array<[number, number, number]>> }> = []
+    const minor: Array<{ elevation: number; rings: Array<Array<[number, number, number]>> }> = []
     
     for (const contour of contours) {
+      // Project each ring onto the terrain surface if elevation grid is available
+      const projectedRings = contour.rings.map(ring => 
+        ring.map(([x, y, z]) => {
+          if (elevationGrid) {
+            const terrainY = sampleElevation(elevationGrid, x, z)
+            // Use terrain Y + small offset to float above surface
+            return [x, terrainY + 1, z] as [number, number, number]
+          }
+          return [x, y, z] as [number, number, number]
+        })
+      )
+      
+      const projectedContour = { elevation: contour.elevation, rings: projectedRings }
+      
       if (contour.elevation % majorInterval === 0) {
-        major.push(contour)
+        major.push(projectedContour)
       } else {
-        minor.push(contour)
+        minor.push(projectedContour)
       }
     }
     
     return { majorContours: major, minorContours: minor }
-  }, [contours, majorInterval])
+  }, [contours, majorInterval, elevationGrid])
 
   if (isLoading) {
     return (

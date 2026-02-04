@@ -51,7 +51,19 @@ export function Terrain3D({ zoom = 12, segments = 256 }: Terrain3DProps) {
         // After rotation, X and Z are correct, Y is elevation
         // PlaneGeometry vertices go from -width/2 to +width/2
         const normalizedX = col / segments // 0 to 1
-        const normalizedZ = row / segments // 0 to 1
+        // After rotateX(-PI/2): row 0 ends up at +Z (local), which is south (maxZ) in world space
+        // Grid data has row 0 = north (minZ from tiles perspective)
+        // But sampleElevation inverts Z: z=maxZ → gridZ=0
+        // So we need to invert here too: row 0 (at maxZ) should sample gridZ = 0
+        // Since row 0 → normalizedZ = 0, and we want gridZ = 0, the mapping is correct!
+        // BUT wait - after rotation, row 0 might be at -Z not +Z. Let's verify:
+        // PlaneGeometry row 0 has Y = +height/2 (top of plane)
+        // After rotateX(-90°): Y becomes Z, so row 0 ends up at Z = +height/2 (positive local Z)
+        // World Z = localZ + center[2]. If center[2] is negative, world Z could still be positive.
+        // The grid row 0 should correspond to the NORTH edge of the grid (minZ in world, maxLat in geo)
+        // Since grid row 0 = north = minZ, and mesh row 0 = +localZ = south (maxZ), they're OPPOSITE
+        // So we need to flip: normalizedZ = 1 - (row / segments)
+        const normalizedZ = 1 - (row / segments) // Flip to match sampleElevation's inverted Z
 
         // Sample from elevation grid
         const gridX = normalizedX * (elevationGrid.cols - 1)
