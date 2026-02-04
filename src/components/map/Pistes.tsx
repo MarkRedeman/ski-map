@@ -30,7 +30,7 @@ export const PISTE_DIFFICULTY_CONFIG: Record<Difficulty, { color: string; colorH
 }
 
 /** Base line width (in pixels) */
-const BASE_LINE_WIDTH = 4
+const BASE_LINE_WIDTH = 7
 /** Highlighted line width multiplier */
 const HIGHLIGHT_MULTIPLIER = 2
 /** Default opacity for lines */

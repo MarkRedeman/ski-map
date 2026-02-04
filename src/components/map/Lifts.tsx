@@ -61,7 +61,7 @@ const LIFT_CABLE_OFFSET = 10
 const LIFT_STATION_OFFSET = 3
 
 /** Base line width for lifts (in pixels) */
-const BASE_LINE_WIDTH = 4
+const BASE_LINE_WIDTH = 7
 /** Highlighted line width multiplier */
 const HIGHLIGHT_MULTIPLIER = 2
 /** Default opacity for lines */

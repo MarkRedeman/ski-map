@@ -1,20 +1,16 @@
 /**
  * InfoPanel component - displays detailed info for selected piste/lift
- * Shows in sidebar when a piste or lift is clicked
+ * Shows when a piste or lift is clicked, styled to match the map legend
  */
 
 import { useMemo } from 'react'
-import { X, Mountain, ArrowUp, ArrowDown, Ruler, Users, Navigation } from 'lucide-react'
+import { X, Mountain, Ruler, Users, Navigation, ArrowUp, ArrowDown } from 'lucide-react'
 import { useMapStore } from '@/stores/useMapStore'
 import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
 import { useNavigationStore } from '@/stores/useNavigationStore'
-
-const DIFFICULTY_CONFIG = {
-  blue: { label: 'Easy', color: 'text-blue-700', bg: 'bg-blue-100', icon: '🔵' },
-  red: { label: 'Intermediate', color: 'text-red-700', bg: 'bg-red-100', icon: '🔴' },
-  black: { label: 'Expert', color: 'text-gray-900', bg: 'bg-gray-200', icon: '⚫' },
-} as const
+import { LIFT_TYPE_CONFIG } from './Lifts'
+import { PISTE_DIFFICULTY_CONFIG } from './Pistes'
 
 /**
  * Calculate approximate length from coordinates in meters
@@ -79,59 +75,60 @@ export function InfoPanel() {
 
   // Render piste info
   if (selectedPiste) {
-    const difficulty = DIFFICULTY_CONFIG[selectedPiste.difficulty]
+    const config = PISTE_DIFFICULTY_CONFIG[selectedPiste.difficulty]
     const length = calculateLength(selectedPiste.coordinates)
 
     return (
-      <div className="absolute bottom-4 left-4 z-50 w-80 overflow-hidden rounded-xl bg-white shadow-2xl">
+      <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/60 backdrop-blur-sm">
         {/* Header */}
-        <div className={`${difficulty.bg} px-4 py-3`}>
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">{difficulty.icon}</span>
-              <div>
-                <h2 className={`text-lg font-bold ${difficulty.color}`}>{selectedPiste.name}</h2>
-                <p className="text-sm text-gray-600">
-                  {difficulty.label} Piste
-                  {selectedPiste.ref && <span className="ml-2 font-mono">#{selectedPiste.ref}</span>}
-                </p>
-              </div>
+        <div className="flex items-start justify-between gap-2 p-3 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <div
+              className="h-4 w-4 rounded-full flex-shrink-0"
+              style={{ backgroundColor: config.color }}
+            />
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-white truncate">{selectedPiste.name}</h2>
+              <p className="text-xs text-white/60">
+                {config.label} Piste
+                {selectedPiste.ref && <span className="ml-1 font-mono">#{selectedPiste.ref}</span>}
+              </p>
             </div>
-            <button
-              onClick={clearSelection}
-              className="rounded-full p-1 transition-colors hover:bg-white/50"
-              aria-label="Close"
-            >
-              <X className="h-5 w-5 text-gray-600" />
-            </button>
           </div>
+          <button
+            onClick={clearSelection}
+            className="rounded p-1 transition-colors hover:bg-white/20 flex-shrink-0"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4 text-white/70" />
+          </button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 p-4">
-          <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-3">
-            <Ruler className="h-5 w-5 text-gray-400" />
+        <div className="grid grid-cols-2 gap-2 p-3">
+          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+            <Ruler className="h-4 w-4 text-white/50" />
             <div>
-              <p className="text-xs text-gray-500">Length</p>
-              <p className="font-semibold text-gray-900">{(length / 1000).toFixed(2)} km</p>
+              <p className="text-[10px] text-white/50">Length</p>
+              <p className="text-xs font-medium text-white">{(length / 1000).toFixed(2)} km</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-3">
-            <Mountain className="h-5 w-5 text-gray-400" />
+          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+            <Mountain className="h-4 w-4 text-white/50" />
             <div>
-              <p className="text-xs text-gray-500">Difficulty</p>
-              <p className="font-semibold text-gray-900">{difficulty.label}</p>
+              <p className="text-[10px] text-white/50">Difficulty</p>
+              <p className="text-xs font-medium text-white">{config.label}</p>
             </div>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="border-t border-gray-100 p-4">
+        <div className="p-3 pt-0">
           <button
             onClick={handleNavigateTo}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-sky-500 px-4 py-2.5 font-medium text-white transition-colors hover:bg-sky-600"
+            className="flex w-full items-center justify-center gap-2 rounded bg-white/20 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/30"
           >
-            <Navigation className="h-4 w-4" />
+            <Navigation className="h-3.5 w-3.5" />
             Navigate to End
           </button>
         </div>
@@ -141,53 +138,55 @@ export function InfoPanel() {
 
   // Render lift info
   if (selectedLift) {
+    const config = LIFT_TYPE_CONFIG[selectedLift.type as keyof typeof LIFT_TYPE_CONFIG] ?? LIFT_TYPE_CONFIG['Lift']
     const length = calculateLength(selectedLift.coordinates)
 
     return (
-      <div className="absolute bottom-4 left-4 z-50 w-80 overflow-hidden rounded-xl bg-white shadow-2xl">
+      <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/60 backdrop-blur-sm">
         {/* Header */}
-        <div className="bg-amber-100 px-4 py-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🚡</span>
-              <div>
-                <h2 className="text-lg font-bold text-amber-800">{selectedLift.name}</h2>
-                <p className="text-sm text-gray-600">{selectedLift.type}</p>
-              </div>
+        <div className="flex items-start justify-between gap-2 p-3 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{config.icon}</span>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-white truncate">{selectedLift.name}</h2>
+              <p className="text-xs text-white/60">{selectedLift.type}</p>
             </div>
-            <button
-              onClick={clearSelection}
-              className="rounded-full p-1 transition-colors hover:bg-white/50"
-              aria-label="Close"
-            >
-              <X className="h-5 w-5 text-gray-600" />
-            </button>
           </div>
+          <button
+            onClick={clearSelection}
+            className="rounded p-1 transition-colors hover:bg-white/20 flex-shrink-0"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4 text-white/70" />
+          </button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 p-4">
-          <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-3">
-            <Ruler className="h-5 w-5 text-gray-400" />
+        <div className="grid grid-cols-2 gap-2 p-3">
+          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+            <Ruler className="h-4 w-4 text-white/50" />
             <div>
-              <p className="text-xs text-gray-500">Length</p>
-              <p className="font-semibold text-gray-900">{(length / 1000).toFixed(2)} km</p>
+              <p className="text-[10px] text-white/50">Length</p>
+              <p className="text-xs font-medium text-white">{(length / 1000).toFixed(2)} km</p>
             </div>
           </div>
           {selectedLift.capacity ? (
-            <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-3">
-              <Users className="h-5 w-5 text-gray-400" />
+            <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+              <Users className="h-4 w-4 text-white/50" />
               <div>
-                <p className="text-xs text-gray-500">Capacity</p>
-                <p className="font-semibold text-gray-900">{selectedLift.capacity}/h</p>
+                <p className="text-[10px] text-white/50">Capacity</p>
+                <p className="text-xs font-medium text-white">{selectedLift.capacity}/h</p>
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-3">
-              <ArrowUp className="h-5 w-5 text-gray-400" />
+            <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+              <div
+                className="h-4 w-4 rounded-full flex-shrink-0"
+                style={{ backgroundColor: config.color }}
+              />
               <div>
-                <p className="text-xs text-gray-500">Type</p>
-                <p className="font-semibold text-gray-900">{selectedLift.type}</p>
+                <p className="text-[10px] text-white/50">Type</p>
+                <p className="text-xs font-medium text-white">{selectedLift.type}</p>
               </div>
             </div>
           )}
@@ -195,33 +194,35 @@ export function InfoPanel() {
 
         {/* Stations */}
         {selectedLift.stations && selectedLift.stations.length >= 2 && (
-          <div className="border-t border-gray-100 px-4 py-3">
-            <p className="mb-2 text-xs font-medium uppercase text-gray-500">Stations</p>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5">
-                <ArrowDown className="h-4 w-4 text-green-500" />
-                <span className="text-sm text-gray-700">
-                  {selectedLift.stations[0]?.name || 'Bottom Station'}
-                </span>
-              </div>
-              <div className="h-px flex-1 bg-gray-200" />
-              <div className="flex items-center gap-1.5">
-                <ArrowUp className="h-4 w-4 text-red-500" />
-                <span className="text-sm text-gray-700">
-                  {selectedLift.stations[1]?.name || 'Top Station'}
-                </span>
+          <div className="px-3 pb-3">
+            <div className="rounded bg-white/10 p-2">
+              <p className="text-[10px] text-white/50 mb-1.5">Stations</p>
+              <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-1">
+                  <ArrowDown className="h-3 w-3 text-green-400" />
+                  <span className="text-white/80 truncate max-w-[80px]">
+                    {selectedLift.stations[0]?.name || 'Bottom'}
+                  </span>
+                </div>
+                <div className="h-px flex-1 bg-white/20" />
+                <div className="flex items-center gap-1">
+                  <ArrowUp className="h-3 w-3 text-red-400" />
+                  <span className="text-white/80 truncate max-w-[80px]">
+                    {selectedLift.stations[1]?.name || 'Top'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {/* Actions */}
-        <div className="border-t border-gray-100 p-4">
+        <div className="p-3 pt-0">
           <button
             onClick={handleNavigateTo}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-500 px-4 py-2.5 font-medium text-white transition-colors hover:bg-amber-600"
+            className="flex w-full items-center justify-center gap-2 rounded bg-white/20 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/30"
           >
-            <Navigation className="h-4 w-4" />
+            <Navigation className="h-3.5 w-3.5" />
             Navigate to Top
           </button>
         </div>
