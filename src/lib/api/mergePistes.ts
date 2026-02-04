@@ -8,7 +8,10 @@
 import type { Piste, RawPiste } from './overpass'
 
 /** Maximum distance in meters to consider two endpoints connected */
-const CONNECTION_THRESHOLD_METERS = 30
+const CONNECTION_THRESHOLD_METERS = 50
+
+/** Maximum distance to consider an endpoint touching a line segment */
+const LINE_PROXIMITY_THRESHOLD_METERS = 30
 
 /**
  * Calculate distance between two coordinates in meters (Haversine formula)
@@ -55,6 +58,29 @@ function areConnected(
 }
 
 /**
+ * Check if a point is close to any point along a line (polyline)
+ * Returns the index of the closest point if within threshold, or -1 if not
+ */
+function findClosestPointOnLine(
+  point: [number, number],
+  line: [number, number][],
+  threshold: number = LINE_PROXIMITY_THRESHOLD_METERS
+): number {
+  let minDist = Infinity
+  let closestIdx = -1
+  
+  for (let i = 0; i < line.length; i++) {
+    const dist = distanceMeters(point[0], point[1], line[i]![0], line[i]![1])
+    if (dist < minDist) {
+      minDist = dist
+      closestIdx = i
+    }
+  }
+  
+  return minDist <= threshold ? closestIdx : -1
+}
+
+/**
  * Group key for merging pistes
  * Pistes with the same key can potentially be merged
  */
@@ -77,7 +103,9 @@ function reverseCoordinates(coords: [number, number][]): [number, number][] {
 
 /**
  * Build a connected chain from a group of segments
- * Uses a greedy approach to connect segments
+ * Uses a greedy approach to connect segments by:
+ * 1. Endpoint-to-endpoint connections (primary)
+ * 2. Endpoint touching line (for branch merging)
  */
 function buildConnectedChain(segments: RawPiste[]): {
   mergedCoordinates: [number, number][]
@@ -96,10 +124,20 @@ function buildConnectedChain(segments: RawPiste[]): {
     }
   }
   
-  // Start with the first segment
-  let currentCoords = [...segments[0]!.coordinates]
-  const usedIndices = new Set<number>([0])
-  const mergedWayIds = [segments[0]!.osmWayId]
+  // Start with the longest segment (more likely to be the main path)
+  let longestIdx = 0
+  let longestLen = 0
+  for (let i = 0; i < segments.length; i++) {
+    const len = segments[i]!.coordinates.length
+    if (len > longestLen) {
+      longestLen = len
+      longestIdx = i
+    }
+  }
+  
+  let currentCoords = [...segments[longestIdx]!.coordinates]
+  const usedIndices = new Set<number>([longestIdx])
+  const mergedWayIds = [segments[longestIdx]!.osmWayId]
   
   // Keep trying to extend the chain
   let extended = true
@@ -110,13 +148,13 @@ function buildConnectedChain(segments: RawPiste[]): {
       if (usedIndices.has(i)) continue
       
       const segment = segments[i]!
+      const segEndpoints = getEndpoints(segment)
       
       // Check if this segment connects to the current chain's end
       const chainEnd = currentCoords[currentCoords.length - 1]!
       const chainStart = currentCoords[0]!
-      const segEndpoints = getEndpoints(segment)
       
-      // Try to connect to the end of the chain
+      // Try endpoint-to-endpoint connections first (most reliable)
       if (areConnected(chainEnd, segEndpoints.start)) {
         currentCoords = [...currentCoords, ...segment.coordinates.slice(1)]
         usedIndices.add(i)
@@ -133,7 +171,6 @@ function buildConnectedChain(segments: RawPiste[]): {
         break
       }
       
-      // Try to connect to the start of the chain
       if (areConnected(chainStart, segEndpoints.end)) {
         currentCoords = [...segment.coordinates, ...currentCoords.slice(1)]
         usedIndices.add(i)
@@ -146,6 +183,29 @@ function buildConnectedChain(segments: RawPiste[]): {
         currentCoords = [...reverseCoordinates(segment.coordinates), ...currentCoords.slice(1)]
         usedIndices.add(i)
         mergedWayIds.unshift(segment.osmWayId)
+        extended = true
+        break
+      }
+      
+      // Try line proximity connections (for branches that merge into main path)
+      // Check if segment's start or end touches somewhere along the chain
+      const startOnChain = findClosestPointOnLine(segEndpoints.start, currentCoords)
+      const endOnChain = findClosestPointOnLine(segEndpoints.end, currentCoords)
+      
+      if (startOnChain !== -1 && startOnChain > 0 && startOnChain < currentCoords.length - 1) {
+        // Segment starts on the chain - it's a branch that joins
+        // Just absorb this segment into the merged piste (don't add coordinates
+        // since it would create a branch, but count it as part of this piste)
+        usedIndices.add(i)
+        mergedWayIds.push(segment.osmWayId)
+        extended = true
+        break
+      }
+      
+      if (endOnChain !== -1 && endOnChain > 0 && endOnChain < currentCoords.length - 1) {
+        // Segment ends on the chain - it's a branch that joins
+        usedIndices.add(i)
+        mergedWayIds.push(segment.osmWayId)
         extended = true
         break
       }

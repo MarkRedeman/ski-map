@@ -1,6 +1,7 @@
 /**
  * InfoTooltip component - displays piste/lift info on hover
  * Positioned near the hovered element in 3D space
+ * Styled to match the dark glass theme of MapLegend
  */
 
 import { useMemo } from 'react'
@@ -11,12 +12,8 @@ import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
 import { coordsToLocal } from '@/lib/geo/coordinates'
 import { sampleElevation } from '@/lib/geo/elevationGrid'
-
-const DIFFICULTY_LABELS = {
-  blue: { label: 'Easy', color: 'text-blue-100', bg: 'bg-blue-500' },
-  red: { label: 'Intermediate', color: 'text-red-100', bg: 'bg-red-500' },
-  black: { label: 'Expert', color: 'text-gray-100', bg: 'bg-gray-900' },
-} as const
+import { PISTE_DIFFICULTY_CONFIG } from './Pistes'
+import { LIFT_TYPE_CONFIG } from './Lifts'
 
 /**
  * Calculate approximate length from coordinates in meters
@@ -76,32 +73,33 @@ export function InfoTooltip() {
 
   // Render piste tooltip
   if (hoveredPiste) {
-    const difficulty = DIFFICULTY_LABELS[hoveredPiste.difficulty]
+    const config = PISTE_DIFFICULTY_CONFIG[hoveredPiste.difficulty]
     const length = calculateLength(hoveredPiste.coordinates)
 
     return (
       <Html position={position} center zIndexRange={[100, 0]}>
-        <div className="pointer-events-none flex min-w-[140px] flex-col gap-1 rounded-lg bg-white/95 p-3 shadow-xl backdrop-blur-sm">
-          {/* Header with difficulty badge */}
+        <div className="pointer-events-none flex min-w-[140px] flex-col gap-1.5 rounded-lg bg-black/80 p-3 backdrop-blur-md">
+          {/* Header with color dot and name */}
           <div className="flex items-center gap-2">
-            <span className={`rounded px-2 py-0.5 text-xs font-bold ${difficulty.bg} ${difficulty.color}`}>
-              {hoveredPiste.difficulty.toUpperCase()}
-            </span>
-            {hoveredPiste.ref && (
-              <span className="text-xs font-medium text-gray-500">#{hoveredPiste.ref}</span>
-            )}
+            <div
+              className="h-3 w-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: config.color }}
+            />
+            <h3 className="text-sm font-semibold text-white truncate">{hoveredPiste.name}</h3>
           </div>
           
-          {/* Name */}
-          <h3 className="text-sm font-semibold text-gray-900">{hoveredPiste.name}</h3>
-          
-          {/* Stats */}
-          <div className="flex gap-3 text-xs text-gray-600">
-            <span>📏 {(length / 1000).toFixed(1)} km</span>
+          {/* Info row */}
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-white/70">
+              {config.label}
+              {hoveredPiste.ref && <span className="ml-1 font-mono text-white/50">#{hoveredPiste.ref}</span>}
+            </span>
+            <span className="text-white/50">•</span>
+            <span className="text-white/70">{(length / 1000).toFixed(1)} km</span>
           </div>
           
           {/* Hint */}
-          <div className="mt-1 text-[10px] text-gray-400">Click for details</div>
+          <div className="text-[10px] text-white/40">Click for details</div>
         </div>
       </Html>
     )
@@ -109,29 +107,37 @@ export function InfoTooltip() {
 
   // Render lift tooltip
   if (hoveredLift) {
+    const config = LIFT_TYPE_CONFIG[hoveredLift.type as keyof typeof LIFT_TYPE_CONFIG] ?? LIFT_TYPE_CONFIG['Lift']
     const length = calculateLength(hoveredLift.coordinates)
 
     return (
       <Html position={position} center zIndexRange={[100, 0]}>
-        <div className="pointer-events-none flex min-w-[140px] flex-col gap-1 rounded-lg bg-white/95 p-3 shadow-xl backdrop-blur-sm">
-          {/* Header with type badge */}
+        <div className="pointer-events-none flex min-w-[140px] flex-col gap-1.5 rounded-lg bg-black/80 p-3 backdrop-blur-md">
+          {/* Header with icon and name */}
           <div className="flex items-center gap-2">
-            <span className="rounded bg-amber-500 px-2 py-0.5 text-xs font-bold text-white">
-              {hoveredLift.type.toUpperCase()}
-            </span>
+            <div
+              className="h-3 w-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: config.color }}
+            />
+            <span className="text-base">{config.icon}</span>
+            <h3 className="text-sm font-semibold text-white truncate">{hoveredLift.name}</h3>
           </div>
           
-          {/* Name */}
-          <h3 className="text-sm font-semibold text-gray-900">{hoveredLift.name}</h3>
-          
-          {/* Stats */}
-          <div className="flex gap-3 text-xs text-gray-600">
-            <span>📏 {(length / 1000).toFixed(1)} km</span>
-            {hoveredLift.capacity && <span>👥 {hoveredLift.capacity}/h</span>}
+          {/* Info row */}
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-white/70">{hoveredLift.type}</span>
+            <span className="text-white/50">•</span>
+            <span className="text-white/70">{(length / 1000).toFixed(1)} km</span>
+            {hoveredLift.capacity && (
+              <>
+                <span className="text-white/50">•</span>
+                <span className="text-white/70">{hoveredLift.capacity}/h</span>
+              </>
+            )}
           </div>
           
           {/* Hint */}
-          <div className="mt-1 text-[10px] text-gray-400">Click for details</div>
+          <div className="text-[10px] text-white/40">Click for details</div>
         </div>
       </Html>
     )
