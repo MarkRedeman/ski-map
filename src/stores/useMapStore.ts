@@ -61,25 +61,9 @@ interface MapState {
   setHoveredEntity: (type: EntityType, id: string | null) => void
   setSelectedEntity: (type: EntityType, id: string | null) => void
   
-  // Backward compatibility getters
-  hoveredPisteId: string | null
-  selectedPisteId: string | null
-  hoveredLiftId: string | null
-  selectedLiftId: string | null
-  hoveredPeakId: string | null
-  selectedPeakId: string | null
-  hoveredPlaceId: string | null
-  selectedPlaceId: string | null
-  
-  // Backward compatibility setters
-  setHoveredPiste: (id: string | null) => void
-  setSelectedPiste: (id: string | null) => void
-  setHoveredLift: (id: string | null) => void
-  setSelectedLift: (id: string | null) => void
-  setHoveredPeak: (id: string | null) => void
-  setSelectedPeak: (id: string | null) => void
-  setHoveredPlace: (id: string | null) => void
-  setSelectedPlace: (id: string | null) => void
+  // Helper selectors
+  getHoveredId: (type: EntityType) => string | null
+  getSelectedId: (type: EntityType) => string | null
   
   // Ski Area hover (for polygon visualization)
   hoveredSkiAreaId: string | null
@@ -162,49 +146,15 @@ export const useMapStore = create<MapState>((set, get) => ({
   setHoveredEntity: (type, id) => set({ hoveredEntity: id ? { type, id } : null }),
   setSelectedEntity: (type, id) => set({ selectedEntity: id ? { type, id } : null }),
   
-  // Backward compatibility - getters that derive from consolidated state
-  get hoveredPisteId() {
+  // Helper selectors
+  getHoveredId: (type) => {
     const entity = get().hoveredEntity
-    return entity?.type === 'piste' ? entity.id : null
+    return entity?.type === type ? entity.id : null
   },
-  get selectedPisteId() {
+  getSelectedId: (type) => {
     const entity = get().selectedEntity
-    return entity?.type === 'piste' ? entity.id : null
+    return entity?.type === type ? entity.id : null
   },
-  get hoveredLiftId() {
-    const entity = get().hoveredEntity
-    return entity?.type === 'lift' ? entity.id : null
-  },
-  get selectedLiftId() {
-    const entity = get().selectedEntity
-    return entity?.type === 'lift' ? entity.id : null
-  },
-  get hoveredPeakId() {
-    const entity = get().hoveredEntity
-    return entity?.type === 'peak' ? entity.id : null
-  },
-  get selectedPeakId() {
-    const entity = get().selectedEntity
-    return entity?.type === 'peak' ? entity.id : null
-  },
-  get hoveredPlaceId() {
-    const entity = get().hoveredEntity
-    return entity?.type === 'place' ? entity.id : null
-  },
-  get selectedPlaceId() {
-    const entity = get().selectedEntity
-    return entity?.type === 'place' ? entity.id : null
-  },
-  
-  // Backward compatibility setters that use consolidated state
-  setHoveredPiste: (id) => set({ hoveredEntity: id ? { type: 'piste', id } : null }),
-  setSelectedPiste: (id) => set({ selectedEntity: id ? { type: 'piste', id } : null }),
-  setHoveredLift: (id) => set({ hoveredEntity: id ? { type: 'lift', id } : null }),
-  setSelectedLift: (id) => set({ selectedEntity: id ? { type: 'lift', id } : null }),
-  setHoveredPeak: (id) => set({ hoveredEntity: id ? { type: 'peak', id } : null }),
-  setSelectedPeak: (id) => set({ selectedEntity: id ? { type: 'peak', id } : null }),
-  setHoveredPlace: (id) => set({ hoveredEntity: id ? { type: 'place', id } : null }),
-  setSelectedPlace: (id) => set({ selectedEntity: id ? { type: 'place', id } : null }),
   
   hoveredSkiAreaId: null,
   setHoveredSkiArea: (id) => set({ hoveredSkiAreaId: id }),
