@@ -34,6 +34,8 @@ const BASE_LINE_WIDTH = 7
 const HIGHLIGHT_MULTIPLIER = 2
 /** Default opacity for lines */
 const LINE_OPACITY = 0.9
+/** Dimmed opacity when another entity is active */
+const DIMMED_OPACITY = 0.4
 
 /**
  * Hook to calculate zoom-based line width scaling
@@ -75,8 +77,13 @@ export function Pistes({ enabledDifficulties }: PistesProps) {
   const showPistes = useMapStore((s) => s.showPistes)
   const hoveredPisteId = useMapStore((s) => s.getHoveredId('piste'))
   const selectedPisteId = useMapStore((s) => s.getSelectedId('piste'))
+  const hoveredEntity = useMapStore((s) => s.hoveredEntity)
+  const selectedEntity = useMapStore((s) => s.selectedEntity)
   const elevationGrid = useMapStore((s) => s.elevationGrid)
   const zoomScale = useZoomScale()
+
+  // Any entity (piste, lift, peak, etc.) is actively hovered or selected
+  const hasActiveEntity = hoveredEntity !== null || selectedEntity !== null
 
   const filteredPistes = useMemo(
     () => filterPistesByDifficulty(pistes, enabledDifficulties),
@@ -89,18 +96,23 @@ export function Pistes({ enabledDifficulties }: PistesProps) {
 
   return (
     <group name="pistes">
-      {filteredPistes.map((piste) => (
-        <PisteLines
-          key={piste.id}
-          id={piste.id}
-          segments={piste.coordinates}
-          difficulty={piste.difficulty}
-          isHovered={hoveredPisteId === piste.id}
-          isSelected={selectedPisteId === piste.id}
-          elevationGrid={elevationGrid}
-          zoomScale={zoomScale}
-        />
-      ))}
+      {filteredPistes.map((piste) => {
+        const isHovered = hoveredPisteId === piste.id
+        const isSelected = selectedPisteId === piste.id
+        return (
+          <PisteLines
+            key={piste.id}
+            id={piste.id}
+            segments={piste.coordinates}
+            difficulty={piste.difficulty}
+            isHovered={isHovered}
+            isSelected={isSelected}
+            dimmed={hasActiveEntity && !isHovered && !isSelected}
+            elevationGrid={elevationGrid}
+            zoomScale={zoomScale}
+          />
+        )
+      })}
     </group>
   )
 }
@@ -111,6 +123,7 @@ interface PisteLinesProps {
   difficulty: Difficulty
   isHovered: boolean
   isSelected: boolean
+  dimmed: boolean
   elevationGrid: ElevationGrid | null
   zoomScale: number
 }
@@ -122,11 +135,12 @@ const PISTE_OFFSET = 2
  * Renders all segments of a piste as separate Line components
  * All segments share the same hover/selection state
  */
-const PisteLines = memo(function PisteLines({ segments, difficulty, isHovered, isSelected, elevationGrid, zoomScale }: PisteLinesProps) {
+const PisteLines = memo(function PisteLines({ segments, difficulty, isHovered, isSelected, dimmed, elevationGrid, zoomScale }: PisteLinesProps) {
   const isHighlighted = isHovered || isSelected
   const baseWidth = BASE_LINE_WIDTH * zoomScale
   const lineWidth = isHighlighted ? baseWidth * HIGHLIGHT_MULTIPLIER : baseWidth
   const color = isHighlighted ? DIFFICULTY_COLORS_HIGHLIGHT[difficulty] : DIFFICULTY_COLORS[difficulty]
+  const opacity = isHighlighted ? 1 : dimmed ? DIMMED_OPACITY : LINE_OPACITY
 
   return (
     <>
@@ -136,7 +150,7 @@ const PisteLines = memo(function PisteLines({ segments, difficulty, isHovered, i
           coordinates={segmentCoords}
           color={color}
           lineWidth={lineWidth}
-          opacity={isHighlighted ? 1 : LINE_OPACITY}
+          opacity={opacity}
           elevationGrid={elevationGrid}
         />
       ))}

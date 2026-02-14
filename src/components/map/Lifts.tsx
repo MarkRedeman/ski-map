@@ -65,6 +65,8 @@ const BASE_LINE_WIDTH = 7
 const HIGHLIGHT_MULTIPLIER = 2
 /** Default opacity for lines */
 const LINE_OPACITY = 0.9
+/** Dimmed opacity when another entity is active */
+const DIMMED_OPACITY = 0.4
 
 /**
  * Hook to calculate zoom-based line width scaling
@@ -107,8 +109,13 @@ export function Lifts() {
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes)
   const hoveredLiftId = useMapStore((s) => s.getHoveredId('lift'))
   const selectedLiftId = useMapStore((s) => s.getSelectedId('lift'))
+  const hoveredEntity = useMapStore((s) => s.hoveredEntity)
+  const selectedEntity = useMapStore((s) => s.selectedEntity)
   const elevationGrid = useMapStore((s) => s.elevationGrid)
   const zoomScale = useZoomScale()
+
+  // Any entity (piste, lift, peak, etc.) is actively hovered or selected
+  const hasActiveEntity = hoveredEntity !== null || selectedEntity !== null
 
   // Filter lifts by visible types
   const visibleLifts = useMemo(() => {
@@ -122,18 +129,23 @@ export function Lifts() {
 
   return (
     <group name="lifts">
-      {visibleLifts.map((lift) => (
-        <LiftLine
-          key={lift.id}
-          id={lift.id}
-          type={lift.type}
-          coordinates={lift.coordinates}
-          isHovered={hoveredLiftId === lift.id}
-          isSelected={selectedLiftId === lift.id}
-          elevationGrid={elevationGrid}
-          zoomScale={zoomScale}
-        />
-      ))}
+      {visibleLifts.map((lift) => {
+        const isHovered = hoveredLiftId === lift.id
+        const isSelected = selectedLiftId === lift.id
+        return (
+          <LiftLine
+            key={lift.id}
+            id={lift.id}
+            type={lift.type}
+            coordinates={lift.coordinates}
+            isHovered={isHovered}
+            isSelected={isSelected}
+            dimmed={hasActiveEntity && !isHovered && !isSelected}
+            elevationGrid={elevationGrid}
+            zoomScale={zoomScale}
+          />
+        )
+      })}
     </group>
   )
 }
@@ -144,11 +156,12 @@ interface LiftLineProps {
   coordinates: [number, number][]
   isHovered: boolean
   isSelected: boolean
+  dimmed: boolean
   elevationGrid: ElevationGrid | null
   zoomScale: number
 }
 
-const LiftLine = memo(function LiftLine({ type, coordinates, isHovered, isSelected, elevationGrid, zoomScale }: LiftLineProps) {
+const LiftLine = memo(function LiftLine({ type, coordinates, isHovered, isSelected, dimmed, elevationGrid, zoomScale }: LiftLineProps) {
   const config = getLiftConfig(type)
   
   // Convert geo coordinates to local 3D coordinates with terrain elevation
@@ -185,6 +198,7 @@ const LiftLine = memo(function LiftLine({ type, coordinates, isHovered, isSelect
   const color = isHighlighted ? config.colorHighlight : config.color
   const baseWidth = BASE_LINE_WIDTH * zoomScale
   const lineWidth = isHighlighted ? baseWidth * HIGHLIGHT_MULTIPLIER : baseWidth
+  const opacity = isHighlighted ? 1 : dimmed ? DIMMED_OPACITY : LINE_OPACITY
 
   // Get station geometry based on lift type
   const stationGeometry = getStationGeometry(type)
@@ -196,7 +210,7 @@ const LiftLine = memo(function LiftLine({ type, coordinates, isHovered, isSelect
         points={cablePoints}
         color={color}
         lineWidth={lineWidth}
-        opacity={isHighlighted ? 1 : LINE_OPACITY}
+        opacity={opacity}
         transparent
         dashed
         dashSize={2}
@@ -209,13 +223,13 @@ const LiftLine = memo(function LiftLine({ type, coordinates, isHovered, isSelect
       {stationPoints[0] && (
         <mesh position={stationPoints[0]} raycast={() => null}>
           {stationGeometry}
-          <meshStandardMaterial color={color} />
+          <meshStandardMaterial color={color} transparent opacity={opacity} />
         </mesh>
       )}
       {stationPoints[1] && (
         <mesh position={stationPoints[1]} raycast={() => null}>
           {stationGeometry}
-          <meshStandardMaterial color={color} />
+          <meshStandardMaterial color={color} transparent opacity={opacity} />
         </mesh>
       )}
     </group>
