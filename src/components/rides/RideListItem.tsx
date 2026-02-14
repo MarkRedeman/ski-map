@@ -41,9 +41,15 @@ export function RideListItem({ ride, isSelected }: RideListItemProps) {
 
   const handleClick = useCallback(() => {
     if (!showDeleteConfirm) {
-      navigate({ to: '/rides/$rideId', params: { rideId: ride.id }, search: { t: 0 } })
+      if (isSelected) {
+        // Deselect by navigating back to root
+        navigate({ to: '/' })
+      } else {
+        // Select the ride
+        navigate({ to: '/rides/$rideId', params: { rideId: ride.id }, search: { t: 0 } })
+      }
     }
-  }, [navigate, ride.id, showDeleteConfirm])
+  }, [navigate, ride.id, showDeleteConfirm, isSelected])
 
   const handleDeleteClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
