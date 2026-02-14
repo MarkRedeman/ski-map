@@ -3,7 +3,7 @@
  *
  * Displays over the 3D map when a ride is being played back.
  * Includes play/pause, timeline scrubbing with colored segments,
- * speed control, camera follow toggle, skip idle toggle, and audio control.
+ * speed control, camera follow toggle, and skip idle toggle.
  */
 
 import { Play, Pause, Camera, ChevronDown, FastForward } from 'lucide-react'
@@ -11,8 +11,6 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { usePlaybackStore, PLAYBACK_SPEEDS } from '@/stores/usePlaybackStore'
 import { useRideSegments } from '@/hooks/useRideSegments'
 import { getSegmentColor } from '@/lib/garmin/pisteMatch'
-import { usePlaybackAudio } from '@/audio/usePlaybackAudio'
-import { AudioToggleButton } from './AudioToggleButton'
 import type { SkiRun } from '@/lib/garmin/types'
 import type { RideSegment } from '@/lib/garmin/segments'
 
@@ -47,9 +45,6 @@ export function PlaybackControls({ ride }: PlaybackControlsProps) {
     toggleCameraFollow,
     toggleSkipIdle,
   } = usePlaybackStore()
-
-  // Sync audio with playback segments
-  usePlaybackAudio(ride)
 
   const segments = useRideSegments(ride)
   const [speedDropdownOpen, setSpeedDropdownOpen] = useState(false)
@@ -308,8 +303,6 @@ export function PlaybackControls({ ride }: PlaybackControlsProps) {
               <span className="hidden sm:inline">Skip Idle</span>
             </button>
 
-            {/* Audio Toggle */}
-            <AudioToggleButton />
           </div>
 
           {/* Right side: Camera Follow Toggle */}
