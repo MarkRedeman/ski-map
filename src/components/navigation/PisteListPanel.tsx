@@ -250,9 +250,9 @@ interface PisteListProps {
 
 function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
   const { data: pistes, isLoading } = usePistes()
-  const hoveredPisteId = useMapStore((s) => s.hoveredPisteId)
-  const selectedPisteId = useMapStore((s) => s.selectedPisteId)
-  const setHoveredPiste = useMapStore((s) => s.setHoveredPiste)
+  const hoveredPisteId = useMapStore((s) => s.getHoveredId('piste'))
+  const selectedPisteId = useMapStore((s) => s.getSelectedId('piste'))
+  const setHoveredEntity = useMapStore((s) => s.setHoveredEntity)
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
   const setHoveredSkiArea = useMapStore((s) => s.setHoveredSkiArea)
   
@@ -368,7 +368,7 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
                 piste={piste}
                 isHovered={hoveredPisteId === piste.id}
                 isSelected={selectedPisteId === piste.id}
-                onHover={setHoveredPiste}
+                onHover={(id) => setHoveredEntity('piste', id)}
                 searchParams={getSelectSearch(piste)}
                 onCameraFocus={() => handleCameraFocus(piste)}
               />
@@ -444,9 +444,9 @@ interface LiftListProps {
 
 function LiftList({ searchQuery, visibleLiftTypes }: LiftListProps) {
   const { data: lifts, isLoading } = useLifts()
-  const hoveredLiftId = useMapStore((s) => s.hoveredLiftId)
-  const selectedLiftId = useMapStore((s) => s.selectedLiftId)
-  const setHoveredLift = useMapStore((s) => s.setHoveredLift)
+  const hoveredLiftId = useMapStore((s) => s.getHoveredId('lift'))
+  const selectedLiftId = useMapStore((s) => s.getSelectedId('lift'))
+  const setHoveredEntity = useMapStore((s) => s.setHoveredEntity)
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
   
   // Get current search params to preserve other params when selecting
@@ -505,7 +505,7 @@ function LiftList({ searchQuery, visibleLiftTypes }: LiftListProps) {
           lift={lift}
           isHovered={hoveredLiftId === lift.id}
           isSelected={selectedLiftId === lift.id}
-          onHover={setHoveredLift}
+          onHover={(id) => setHoveredEntity('lift', id)}
           searchParams={getSelectSearch(lift)}
           onCameraFocus={() => handleCameraFocus(lift)}
         />
@@ -582,9 +582,9 @@ interface PeakListProps {
 
 function PeakList({ searchQuery }: PeakListProps) {
   const { data: peaks, isLoading } = usePeaks()
-  const hoveredPeakId = useMapStore((s) => s.hoveredPeakId)
-  const selectedPeakId = useMapStore((s) => s.selectedPeakId)
-  const setHoveredPeak = useMapStore((s) => s.setHoveredPeak)
+  const hoveredPeakId = useMapStore((s) => s.getHoveredId('peak'))
+  const selectedPeakId = useMapStore((s) => s.getSelectedId('peak'))
+  const setHoveredEntity = useMapStore((s) => s.setHoveredEntity)
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
   
   // Get current search params to preserve other params when selecting
@@ -643,7 +643,7 @@ function PeakList({ searchQuery }: PeakListProps) {
           peak={peak}
           isHovered={hoveredPeakId === peak.id}
           isSelected={selectedPeakId === peak.id}
-          onHover={setHoveredPeak}
+          onHover={(id) => setHoveredEntity('peak', id)}
           searchParams={getSelectSearch(peak)}
           onCameraFocus={() => handleCameraFocus(peak)}
         />
@@ -706,9 +706,9 @@ interface PlaceListProps {
 
 function PlaceList({ searchQuery }: PlaceListProps) {
   const { data: places, isLoading } = usePlaces()
-  const hoveredPlaceId = useMapStore((s) => s.hoveredPlaceId)
-  const selectedPlaceId = useMapStore((s) => s.selectedPlaceId)
-  const setHoveredPlace = useMapStore((s) => s.setHoveredPlace)
+  const hoveredPlaceId = useMapStore((s) => s.getHoveredId('place'))
+  const selectedPlaceId = useMapStore((s) => s.getSelectedId('place'))
+  const setHoveredEntity = useMapStore((s) => s.setHoveredEntity)
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
   
   // Get current search params to preserve other params when selecting
@@ -772,7 +772,7 @@ function PlaceList({ searchQuery }: PlaceListProps) {
           place={place}
           isHovered={hoveredPlaceId === place.id}
           isSelected={selectedPlaceId === place.id}
-          onHover={setHoveredPlace}
+          onHover={(id) => setHoveredEntity('place', id)}
           searchParams={getSelectSearch(place)}
           onCameraFocus={() => handleCameraFocus(place)}
         />
