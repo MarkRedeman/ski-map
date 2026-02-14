@@ -13,7 +13,7 @@
 import { Navigation, ChevronUp, ChevronDown, Settings2 } from 'lucide-react'
 import { useSettingsStore, type ResolutionLevel } from '@/stores/useSettingsStore'
 import { useMapStore } from '@/stores/useMapStore'
-import { useRoutePlanningStore } from '@/stores/useNavigationStore'
+import { useRoutePlanningStore } from '@/stores/useRoutePlanningStore'
 import { useUIStore } from '@/stores/useUIStore'
 import { geoToLocal } from '@/lib/geo/coordinates'
 

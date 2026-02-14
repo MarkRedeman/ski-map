@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useRoutePlanningStore } from '@/stores/useNavigationStore'
+import { useRoutePlanningStore } from '@/stores/useRoutePlanningStore'
 
 export interface GeolocationError {
   code: number

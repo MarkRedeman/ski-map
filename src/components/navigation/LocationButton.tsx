@@ -1,6 +1,6 @@
 import { Locate, LocateOff, AlertCircle, Navigation, MapPinOff } from 'lucide-react'
 import { useGeolocation } from '@/hooks/useGeolocation'
-import { useRoutePlanningStore } from '@/stores/useNavigationStore'
+import { useRoutePlanningStore } from '@/stores/useRoutePlanningStore'
 import { useMapStore } from '@/stores/useMapStore'
 import { geoToLocal, isInSoldenBounds } from '@/lib/geo/coordinates'
 import { cn } from '@/lib/utils'

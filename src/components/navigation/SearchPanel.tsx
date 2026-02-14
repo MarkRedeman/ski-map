@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { MapPin, Navigation, ArrowRightLeft, Loader2 } from 'lucide-react'
-import { useRoutePlanningStore, type Location } from '@/stores/useNavigationStore'
+import { useRoutePlanningStore, type Location } from '@/stores/useRoutePlanningStore'
 import { useDifficultyFilter } from '@/hooks/useDifficultyFilter'
 import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'

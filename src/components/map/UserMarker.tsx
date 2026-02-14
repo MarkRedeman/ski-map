@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Sphere, Html, Ring } from '@react-three/drei'
 import * as THREE from 'three'
-import { useRoutePlanningStore } from '@/stores/useNavigationStore'
+import { useRoutePlanningStore } from '@/stores/useRoutePlanningStore'
 import { geoToLocal } from '@/lib/geo/coordinates'
 
 // Scale factor from coordinates.ts (meters to scene units)

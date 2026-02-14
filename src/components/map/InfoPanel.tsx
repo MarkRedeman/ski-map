@@ -9,7 +9,7 @@ import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
 import { usePeaks } from '@/hooks/usePeaks'
 import { usePlaces } from '@/hooks/usePlaces'
-import { useRoutePlanningStore } from '@/stores/useNavigationStore'
+import { useRoutePlanningStore } from '@/stores/useRoutePlanningStore'
 import { LIFT_TYPE_CONFIG } from './Lifts'
 import { PISTE_DIFFICULTY_CONFIG } from './Pistes'
 

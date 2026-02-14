@@ -3,7 +3,7 @@
  */
 
 import type { Difficulty } from '@/lib/api/overpass'
-import type { Route, RouteStep, Location } from '@/stores/useNavigationStore'
+import type { Route, RouteStep, Location } from '@/stores/useRoutePlanningStore'
 import type { SkiGraph, SkiEdge, PathResult } from './types'
 import { getOutgoingEdges, findNode } from './graph'
 

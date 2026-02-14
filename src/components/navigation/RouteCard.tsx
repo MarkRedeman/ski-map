@@ -1,6 +1,6 @@
 import { Clock, TrendingDown, TrendingUp, Route as RouteIcon } from 'lucide-react'
 import type { Difficulty } from '@/lib/api/overpass'
-import type { Route } from '@/stores/useNavigationStore'
+import type { Route } from '@/stores/useRoutePlanningStore'
 
 interface RouteCardProps {
   route: Route
