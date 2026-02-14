@@ -4,13 +4,7 @@
  * Fetches pistes, lifts, and POIs for the Sölden ski area
  */
 
-// Sölden ski area bounding box (includes Rettenbach & Tiefenbach glaciers)
-const SOLDEN_BBOX = {
-  south: 46.84,
-  west: 10.86,
-  north: 46.98,
-  east: 11.15,
-}
+import { SOLDEN_BBOX } from '@/config/region'
 
 const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter'
 
@@ -48,39 +42,6 @@ export interface OverpassResponse {
 }
 
 /**
- * Build Overpass QL query for ski pistes in Sölden
- */
-function buildPistesQuery(): string {
-  const { south, west, north, east } = SOLDEN_BBOX
-  return `
-[out:json][timeout:60];
-(
-  way["piste:type"="downhill"](${south},${west},${north},${east});
-  relation["piste:type"="downhill"](${south},${west},${north},${east});
-);
-out body;
->;
-out skel qt;
-`.trim()
-}
-
-/**
- * Build Overpass QL query for ski lifts in Sölden
- */
-function buildLiftsQuery(): string {
-  const { south, west, north, east } = SOLDEN_BBOX
-  return `
-[out:json][timeout:60];
-(
-  way["aerialway"](${south},${west},${north},${east});
-);
-out body;
->;
-out skel qt;
-`.trim()
-}
-
-/**
  * Execute an Overpass API query
  */
 async function executeQuery(query: string): Promise<OverpassResponse> {
@@ -100,441 +61,364 @@ async function executeQuery(query: string): Promise<OverpassResponse> {
 }
 
 /**
- * Parse OSM difficulty to our difficulty type
- * European ski slope colors:
- * - Blue = Easy/Beginner (novice, easy)
- * - Red = Intermediate (intermediate)
- * - Black = Expert/Advanced (advanced, expert, freeride)
+ * Parse pistes from Overpass response
  */
-export function parseDifficulty(osmDifficulty?: string): 'blue' | 'red' | 'black' {
-  switch (osmDifficulty) {
-    case 'novice':
+function parsePistes(elements: OSMElement[]): Piste[] {
+  const nodes = new Map<number, OSMNode>()
+  const ways: OSMWay[] = []
+  const relations: OSMRelation[] = []
+
+  for (const element of elements) {
+    if (element.type === 'node') {
+      nodes.set(element.id, element)
+    } else if (element.type === 'way') {
+      ways.push(element)
+    } else if (element.type === 'relation') {
+      relations.push(element)
+    }
+  }
+
+  const pistes: Piste[] = []
+
+  // Parse ways (individual piste segments)
+  for (const way of ways) {
+    if (!way.tags) continue
+
+    const coordinates: [number, number, number][] = []
+    for (const nodeId of way.nodes) {
+      const node = nodes.get(nodeId)
+      if (node) {
+        coordinates.push([node.lat, node.lon, 0])
+      }
+    }
+
+    if (coordinates.length < 2) continue
+
+    const difficulty = way.tags['piste:difficulty'] || 'unknown'
+    const name = way.tags.name || `Piste ${way.id}`
+
+    pistes.push({
+      id: `piste-${way.id}`,
+      name,
+      difficulty: normalizeDifficulty(difficulty),
+      coordinates,
+      length: calculateLength(coordinates),
+      oneway: way.tags['piste:oneway'] === 'yes',
+      ref: way.tags.ref,
+      skiArea: undefined, // Will be assigned later
+    })
+  }
+
+  // Parse relations (piste routes - collections of ways)
+  for (const relation of relations) {
+    if (!relation.tags) continue
+
+    const difficulty = relation.tags['piste:difficulty'] || 'unknown'
+    const name = relation.tags.name || `Route ${relation.id}`
+
+    // Collect all coordinates from member ways
+    const coordinates: [number, number, number][] = []
+    for (const member of relation.members) {
+      if (member.type === 'way') {
+        const way = ways.find((w) => w.id === member.ref)
+        if (way) {
+          for (const nodeId of way.nodes) {
+            const node = nodes.get(nodeId)
+            if (node) {
+              coordinates.push([node.lat, node.lon, 0])
+            }
+          }
+        }
+      }
+    }
+
+    if (coordinates.length < 2) continue
+
+    pistes.push({
+      id: `piste-relation-${relation.id}`,
+      name,
+      difficulty: normalizeDifficulty(difficulty),
+      coordinates,
+      length: calculateLength(coordinates),
+      oneway: relation.tags['piste:oneway'] === 'yes',
+      ref: relation.tags.ref,
+      skiArea: undefined,
+    })
+  }
+
+  return pistes
+}
+
+/**
+ * Normalize difficulty string to our enum
+ */
+function normalizeDifficulty(difficulty: string): Difficulty {
+  switch (difficulty) {
     case 'easy':
+    case 'novice':
       return 'blue'
     case 'intermediate':
       return 'red'
     case 'advanced':
     case 'expert':
-    case 'freeride':
       return 'black'
     default:
-      return 'blue' // Default to easy if unknown
+      return 'blue' // Default to easiest
   }
 }
 
 /**
- * Parse OSM lift type
+ * Calculate approximate length of a coordinate path in meters
  */
-export function parseLiftType(aerialway?: string): string {
-  switch (aerialway) {
-    case 'gondola':
-      return 'Gondola'
-    case 'chair_lift':
-      return 'Chair Lift'
-    case 'cable_car':
-      return 'Cable Car'
-    case 't-bar':
-      return 'T-Bar'
-    case 'drag_lift':
-      return 'Drag Lift'
-    case 'platter':
-      return 'Button Lift'
-    case 'magic_carpet':
-      return 'Magic Carpet'
-    default:
-      return 'Lift'
+function calculateLength(coordinates: [number, number, number][]): number {
+  let length = 0
+  for (let i = 1; i < coordinates.length; i++) {
+    const [lat1, lon1] = coordinates[i - 1]!
+    const [lat2, lon2] = coordinates[i]!
+    length += distanceMeters(lat1, lon1, lat2, lon2)
   }
-}
-
-import type { Difficulty } from '@/stores/useNavigationStore'
-
-export interface SkiArea {
-  id: string
-  name: string
-  url?: string
+  return length
 }
 
 /**
- * Ski area with polygon boundary for spatial containment tests
+ * Calculate distance between two lat/lon points (Haversine formula)
  */
-export interface SkiAreaPolygon extends SkiArea {
-  polygon: [number, number][] // Boundary coordinates [lon, lat][]
-  centroid: [number, number]  // Center point [lon, lat]
-}
-
-export interface Piste {
-  id: string
-  name: string
-  difficulty: Difficulty
-  ref?: string // Piste number/reference
-  coordinates: [number, number][][] // Array of line segments, each segment is [lon, lat][] pairs
-  startPoint?: [number, number, number] // [lat, lon, elevation]
-  endPoint?: [number, number, number]
-  length?: number // meters (total of all segments)
-  skiArea?: SkiArea // Which ski resort this piste belongs to
-  osmWayIds?: number[] // Original OSM way IDs (for merged pistes)
+function distanceMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371000 // Earth's radius in meters
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
 }
 
 /**
- * Raw piste data before merging (single segment with OSM way ID)
- * This is different from Piste which has multi-segment coordinates
+ * Parse lifts from Overpass response
  */
-export interface RawPiste {
-  id: string
-  osmWayId: number
-  name: string
-  difficulty: Difficulty
-  ref?: string
-  coordinates: [number, number][] // Single segment: [lon, lat][] pairs
-  startPoint?: [number, number, number]
-  endPoint?: [number, number, number]
-  skiArea?: SkiArea
-}
-
-export interface Lift {
-  id: string
-  name: string
-  type: string
-  coordinates: [number, number][] // [lon, lat] pairs
-  stations?: {
-    name?: string
-    coordinates: [number, number, number] // [lat, lon, elevation]
-  }[]
-  capacity?: number
-  skiArea?: SkiArea // Which ski resort this lift belongs to
-}
-
-export interface Peak {
-  id: string
-  name: string
-  lat: number
-  lon: number
-  elevation: number
-}
-
-export interface Place {
-  id: string
-  name: string
-  type: 'town' | 'village' | 'hamlet'
-  lat: number
-  lon: number
-}
-
-/**
- * Fetch and parse ski pistes from OSM
- * @deprecated Use fetchAllSkiData() + mergePisteSegments() instead
- */
-export async function fetchPistes(): Promise<RawPiste[]> {
-  const query = buildPistesQuery()
-  const response = await executeQuery(query)
-  
-  // Build node lookup for coordinates
+function parseLifts(elements: OSMElement[]): Lift[] {
   const nodes = new Map<number, OSMNode>()
-  response.elements.forEach((el) => {
-    if (el.type === 'node') {
-      nodes.set(el.id, el)
+  const ways: OSMWay[] = []
+
+  for (const element of elements) {
+    if (element.type === 'node') {
+      nodes.set(element.id, element)
+    } else if (element.type === 'way') {
+      ways.push(element)
     }
-  })
+  }
 
-  // Parse ways into pistes
-  const pistes: RawPiste[] = []
-  
-  response.elements.forEach((el) => {
-    if (el.type === 'way' && el.tags) {
-      const coordinates: [number, number][] = []
-      
-      el.nodes.forEach((nodeId) => {
-        const node = nodes.get(nodeId)
-        if (node) {
-          coordinates.push([node.lon, node.lat])
-        }
-      })
-
-      if (coordinates.length > 0) {
-        const firstCoord = coordinates[0]
-        const lastCoord = coordinates[coordinates.length - 1]
-        
-        pistes.push({
-          id: `piste-${el.id}`,
-          osmWayId: el.id,
-          name: el.tags.name || el.tags.ref || `Piste ${el.tags['piste:ref'] || el.id}`,
-          difficulty: parseDifficulty(el.tags['piste:difficulty']),
-          ref: el.tags.ref || el.tags['piste:ref'],
-          coordinates,
-          startPoint: firstCoord ? [firstCoord[1], firstCoord[0], 0] : undefined,
-          endPoint: lastCoord ? [lastCoord[1], lastCoord[0], 0] : undefined,
-        })
-      }
-    }
-  })
-
-  return pistes
-}
-
-/**
- * Fetch and parse ski lifts from OSM
- */
-export async function fetchLifts(): Promise<Lift[]> {
-  const query = buildLiftsQuery()
-  const response = await executeQuery(query)
-  
-  // Build node lookup for coordinates
-  const nodes = new Map<number, OSMNode>()
-  response.elements.forEach((el) => {
-    if (el.type === 'node') {
-      nodes.set(el.id, el)
-    }
-  })
-
-  // Parse ways into lifts
   const lifts: Lift[] = []
-  
-  response.elements.forEach((el) => {
-    if (el.type === 'way' && el.tags?.aerialway) {
-      const coordinates: [number, number][] = []
-      
-      el.nodes.forEach((nodeId) => {
-        const node = nodes.get(nodeId)
-        if (node) {
-          coordinates.push([node.lon, node.lat])
-        }
-      })
 
-      if (coordinates.length >= 2) {
-        const firstCoord = coordinates[0]
-        const lastCoord = coordinates[coordinates.length - 1]
-        
-        lifts.push({
-          id: `lift-${el.id}`,
-          name: el.tags.name || `${parseLiftType(el.tags.aerialway)} ${el.id}`,
-          type: parseLiftType(el.tags.aerialway),
-          coordinates,
-          stations: [
-            {
-              name: el.tags['aerialway:station:bottom'],
-              coordinates: firstCoord ? [firstCoord[1], firstCoord[0], 0] : [0, 0, 0],
-            },
-            {
-              name: el.tags['aerialway:station:top'],
-              coordinates: lastCoord ? [lastCoord[1], lastCoord[0], 0] : [0, 0, 0],
-            },
-          ],
-          capacity: el.tags['aerialway:capacity'] 
-            ? parseInt(el.tags['aerialway:capacity'], 10) 
-            : undefined,
-        })
+  for (const way of ways) {
+    if (!way.tags) continue
+
+    const coordinates: [number, number, number][] = []
+    for (const nodeId of way.nodes) {
+      const node = nodes.get(nodeId)
+      if (node) {
+        coordinates.push([node.lat, node.lon, 0])
       }
     }
-  })
+
+    if (coordinates.length < 2) continue
+
+    const liftType = way.tags.aerialway || 'lift'
+    const name = way.tags.name || `Lift ${way.id}`
+
+    lifts.push({
+      id: `lift-${way.id}`,
+      name,
+      type: normalizeLiftType(liftType),
+      coordinates,
+      length: calculateLength(coordinates),
+      skiArea: undefined, // Will be assigned later
+    })
+  }
 
   return lifts
 }
 
 /**
- * Build Overpass QL query for mountain peaks
+ * Normalize lift type string
  */
-function buildPeaksQuery(): string {
-  const { south, west, north, east } = SOLDEN_BBOX
-  return `
-[out:json][timeout:30];
-node["natural"="peak"](${south},${west},${north},${east});
-out body;
-`.trim()
+function normalizeLiftType(type: string): LiftType {
+  const normalized = type.toLowerCase().replace(/_/g, ' ')
+
+  if (normalized.includes('gondola')) return 'Gondola'
+  if (normalized.includes('cable car')) return 'Cable Car'
+  if (normalized.includes('chair')) return 'Chair Lift'
+  if (normalized.includes('t-bar') || normalized.includes('tbar')) return 'T-Bar'
+  if (normalized.includes('button') || normalized.includes('platter'))
+    return 'Button Lift'
+  if (normalized.includes('drag') || normalized.includes('rope')) return 'Drag Lift'
+  if (normalized.includes('magic carpet')) return 'Magic Carpet'
+
+  return 'Lift'
 }
 
 /**
- * Build Overpass QL query for villages, towns, and hamlets
+ * Parse peaks from Overpass response
  */
-function buildPlacesQuery(): string {
-  const { south, west, north, east } = SOLDEN_BBOX
-  return `
-[out:json][timeout:30];
-node["place"~"village|town|hamlet"](${south},${west},${north},${east});
-out body;
-`.trim()
-}
+function parsePeaks(elements: OSMElement[]): Peak[] {
+  const peaks: Peak[] = []
 
-/**
- * Fetch and parse mountain peaks from OSM
- */
-export async function fetchPeaks(): Promise<Peak[]> {
-  const query = buildPeaksQuery()
-  const response = await executeQuery(query)
-  
-  return response.elements
-    .filter((el): el is OSMNode => el.type === 'node' && !!el.tags?.name)
-    .map((node) => ({
-      id: `peak-${node.id}`,
-      name: node.tags!.name!,
-      lat: node.lat,
-      lon: node.lon,
-      elevation: parseFloat(node.tags?.ele ?? '0'),
-    }))
-}
+  for (const element of elements) {
+    if (element.type !== 'node') continue
+    if (!element.tags) continue
 
-/**
- * Fetch and parse villages, towns, and hamlets from OSM
- */
-export async function fetchPlaces(): Promise<Place[]> {
-  const query = buildPlacesQuery()
-  const response = await executeQuery(query)
-  
-  return response.elements
-    .filter((el): el is OSMNode => el.type === 'node' && !!el.tags?.name && !!el.tags?.place)
-    .map((node) => ({
-      id: `place-${node.id}`,
-      name: node.tags!.name!,
-      type: node.tags!.place as 'town' | 'village' | 'hamlet',
-      lat: node.lat,
-      lon: node.lon,
-    }))
-}
+    const name = element.tags.name
+    if (!name) continue
 
-/**
- * Build Overpass QL query for ski area site relations
- * These relations group pistes by ski resort
- */
-function buildSkiAreasQuery(): string {
-  const { south, west, north, east } = SOLDEN_BBOX
-  return `
-[out:json][timeout:60];
-relation["site"="piste"](${south},${west},${north},${east});
-out body;
-`.trim()
-}
+    const elevation = element.tags.ele
+      ? parseFloat(element.tags.ele)
+      : undefined
 
-/**
- * Ski area data with member way IDs
- */
-export interface SkiAreaWithMembers extends SkiArea {
-  wayIds: Set<number>
-}
-
-/**
- * Fetch ski area relations and their member way IDs
- * Returns a map of wayId -> SkiArea for quick lookup
- */
-export async function fetchSkiAreaMemberships(): Promise<{
-  skiAreas: SkiArea[]
-  wayToSkiArea: Map<number, SkiArea>
-}> {
-  const query = buildSkiAreasQuery()
-  const response = await executeQuery(query)
-  
-  const skiAreas: SkiArea[] = []
-  const wayToSkiArea = new Map<number, SkiArea>()
-  
-  for (const el of response.elements) {
-    if (el.type === 'relation' && el.tags?.name) {
-      const skiArea: SkiArea = {
-        id: `skiarea-${el.id}`,
-        name: el.tags.name,
-        url: el.tags.url,
-      }
-      skiAreas.push(skiArea)
-      
-      // Map each way member to this ski area
-      for (const member of el.members) {
-        if (member.type === 'way') {
-          wayToSkiArea.set(member.ref, skiArea)
-        }
-      }
-    }
+    peaks.push({
+      id: `peak-${element.id}`,
+      name,
+      lat: element.lat,
+      lon: element.lon,
+      elevation,
+    })
   }
-  
-  return { skiAreas, wayToSkiArea }
+
+  return peaks
 }
 
 /**
- * Fetch and parse ski pistes from OSM with ski area assignment
- * Returns raw pistes (before segment merging)
+ * Parse places (villages, restaurants, etc) from Overpass response
  */
-export async function fetchPistesWithSkiAreas(): Promise<RawPiste[]> {
-  // Fetch ski area memberships and pistes in parallel
-  const [{ wayToSkiArea }, pistesResponse] = await Promise.all([
-    fetchSkiAreaMemberships(),
-    executeQuery(buildPistesQuery()),
-  ])
-  
-  // Build node lookup for coordinates
-  const nodes = new Map<number, OSMNode>()
-  pistesResponse.elements.forEach((el) => {
-    if (el.type === 'node') {
-      nodes.set(el.id, el)
-    }
-  })
+function parsePlaces(elements: OSMElement[]): Place[] {
+  const places: Place[] = []
 
-  // Parse ways into pistes with ski area assignment
-  const pistes: RawPiste[] = []
-  
-  pistesResponse.elements.forEach((el) => {
-    if (el.type === 'way' && el.tags) {
-      const coordinates: [number, number][] = []
-      
-      el.nodes.forEach((nodeId) => {
-        const node = nodes.get(nodeId)
-        if (node) {
-          coordinates.push([node.lon, node.lat])
-        }
-      })
+  for (const element of elements) {
+    if (element.type !== 'node') continue
+    if (!element.tags) continue
 
-      if (coordinates.length > 0) {
-        const firstCoord = coordinates[0]
-        const lastCoord = coordinates[coordinates.length - 1]
-        
-        // Look up ski area for this way
-        const skiArea = wayToSkiArea.get(el.id)
-        
-        pistes.push({
-          id: `piste-${el.id}`,
-          osmWayId: el.id,
-          name: el.tags.name || el.tags.ref || `Piste ${el.tags['piste:ref'] || el.id}`,
-          difficulty: parseDifficulty(el.tags['piste:difficulty']),
-          ref: el.tags.ref || el.tags['piste:ref'],
-          coordinates,
-          startPoint: firstCoord ? [firstCoord[1], firstCoord[0], 0] : undefined,
-          endPoint: lastCoord ? [lastCoord[1], lastCoord[0], 0] : undefined,
-          skiArea,
-        })
-      }
-    }
-  })
+    const name = element.tags.name
+    if (!name) continue
 
-  return pistes
+    places.push({
+      id: `place-${element.id}`,
+      name,
+      lat: element.lat,
+      lon: element.lon,
+      type: element.tags.place || 'locality',
+    })
+  }
+
+  return places
 }
 
-// =============================================================================
-// Combined Query - Fetches all ski data in a single Overpass request
-// =============================================================================
+/** Piste difficulty levels */
+export type Difficulty = 'blue' | 'red' | 'black'
+
+/** Piste (ski run) data */
+export interface Piste {
+  id: string
+  name: string
+  difficulty: Difficulty
+  coordinates: [number, number, number][]
+  length: number
+  oneway: boolean
+  ref?: string
+  skiArea?: string
+}
+
+/** Lift types */
+export type LiftType =
+  | 'Gondola'
+  | 'Chair Lift'
+  | 'Cable Car'
+  | 'T-Bar'
+  | 'Button Lift'
+  | 'Drag Lift'
+  | 'Magic Carpet'
+  | 'Lift'
+
+/** Ski lift data */
+export interface Lift {
+  id: string
+  name: string
+  type: LiftType
+  coordinates: [number, number, number][]
+  length: number
+  skiArea?: string
+}
+
+/** Peak/mountain data */
+export interface Peak {
+  id: string
+  name: string
+  lat: number
+  lon: number
+  elevation?: number
+}
+
+/** Place/POI data */
+export interface Place {
+  id: string
+  name: string
+  lat: number
+  lon: number
+  type: string
+}
+
+/** Ski area relation */
+export interface SkiArea {
+  id: string
+  name: string
+  members: { type: string; ref: number; role: string }[]
+}
+
+/** Polygon data for ski areas */
+export interface SkiAreaPolygon {
+  id: string
+  name: string
+  polygon: [number, number][][] // GeoJSON-style polygon
+}
+
+/** Complete ski data response */
+export interface SkiData {
+  pistes: Piste[]
+  lifts: Lift[]
+  peaks: Peak[]
+  places: Place[]
+  skiAreaPolygons: SkiAreaPolygon[]
+}
 
 /**
- * Build a combined Overpass QL query for ALL ski data:
- * - Pistes (downhill ways and relations)
- * - Lifts (aerialway ways)
- * - Ski area polygons (landuse=winter_sports)
- * - Ski area relations (site=piste) - for backwards compatibility
- * - Mountain peaks
- * - Villages/towns/hamlets
+ * Build a single combined Overpass query for all ski data
+ * More efficient than making separate requests
  */
 function buildCombinedQuery(): string {
   const { south, west, north, east } = SOLDEN_BBOX
   return `
-[out:json][timeout:90];
+[out:json][timeout:120];
 (
-  // Pistes
+  // Ski pistes (downhill only)
   way["piste:type"="downhill"](${south},${west},${north},${east});
   relation["piste:type"="downhill"](${south},${west},${north},${east});
-  // Lifts
+  
+  // Ski lifts
   way["aerialway"](${south},${west},${north},${east});
-  // Ski area polygons (landuse=winter_sports)
-  way["landuse"="winter_sports"](${south},${west},${north},${east});
-  relation["landuse"="winter_sports"](${south},${west},${north},${east});
-  // Ski area relations (for backwards compatibility with site=piste)
+  
+  // Ski areas (for boundaries)
   relation["site"="piste"](${south},${west},${north},${east});
-  // Peaks
+  
+  // Peaks and places
   node["natural"="peak"](${south},${west},${north},${east});
-  // Villages/towns/hamlets
-  node["place"~"village|town|hamlet"](${south},${west},${north},${east});
+  node["place"~"^(village|hamlet|locality|isolated_dwelling)$"](${south},${west},${north},${east});
 );
 out body;
 >;
@@ -543,247 +427,90 @@ out skel qt;
 }
 
 /**
- * Combined ski data response
+ * Parse ski area polygons from Overpass response
+ * Returns simplified polygons for each ski area
  */
-export interface SkiData {
-  pistes: RawPiste[]
-  lifts: Lift[]
-  skiAreas: SkiArea[]
-  skiAreaPolygons: SkiAreaPolygon[] // Ski areas with polygon boundaries
-  peaks: Peak[]
-  places: Place[]
-}
+function parseSkiAreaPolygons(
+  elements: OSMElement[],
+  nodes: Map<number, OSMNode>
+): SkiAreaPolygon[] {
+  const polygons: SkiAreaPolygon[] = []
 
-/**
- * Fetch ALL ski-related data in a single Overpass API request
- * 
- * This reduces API calls from 5 to 1, avoiding rate limiting issues.
- * Returns raw pistes (before segment merging) - use mergePisteSegments() afterward.
- */
-export async function fetchAllSkiData(): Promise<SkiData> {
-  const query = buildCombinedQuery()
-  const response = await executeQuery(query)
-  
-  // Build node lookup for coordinates
-  const nodes = new Map<number, OSMNode>()
-  response.elements.forEach((el) => {
-    if (el.type === 'node') {
-      nodes.set(el.id, el)
-    }
-  })
-  
-  // First pass: extract ski area relations (site=piste) and build wayId -> SkiArea mapping
-  // This is for backwards compatibility - spatial containment will override this
-  const skiAreas: SkiArea[] = []
-  const wayToSkiArea = new Map<number, SkiArea>()
-  
-  response.elements.forEach((el) => {
-    if (el.type === 'relation' && el.tags?.site === 'piste' && el.tags?.name) {
-      const skiArea: SkiArea = {
-        id: `skiarea-${el.id}`,
-        name: el.tags.name,
-        url: el.tags.url,
-      }
-      skiAreas.push(skiArea)
-      
-      // Map each way member to this ski area
-      for (const member of el.members) {
-        if (member.type === 'way') {
-          wayToSkiArea.set(member.ref, skiArea)
-        }
-      }
-    }
-  })
-  
-  // Parse ski area polygons (landuse=winter_sports ways and relations)
-  const skiAreaPolygons: SkiAreaPolygon[] = []
-  
-  response.elements.forEach((el) => {
-    if (el.tags?.landuse === 'winter_sports' && el.tags?.name) {
-      if (el.type === 'way') {
-        // Parse way as polygon
-        const polygon: [number, number][] = []
-        
-        el.nodes.forEach((nodeId) => {
-          const node = nodes.get(nodeId)
-          if (node) {
-            polygon.push([node.lon, node.lat])
-          }
-        })
-        
-        if (polygon.length >= 3) {
-          // Calculate centroid
-          let cx = 0, cy = 0
-          for (const [lon, lat] of polygon) {
-            cx += lon
-            cy += lat
-          }
-          cx /= polygon.length
-          cy /= polygon.length
-          
-          skiAreaPolygons.push({
-            id: `skiarea-poly-${el.id}`,
-            name: el.tags.name,
-            url: el.tags.url,
-            polygon,
-            centroid: [cx, cy],
-          })
-        }
-      } else if (el.type === 'relation') {
-        // Parse relation - combine outer ways into a single polygon
-        // For simplicity, we'll use the first outer way or combine them
-        const outerWayIds: number[] = []
-        
-        for (const member of el.members) {
-          if (member.type === 'way' && (member.role === 'outer' || member.role === '')) {
-            outerWayIds.push(member.ref)
-          }
-        }
-        
-        // Find the way elements and build polygon
-        // Note: Ways in relations need to be resolved from the response
-        const polygon: [number, number][] = []
-        
-        // For relations, we need to find the way elements first
-        // They should be in the response due to our > recursion
-        const wayElements = response.elements.filter(
-          (way): way is OSMWay => 
-            way.type === 'way' && outerWayIds.includes(way.id)
+  for (const element of elements) {
+    if (element.type !== 'relation') continue
+    if (!element.tags) continue
+
+    const name = element.tags.name
+    if (!name) continue
+
+    // Collect all outer ways to form polygon
+    const outerRings: [number, number][][] = []
+
+    for (const member of element.members) {
+      if (member.type === 'way' && member.role === 'outer') {
+        const way = elements.find(
+          (e): e is OSMWay => e.type === 'way' && e.id === member.ref
         )
-        
-        // Combine all outer ways into a single polygon
-        for (const way of wayElements) {
+        if (way) {
+          const ring: [number, number][] = []
           for (const nodeId of way.nodes) {
             const node = nodes.get(nodeId)
             if (node) {
-              polygon.push([node.lon, node.lat])
+              ring.push([node.lon, node.lat])
             }
           }
-        }
-        
-        if (polygon.length >= 3) {
-          // Calculate centroid
-          let cx = 0, cy = 0
-          for (const [lon, lat] of polygon) {
-            cx += lon
-            cy += lat
+          if (ring.length > 2) {
+            outerRings.push(ring)
           }
-          cx /= polygon.length
-          cy /= polygon.length
-          
-          skiAreaPolygons.push({
-            id: `skiarea-poly-${el.id}`,
-            name: el.tags.name,
-            url: el.tags.url,
-            polygon,
-            centroid: [cx, cy],
-          })
         }
       }
     }
-  })
-  
-  // Second pass: parse pistes, lifts, peaks, and places
-  const pistes: RawPiste[] = []
-  const lifts: Lift[] = []
-  const peaks: Peak[] = []
-  const places: Place[] = []
-  
-  response.elements.forEach((el) => {
-    if (el.type === 'way' && el.tags) {
-      // Check if it's a piste
-      if (el.tags['piste:type'] === 'downhill') {
-        const coordinates: [number, number][] = []
-        
-        el.nodes.forEach((nodeId) => {
-          const node = nodes.get(nodeId)
-          if (node) {
-            coordinates.push([node.lon, node.lat])
-          }
-        })
 
-        if (coordinates.length > 0) {
-          const firstCoord = coordinates[0]
-          const lastCoord = coordinates[coordinates.length - 1]
-          // Keep site=piste assignment for now, spatial containment will override later
-          const skiArea = wayToSkiArea.get(el.id)
-          
-          pistes.push({
-            id: `piste-${el.id}`,
-            osmWayId: el.id,
-            name: el.tags.name || el.tags.ref || `Piste ${el.tags['piste:ref'] || el.id}`,
-            difficulty: parseDifficulty(el.tags['piste:difficulty']),
-            ref: el.tags.ref || el.tags['piste:ref'],
-            coordinates,
-            startPoint: firstCoord ? [firstCoord[1], firstCoord[0], 0] : undefined,
-            endPoint: lastCoord ? [lastCoord[1], lastCoord[0], 0] : undefined,
-            skiArea,
-          })
-        }
-      }
-      // Check if it's a lift
-      else if (el.tags.aerialway) {
-        const coordinates: [number, number][] = []
-        
-        el.nodes.forEach((nodeId) => {
-          const node = nodes.get(nodeId)
-          if (node) {
-            coordinates.push([node.lon, node.lat])
-          }
-        })
-
-        if (coordinates.length >= 2) {
-          const firstCoord = coordinates[0]
-          const lastCoord = coordinates[coordinates.length - 1]
-          
-          lifts.push({
-            id: `lift-${el.id}`,
-            name: el.tags.name || `${parseLiftType(el.tags.aerialway)} ${el.id}`,
-            type: parseLiftType(el.tags.aerialway),
-            coordinates,
-            stations: [
-              {
-                name: el.tags['aerialway:station:bottom'],
-                coordinates: firstCoord ? [firstCoord[1], firstCoord[0], 0] : [0, 0, 0],
-              },
-              {
-                name: el.tags['aerialway:station:top'],
-                coordinates: lastCoord ? [lastCoord[1], lastCoord[0], 0] : [0, 0, 0],
-              },
-            ],
-            capacity: el.tags['aerialway:capacity'] 
-              ? parseInt(el.tags['aerialway:capacity'], 10) 
-              : undefined,
-          })
-        }
-      }
-    }
-    // Parse peaks
-    else if (el.type === 'node' && el.tags?.natural === 'peak' && el.tags.name) {
-      peaks.push({
-        id: `peak-${el.id}`,
-        name: el.tags.name,
-        lat: el.lat,
-        lon: el.lon,
-        elevation: parseFloat(el.tags.ele ?? '0'),
+    if (outerRings.length > 0) {
+      polygons.push({
+        id: `skiarea-${element.id}`,
+        name,
+        polygon: outerRings,
       })
     }
-    // Parse places (villages, towns, hamlets)
-    else if (el.type === 'node' && el.tags?.place && el.tags.name) {
-      const placeType = el.tags.place
-      if (placeType === 'town' || placeType === 'village' || placeType === 'hamlet') {
-        places.push({
-          id: `place-${el.id}`,
-          name: el.tags.name,
-          type: placeType,
-          lat: el.lat,
-          lon: el.lon,
-        })
-      }
+  }
+
+  return polygons
+}
+
+/**
+ * Fetch all ski data in a single request
+ */
+export async function fetchAllSkiData(): Promise<SkiData> {
+  console.log('[Overpass] Fetching all ski data...')
+
+  const query = buildCombinedQuery()
+  const response = await executeQuery(query)
+
+  // Build node lookup
+  const nodes = new Map<number, OSMNode>()
+  for (const element of response.elements) {
+    if (element.type === 'node') {
+      nodes.set(element.id, element)
     }
-  })
-  
-  console.log(`[Overpass] Combined query fetched: ${pistes.length} pistes, ${lifts.length} lifts, ${skiAreaPolygons.length} ski area polygons, ${peaks.length} peaks, ${places.length} places`)
-  
-  return { pistes, lifts, skiAreas, skiAreaPolygons, peaks, places }
+  }
+
+  // Parse all data types
+  const pistes = parsePistes(response.elements)
+  const lifts = parseLifts(response.elements)
+  const peaks = parsePeaks(response.elements)
+  const places = parsePlaces(response.elements)
+  const skiAreaPolygons = parseSkiAreaPolygons(response.elements, nodes)
+
+  console.log(
+    `[Overpass] Loaded: ${pistes.length} pistes, ${lifts.length} lifts, ${peaks.length} peaks, ${places.length} places, ${skiAreaPolygons.length} ski areas`
+  )
+
+  return {
+    pistes,
+    lifts,
+    peaks,
+    places,
+    skiAreaPolygons,
+  }
 }
