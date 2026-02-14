@@ -13,7 +13,6 @@ import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
 import { useNavigationStore } from '@/stores/useNavigationStore'
 import { useMapStore } from '@/stores/useMapStore'
-import { useTerrainStore } from '@/store/terrainStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
 import { projectPointsOnGrid } from '@/lib/geo/elevationGrid'
 import { featureSpatialIndex } from '@/lib/geo/spatialIndex'
@@ -29,9 +28,8 @@ const raycaster = new THREE.Raycaster()
 
 export function ProximitySelector() {
   const { camera, gl } = useThree()
-  const terrainMesh = useMapStore((s) => s.terrainMesh)
   const terrainGroup = useMapStore((s) => s.terrainGroup)
-  const elevationGrid = useTerrainStore((s) => s.elevationGrid)
+  const elevationGrid = useMapStore((s) => s.elevationGrid)
   const setHoveredPiste = useMapStore((s) => s.setHoveredPiste)
   const setHoveredLift = useMapStore((s) => s.setHoveredLift)
   const setSelectedPiste = useMapStore((s) => s.setSelectedPiste)
@@ -89,9 +87,7 @@ export function ProximitySelector() {
   
   // Get terrain intersection point from mouse position
   const getTerrainPoint = useCallback((event: PointerEvent): THREE.Vector3 | null => {
-    // Prefer terrain group (chunked terrain) over single mesh
-    const raycastTarget = terrainGroup || terrainMesh
-    if (!raycastTarget) return null
+    if (!terrainGroup) return null
     
     const rect = gl.domElement.getBoundingClientRect()
     const x = ((event.clientX - rect.left) / rect.width) * 2 - 1
@@ -99,16 +95,14 @@ export function ProximitySelector() {
     
     raycaster.setFromCamera(new THREE.Vector2(x, y), camera)
     
-    // For groups, raycast recursively; for mesh, direct intersection
-    const intersects = terrainGroup 
-      ? raycaster.intersectObjects(terrainGroup.children, true)
-      : raycaster.intersectObject(terrainMesh!, false)
+    // Raycast recursively through terrain group
+    const intersects = raycaster.intersectObjects(terrainGroup.children, true)
     
     if (intersects.length > 0 && intersects[0]) {
       return intersects[0].point
     }
     return null
-  }, [terrainMesh, terrainGroup, camera, gl])
+  }, [terrainGroup, camera, gl])
   
   // Handle pointer move for hover
   const handlePointerMove = useCallback((event: PointerEvent) => {
