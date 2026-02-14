@@ -21,13 +21,6 @@ export interface RegionConfig {
     minLon: number
     maxLon: number
   }
-  /** Bounding box format (for APIs like Overpass) */
-  bbox: {
-    south: number
-    north: number
-    west: number
-    east: number
-  }
 }
 
 /**
@@ -47,12 +40,6 @@ export const SOLDEN_REGION: RegionConfig = {
     minLon: 10.86,
     maxLon: 11.2,
   },
-  bbox: {
-    south: 46.84,
-    north: 46.98,
-    west: 10.86,
-    east: 11.15,
-  },
 }
 
 /**
@@ -60,6 +47,18 @@ export const SOLDEN_REGION: RegionConfig = {
  * In the future, this could be loaded from user preferences or URL params
  */
 export const ACTIVE_REGION = SOLDEN_REGION
+
+/**
+ * Convert bounds to bbox format (for APIs like Overpass)
+ */
+export function boundsToBbox(bounds: RegionConfig['bounds']) {
+  return {
+    south: bounds.minLat,
+    north: bounds.maxLat,
+    west: bounds.minLon,
+    east: bounds.maxLon,
+  }
+}
 
 /**
  * Helper to check if coordinates are within region bounds
@@ -77,19 +76,8 @@ export function isInRegionBounds(
   )
 }
 
-/**
- * Get region bounds in different formats
- */
-export function getRegionBounds(region: RegionConfig = ACTIVE_REGION) {
-  return {
-    // Geographic bounds
-    geo: region.bounds,
-    // Bounding box format
-    bbox: region.bbox,
-    // Center point
-    center: region.center,
-  }
-}
-
 // Re-export commonly used values for convenience
-export const { center: SOLDEN_CENTER, bounds: SOLDEN_BOUNDS, bbox: SOLDEN_BBOX } = SOLDEN_REGION
+export const { center: SOLDEN_CENTER, bounds: SOLDEN_BOUNDS } = SOLDEN_REGION
+
+/** Sölden bounding box in Overpass API format */
+export const SOLDEN_BBOX = boundsToBbox(SOLDEN_BOUNDS)
