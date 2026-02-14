@@ -15,15 +15,14 @@ import { RunPath } from "./RunPath";
 import { PlayerMarker } from "./PlayerMarker";
 import { PlaybackCameraFollow } from "./PlaybackCameraFollow";
 import { PlaybackManager } from "./PlaybackManager";
-import { InfoTooltip } from "./InfoTooltip";
-import { InfoPanel } from "./InfoPanel";
+import { InfoTooltip } from "./panels/InfoTooltip";
+import { InfoPanel } from "./panels/InfoPanel";
 import { ProximitySelector } from "./ProximitySelector";
 import { KeyboardControls } from "./KeyboardControls";
-import { ResolutionControl } from "./ResolutionControl";
-import { CompassController, CompassUI } from "./Compass";
+import { CompassController, CompassUI } from "./panels/Compass";
 import { PeakLabels } from "./PeakLabels";
 import { PlaceLabels } from "./PlaceLabels";
-import { MapLegend } from "./MapLegend";
+import { MapControls } from "./panels/Controls";
 import { CameraNavigator } from "./CameraNavigator";
 import { SkiAreaBoundary } from "./SkiAreaBoundary";
 import { useSelectedRun } from "@/hooks/useRuns";
@@ -151,11 +150,8 @@ export function SkiMap3D() {
       {/* Compass (outside Canvas, top-right corner) */}
       <CompassUI rotation={compassRotation} onClick={handleCompassClick} />
 
-      {/* Resolution Control (outside Canvas, bottom-right corner) */}
-      <ResolutionControl />
-
-      {/* Map Legend with piste and lift filter toggles (outside Canvas, bottom-left corner) */}
-      <MapLegend />
+      {/* Map Controls - layers, filters, quality (outside Canvas, bottom-left corner) */}
+      <MapControls />
     </div>
   );
 }

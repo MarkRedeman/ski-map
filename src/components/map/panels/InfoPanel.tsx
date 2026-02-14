@@ -9,8 +9,8 @@ import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
 import { usePeaks } from '@/hooks/usePeaks'
 import { usePlaces } from '@/hooks/usePlaces'
-import { LIFT_TYPE_CONFIG } from './Lifts'
-import { PISTE_DIFFICULTY_CONFIG } from './Pistes'
+import { LIFT_TYPE_CONFIG } from '../Lifts'
+import { PISTE_DIFFICULTY_CONFIG } from '../Pistes'
 
 // Common layout component for all info panels
 interface PanelLayoutProps {

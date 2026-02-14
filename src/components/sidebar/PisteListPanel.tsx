@@ -101,7 +101,7 @@ export function PisteListPanel() {
   const [activeTab, setActiveTab] = useState<Tab>('pistes')
   const [searchQuery, setSearchQuery] = useState('')
   
-  // Use URL-native difficulty filter (synced with MapLegend)
+  // Use URL-native difficulty filter (synced with MapControls)
   const { enabledDifficulties, toggleDifficulty } = useDifficultyFilter()
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes)
   const toggleLiftType = useMapStore((s) => s.toggleLiftType)

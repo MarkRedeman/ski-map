@@ -1,7 +1,7 @@
 /**
  * InfoTooltip component - displays entity info on hover
  * Positioned near the hovered element in 3D space
- * Styled to match the dark glass theme of MapLegend
+ * Styled to match the dark glass theme of MapControls
  */
 
 import { useMemo } from 'react'
@@ -13,8 +13,8 @@ import { usePeaks } from '@/hooks/usePeaks'
 import { usePlaces } from '@/hooks/usePlaces'
 import { coordsToLocal, geoToLocal } from '@/lib/geo/coordinates'
 import { sampleElevation } from '@/lib/geo/elevationGrid'
-import { PISTE_DIFFICULTY_CONFIG } from './Pistes'
-import { LIFT_TYPE_CONFIG } from './Lifts'
+import { PISTE_DIFFICULTY_CONFIG } from '../Pistes'
+import { LIFT_TYPE_CONFIG } from '../Lifts'
 import type { ElevationGrid } from '@/lib/geo/elevationGrid'
 
 // Shared tooltip wrapper — positions content in 3D space

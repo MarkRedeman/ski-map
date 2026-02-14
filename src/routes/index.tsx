@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { zodValidator } from '@tanstack/zod-adapter'
 import { Suspense, lazy } from 'react'
 import { Sidebar } from '@/components/layout/Sidebar'
-import { SidebarToggle } from '@/components/layout/SidebarToggle'
+import { SidebarToggle } from '@/components/map/panels/SidebarToggle'
 import { searchSchema } from '@/lib/url/searchSchema'
 import { useURLSync } from '@/hooks/useURLSync'
 

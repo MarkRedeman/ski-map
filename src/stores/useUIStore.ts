@@ -14,12 +14,7 @@ interface UIState {
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
   
-  // Map Legend panel (bottom-left)
-  legendExpanded: boolean
-  toggleLegend: () => void
-  setLegendExpanded: (expanded: boolean) => void
-  
-  // Resolution Control panel (bottom-right)
+  // Map Controls panel (bottom-left) - layers, filters, quality
   controlsExpanded: boolean
   toggleControls: () => void
   setControlsExpanded: (expanded: boolean) => void
@@ -41,11 +36,6 @@ export const useUIStore = create<UIState>()(
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       
-      // Legend - default collapsed on mobile
-      legendExpanded: !isMobileDevice(),
-      toggleLegend: () => set((state) => ({ legendExpanded: !state.legendExpanded })),
-      setLegendExpanded: (expanded) => set({ legendExpanded: expanded }),
-      
       // Controls - default collapsed on mobile
       controlsExpanded: !isMobileDevice(),
       toggleControls: () => set((state) => ({ controlsExpanded: !state.controlsExpanded })),
@@ -56,7 +46,6 @@ export const useUIStore = create<UIState>()(
       // Only persist the open/expanded states, not the functions
       partialize: (state) => ({
         sidebarOpen: state.sidebarOpen,
-        legendExpanded: state.legendExpanded,
         controlsExpanded: state.controlsExpanded,
       }),
     }
