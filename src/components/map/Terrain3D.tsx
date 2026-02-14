@@ -19,6 +19,7 @@ export function Terrain3D() {
   const { data, isLoading, error } = useTerrainData({ zoom })
 
   // Register terrain group with store for raycasting
+  // Re-runs when data loads (groupRef is only attached when terrain renders, not during loading state)
   useEffect(() => {
     if (groupRef.current) {
       setTerrainGroup(groupRef.current)
@@ -26,7 +27,7 @@ export function Terrain3D() {
     return () => {
       setTerrainGroup(null)
     }
-  }, [setTerrainGroup])
+  }, [setTerrainGroup, data])
 
   // Create the displaced geometry
   const geometry = useMemo(() => {
