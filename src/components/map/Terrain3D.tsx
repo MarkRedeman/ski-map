@@ -5,15 +5,28 @@
  * textured with satellite imagery.
  */
 
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useEffect } from 'react'
 import * as THREE from 'three'
 import { useTerrainData } from '@/hooks/useTerrainData'
 import { useTerrainSettings } from '@/stores/useSettingsStore'
+import { useMapStore } from '@/stores/useMapStore'
 
 export function Terrain3D() {
   const { zoom, segments } = useTerrainSettings()
   const meshRef = useRef<THREE.Mesh>(null)
+  const groupRef = useRef<THREE.Group>(null)
+  const setTerrainGroup = useMapStore((s) => s.setTerrainGroup)
   const { data, isLoading, error } = useTerrainData({ zoom })
+
+  // Register terrain group with store for raycasting
+  useEffect(() => {
+    if (groupRef.current) {
+      setTerrainGroup(groupRef.current)
+    }
+    return () => {
+      setTerrainGroup(null)
+    }
+  }, [setTerrainGroup])
 
   // Create the displaced geometry
   const geometry = useMemo(() => {
@@ -135,7 +148,7 @@ export function Terrain3D() {
   }
 
   return (
-    <group name="terrain-3d">
+    <group ref={groupRef} name="terrain-3d">
       <mesh
         ref={meshRef}
         geometry={geometry}
