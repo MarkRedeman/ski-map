@@ -71,42 +71,5 @@ export function useSkiData() {
   return useQuery(skiDataQueryOptions)
 }
 
-/**
- * Selector hooks for individual data types
- * These use the combined query but return only the requested data
- */
-
-export function usePistesFromSkiData() {
-  const query = useSkiData()
-  return {
-    ...query,
-    data: query.data?.pistes,
-  }
-}
-
-export function useLiftsFromSkiData() {
-  const query = useSkiData()
-  return {
-    ...query,
-    data: query.data?.lifts,
-  }
-}
-
-export function usePeaksFromSkiData() {
-  const query = useSkiData()
-  return {
-    ...query,
-    data: query.data?.peaks,
-  }
-}
-
-export function usePlacesFromSkiData() {
-  const query = useSkiData()
-  return {
-    ...query,
-    data: query.data?.places,
-  }
-}
-
 // Re-export types for convenience
 export type { Piste, Lift, Peak, Place, SkiArea, SkiAreaPolygon, SkiData }
