@@ -10,24 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as RunsIndexRouteImport } from './routes/runs/index'
-import { Route as RunsUploadRouteImport } from './routes/runs/upload'
 import { Route as RidesRideIdRouteImport } from './routes/rides/$rideId'
-import { Route as RunsVideoRunIdRouteImport } from './routes/runs/video.$runId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RunsIndexRoute = RunsIndexRouteImport.update({
-  id: '/runs/',
-  path: '/runs/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RunsUploadRoute = RunsUploadRouteImport.update({
-  id: '/runs/upload',
-  path: '/runs/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RidesRideIdRoute = RidesRideIdRouteImport.update({
@@ -35,59 +22,31 @@ const RidesRideIdRoute = RidesRideIdRouteImport.update({
   path: '/rides/$rideId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RunsVideoRunIdRoute = RunsVideoRunIdRouteImport.update({
-  id: '/runs/video/$runId',
-  path: '/runs/video/$runId',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/rides/$rideId': typeof RidesRideIdRoute
-  '/runs/upload': typeof RunsUploadRoute
-  '/runs/': typeof RunsIndexRoute
-  '/runs/video/$runId': typeof RunsVideoRunIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/rides/$rideId': typeof RidesRideIdRoute
-  '/runs/upload': typeof RunsUploadRoute
-  '/runs': typeof RunsIndexRoute
-  '/runs/video/$runId': typeof RunsVideoRunIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/rides/$rideId': typeof RidesRideIdRoute
-  '/runs/upload': typeof RunsUploadRoute
-  '/runs/': typeof RunsIndexRoute
-  '/runs/video/$runId': typeof RunsVideoRunIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/rides/$rideId'
-    | '/runs/upload'
-    | '/runs/'
-    | '/runs/video/$runId'
+  fullPaths: '/' | '/rides/$rideId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/rides/$rideId' | '/runs/upload' | '/runs' | '/runs/video/$runId'
-  id:
-    | '__root__'
-    | '/'
-    | '/rides/$rideId'
-    | '/runs/upload'
-    | '/runs/'
-    | '/runs/video/$runId'
+  to: '/' | '/rides/$rideId'
+  id: '__root__' | '/' | '/rides/$rideId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   RidesRideIdRoute: typeof RidesRideIdRoute
-  RunsUploadRoute: typeof RunsUploadRoute
-  RunsIndexRoute: typeof RunsIndexRoute
-  RunsVideoRunIdRoute: typeof RunsVideoRunIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,32 +58,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/runs/': {
-      id: '/runs/'
-      path: '/runs'
-      fullPath: '/runs/'
-      preLoaderRoute: typeof RunsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/runs/upload': {
-      id: '/runs/upload'
-      path: '/runs/upload'
-      fullPath: '/runs/upload'
-      preLoaderRoute: typeof RunsUploadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/rides/$rideId': {
       id: '/rides/$rideId'
       path: '/rides/$rideId'
       fullPath: '/rides/$rideId'
       preLoaderRoute: typeof RidesRideIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/runs/video/$runId': {
-      id: '/runs/video/$runId'
-      path: '/runs/video/$runId'
-      fullPath: '/runs/video/$runId'
-      preLoaderRoute: typeof RunsVideoRunIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -133,9 +71,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RidesRideIdRoute: RidesRideIdRoute,
-  RunsUploadRoute: RunsUploadRoute,
-  RunsIndexRoute: RunsIndexRoute,
-  RunsVideoRunIdRoute: RunsVideoRunIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,10 +1,9 @@
 /**
- * TanStack Query hooks for ski runs
+ * TanStack Query hooks for ski runs (uploaded GPX rides)
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRunsStore, selectSelectedRun } from '@/stores/useRunsStore'
-import { parseGPXFile } from '@/lib/garmin/parser'
 import type { SkiRun } from '@/lib/garmin/types'
 
 /**
@@ -47,37 +46,6 @@ export function useRuns() {
  */
 export function useSelectedRun(): SkiRun | null {
   return useRunsStore(selectSelectedRun)
-}
-
-/**
- * Hook for selecting a run
- */
-export function useSelectRun() {
-  const selectRun = useRunsStore((s) => s.selectRun)
-  return selectRun
-}
-
-/**
- * Mutation hook for uploading and parsing a GPX file
- */
-export function useUploadRun() {
-  const queryClient = useQueryClient()
-  const addRun = useRunsStore((s) => s.addRun)
-  
-  return useMutation({
-    mutationKey: ['uploadRun'],
-    mutationFn: async (file: File): Promise<SkiRun> => {
-      // Parse the GPX file
-      const run = await parseGPXFile(file)
-      // Save to store and IndexedDB
-      await addRun(run)
-      return run
-    },
-    onSuccess: () => {
-      // Invalidate runs query to refetch
-      queryClient.invalidateQueries({ queryKey: runsQueryKey })
-    },
-  })
 }
 
 /**
