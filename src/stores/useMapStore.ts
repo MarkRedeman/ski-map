@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type * as THREE from 'three'
-import type { ElevationGrid, ChunkElevationMap } from '@/lib/geo/elevationGrid'
+import type { ElevationGrid } from '@/lib/geo/elevationGrid'
+import { SOLDEN_CENTER } from '@/config/region'
 
 /** Lift types that can be filtered */
 export type LiftType = 'Gondola' | 'Chair Lift' | 'Cable Car' | 'T-Bar' | 'Button Lift' | 'Drag Lift' | 'Magic Carpet' | 'Lift'
@@ -8,22 +9,23 @@ export type LiftType = 'Gondola' | 'Chair Lift' | 'Cable Car' | 'T-Bar' | 'Butto
 /** All available lift types */
 export const ALL_LIFT_TYPES: LiftType[] = ['Gondola', 'Chair Lift', 'Cable Car', 'T-Bar', 'Button Lift', 'Drag Lift', 'Magic Carpet', 'Lift']
 
+/** Entity types that can be selected */
+export type EntityType = 'piste' | 'lift' | 'peak' | 'place'
+
+/** Selection state for an entity */
+export interface EntitySelection {
+  type: EntityType
+  id: string
+}
+
 interface MapState {
-  // Terrain mesh reference for raycasting (legacy, kept for compatibility)
-  terrainMesh: THREE.Mesh | null
-  setTerrainMesh: (mesh: THREE.Mesh | null) => void
-  
-  // Terrain group for chunked terrain raycasting
+  // Terrain
   terrainGroup: THREE.Group | null
   setTerrainGroup: (group: THREE.Group | null) => void
   
-  // Elevation grid for fast O(1) terrain height lookups (legacy single grid)
+  // Elevation grid for fast O(1) terrain height lookups
   elevationGrid: ElevationGrid | null
   setElevationGrid: (grid: ElevationGrid | null) => void
-  
-  // Chunk-based elevation map for dynamic terrain
-  chunkElevationMap: ChunkElevationMap | null
-  setChunkElevationMap: (map: ChunkElevationMap | null) => void
   
   // Camera
   cameraPosition: [number, number, number]
@@ -53,27 +55,29 @@ interface MapState {
   toggleLiftType: (liftType: LiftType) => void
   setAllLiftTypesVisible: (visible: boolean) => void
   
-  // Selection - Pistes
+  // Selection (consolidated)
+  hoveredEntity: EntitySelection | null
+  selectedEntity: EntitySelection | null
+  setHoveredEntity: (type: EntityType, id: string | null) => void
+  setSelectedEntity: (type: EntityType, id: string | null) => void
+  
+  // Backward compatibility getters
   hoveredPisteId: string | null
   selectedPisteId: string | null
-  setHoveredPiste: (id: string | null) => void
-  setSelectedPiste: (id: string | null) => void
-  
-  // Selection - Lifts
   hoveredLiftId: string | null
   selectedLiftId: string | null
-  setHoveredLift: (id: string | null) => void
-  setSelectedLift: (id: string | null) => void
-  
-  // Selection - Peaks
   hoveredPeakId: string | null
   selectedPeakId: string | null
-  setHoveredPeak: (id: string | null) => void
-  setSelectedPeak: (id: string | null) => void
-  
-  // Selection - Places
   hoveredPlaceId: string | null
   selectedPlaceId: string | null
+  
+  // Backward compatibility setters
+  setHoveredPiste: (id: string | null) => void
+  setSelectedPiste: (id: string | null) => void
+  setHoveredLift: (id: string | null) => void
+  setSelectedLift: (id: string | null) => void
+  setHoveredPeak: (id: string | null) => void
+  setSelectedPeak: (id: string | null) => void
   setHoveredPlace: (id: string | null) => void
   setSelectedPlace: (id: string | null) => void
   
@@ -89,25 +93,21 @@ interface MapState {
   setIsLoadingTerrain: (loading: boolean) => void
 }
 
-// Sölden center coordinates (Giggijoch area)
-const SOLDEN_CENTER: [number, number, number] = [46.9147, 10.9975, 2000]
+const layerMap = {
+  terrain: 'showTerrain' as const,
+  pistes: 'showPistes' as const,
+  lifts: 'showLifts' as const,
+  labels: 'showLabels' as const,
+}
 
-export const useMapStore = create<MapState>((set) => ({
-  // Terrain mesh for raycasting (legacy)
-  terrainMesh: null,
-  setTerrainMesh: (mesh) => set({ terrainMesh: mesh }),
-  
-  // Terrain group for chunked terrain
+export const useMapStore = create<MapState>((set, get) => ({
+  // Terrain
   terrainGroup: null,
   setTerrainGroup: (group) => set({ terrainGroup: group }),
   
-  // Elevation grid for fast lookups (legacy single grid)
+  // Elevation grid for fast lookups
   elevationGrid: null,
   setElevationGrid: (grid) => set({ elevationGrid: grid }),
-  
-  // Chunk-based elevation map
-  chunkElevationMap: null,
-  setChunkElevationMap: (map) => set({ chunkElevationMap: map }),
   
   // Default camera looking at Sölden from above
   cameraPosition: [0, 500, 300],
@@ -129,20 +129,9 @@ export const useMapStore = create<MapState>((set) => ({
   showLabels: true,
   
   toggleLayer: (layer) =>
-    set((state) => {
-      switch (layer) {
-        case 'terrain':
-          return { showTerrain: !state.showTerrain }
-        case 'pistes':
-          return { showPistes: !state.showPistes }
-        case 'lifts':
-          return { showLifts: !state.showLifts }
-        case 'labels':
-          return { showLabels: !state.showLabels }
-        default:
-          return state
-      }
-    }),
+    set((state) => ({
+      [layerMap[layer]]: !state[layerMap[layer]],
+    })),
   
   setShowPistes: (show) => set({ showPistes: show }),
   setShowLifts: (show) => set({ showLifts: show }),
@@ -167,58 +156,63 @@ export const useMapStore = create<MapState>((set) => ({
       visibleLiftTypes: visible ? new Set(ALL_LIFT_TYPES) : new Set()
     })),
   
-  hoveredPisteId: null,
-  selectedPisteId: null,
-  setHoveredPiste: (id) => set({ hoveredPisteId: id }),
-  setSelectedPiste: (id) => set({ 
-    selectedPisteId: id, 
-    selectedLiftId: null,
-    selectedPeakId: null,
-    selectedPlaceId: null,
-  }),
+  // Consolidated selection state
+  hoveredEntity: null,
+  selectedEntity: null,
+  setHoveredEntity: (type, id) => set({ hoveredEntity: id ? { type, id } : null }),
+  setSelectedEntity: (type, id) => set({ selectedEntity: id ? { type, id } : null }),
   
-  hoveredLiftId: null,
-  selectedLiftId: null,
-  setHoveredLift: (id) => set({ hoveredLiftId: id }),
-  setSelectedLift: (id) => set({ 
-    selectedLiftId: id, 
-    selectedPisteId: null,
-    selectedPeakId: null,
-    selectedPlaceId: null,
-  }),
+  // Backward compatibility - getters that derive from consolidated state
+  get hoveredPisteId() {
+    const entity = get().hoveredEntity
+    return entity?.type === 'piste' ? entity.id : null
+  },
+  get selectedPisteId() {
+    const entity = get().selectedEntity
+    return entity?.type === 'piste' ? entity.id : null
+  },
+  get hoveredLiftId() {
+    const entity = get().hoveredEntity
+    return entity?.type === 'lift' ? entity.id : null
+  },
+  get selectedLiftId() {
+    const entity = get().selectedEntity
+    return entity?.type === 'lift' ? entity.id : null
+  },
+  get hoveredPeakId() {
+    const entity = get().hoveredEntity
+    return entity?.type === 'peak' ? entity.id : null
+  },
+  get selectedPeakId() {
+    const entity = get().selectedEntity
+    return entity?.type === 'peak' ? entity.id : null
+  },
+  get hoveredPlaceId() {
+    const entity = get().hoveredEntity
+    return entity?.type === 'place' ? entity.id : null
+  },
+  get selectedPlaceId() {
+    const entity = get().selectedEntity
+    return entity?.type === 'place' ? entity.id : null
+  },
   
-  hoveredPeakId: null,
-  selectedPeakId: null,
-  setHoveredPeak: (id) => set({ hoveredPeakId: id }),
-  setSelectedPeak: (id) => set({ 
-    selectedPeakId: id, 
-    selectedPisteId: null,
-    selectedLiftId: null,
-    selectedPlaceId: null,
-  }),
-  
-  hoveredPlaceId: null,
-  selectedPlaceId: null,
-  setHoveredPlace: (id) => set({ hoveredPlaceId: id }),
-  setSelectedPlace: (id) => set({ 
-    selectedPlaceId: id, 
-    selectedPisteId: null,
-    selectedLiftId: null,
-    selectedPeakId: null,
-  }),
+  // Backward compatibility setters that use consolidated state
+  setHoveredPiste: (id) => set({ hoveredEntity: id ? { type: 'piste', id } : null }),
+  setSelectedPiste: (id) => set({ selectedEntity: id ? { type: 'piste', id } : null }),
+  setHoveredLift: (id) => set({ hoveredEntity: id ? { type: 'lift', id } : null }),
+  setSelectedLift: (id) => set({ selectedEntity: id ? { type: 'lift', id } : null }),
+  setHoveredPeak: (id) => set({ hoveredEntity: id ? { type: 'peak', id } : null }),
+  setSelectedPeak: (id) => set({ selectedEntity: id ? { type: 'peak', id } : null }),
+  setHoveredPlace: (id) => set({ hoveredEntity: id ? { type: 'place', id } : null }),
+  setSelectedPlace: (id) => set({ selectedEntity: id ? { type: 'place', id } : null }),
   
   hoveredSkiAreaId: null,
   setHoveredSkiArea: (id) => set({ hoveredSkiAreaId: id }),
   
   clearSelection: () => set({ 
-    selectedPisteId: null, 
-    selectedLiftId: null, 
-    selectedPeakId: null,
-    selectedPlaceId: null,
-    hoveredPisteId: null, 
-    hoveredLiftId: null,
-    hoveredPeakId: null,
-    hoveredPlaceId: null,
+    selectedEntity: null,
+    hoveredEntity: null,
+    hoveredSkiAreaId: null,
     cameraFocusTarget: null,
   }),
   
@@ -226,5 +220,5 @@ export const useMapStore = create<MapState>((set) => ({
   setIsLoadingTerrain: (loading) => set({ isLoadingTerrain: loading }),
 }))
 
-// Export center for use elsewhere
+// Re-export for convenience
 export { SOLDEN_CENTER }
