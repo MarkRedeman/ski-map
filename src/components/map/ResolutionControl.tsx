@@ -22,7 +22,7 @@ const RESOLUTION_LEVELS: ResolutionLevel[] = ['1x', '2x', '4x', '8x', '16x']
 export function ResolutionControl() {
   const resolution = useSettingsStore((s) => s.resolution)
   const setResolution = useSettingsStore((s) => s.setResolution)
-  const isLoading = useMapStore((s) => s.isLoading)
+  const isLoading = useMapStore((s) => s.isLoadingTerrain)
   const showLabels = useMapStore((s) => s.showLabels)
   const showPistes = useMapStore((s) => s.showPistes)
   const showLifts = useMapStore((s) => s.showLifts)

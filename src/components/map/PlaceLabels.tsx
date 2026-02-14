@@ -136,7 +136,7 @@ export function PlaceLabels() {
     )
     
     return places
-      .filter((place) => visibleTypes.has(place.type))
+      .filter((place) => visibleTypes.has(place.type as PlaceType))
       // Towns are always visible; villages/hamlets only if near lifts
       .filter((place) => {
         if (place.type === 'town') return true
@@ -172,7 +172,7 @@ export function PlaceLabels() {
         <PlaceLabel
           key={place.id}
           name={place.name}
-          type={place.type}
+          type={place.type as PlaceType}
           position={place.position}
         />
       ))}

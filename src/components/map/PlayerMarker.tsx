@@ -12,7 +12,7 @@ import { geoToLocal, SOLDEN_CENTER } from '@/lib/geo/coordinates'
 import { formatSpeed } from '@/lib/garmin/parser'
 import { useMapStore } from '@/stores/useMapStore'
 import { usePlaybackStore } from '@/stores/usePlaybackStore'
-import { sampleElevationFromChunks } from '@/lib/geo/elevationGrid'
+import { sampleElevation } from '@/lib/geo/elevationGrid'
 
 interface PlayerMarkerProps {
   ride: SkiRun
@@ -146,7 +146,7 @@ function getPositionAtTime(
 export function PlayerMarker({ ride }: PlayerMarkerProps) {
   const { coordinates } = ride
   const currentTime = usePlaybackStore((s) => s.currentTime)
-  const chunkElevationMap = useMapStore((s) => s.chunkElevationMap)
+  const elevationGrid = useMapStore((s) => s.elevationGrid)
   const materialRef = useRef<THREE.MeshStandardMaterial>(null)
   const glowMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
   
@@ -162,8 +162,8 @@ export function PlayerMarker({ ride }: PlayerMarkerProps) {
     
     // Sample terrain height if available, otherwise use GPS elevation
     let y: number
-    if (chunkElevationMap) {
-      const terrainY = sampleElevationFromChunks(chunkElevationMap, x, z)
+    if (elevationGrid) {
+      const terrainY = sampleElevation(elevationGrid, x, z)
       y = terrainY + TERRAIN_OFFSET
     } else {
       // Fallback: use GPS elevation relative to Sölden center, scaled (SCALE = 0.1)
@@ -178,7 +178,7 @@ export function PlayerMarker({ ride }: PlayerMarkerProps) {
       speed: position.speed,
       color,
     }
-  }, [coordinates, currentTime, chunkElevationMap])
+  }, [coordinates, currentTime, elevationGrid])
   
   // Don't render if no valid position
   if (!markerData) return null

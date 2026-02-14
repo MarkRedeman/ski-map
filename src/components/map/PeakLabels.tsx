@@ -117,7 +117,9 @@ export function PeakLabels() {
         )
       )
       // Then filter by elevation threshold
-      .filter((peak) => peak.elevation >= minElevation)
+      .filter((peak): peak is typeof peak & { elevation: number } =>
+        peak.elevation != null && peak.elevation >= minElevation
+      )
       .map((peak) => {
         // Convert geo coordinates to local 3D position
         const [x, , z] = geoToLocal(peak.lat, peak.lon, 0)

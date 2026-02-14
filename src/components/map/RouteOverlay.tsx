@@ -10,7 +10,7 @@ import * as THREE from 'three'
 import { useNavigationStore } from '@/stores/useNavigationStore'
 import { useMapStore } from '@/stores/useMapStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
-import { projectPointsOnChunks, sampleElevationFromChunks, type ChunkElevationMap } from '@/lib/geo/elevationGrid'
+import { projectPointsOnGrid, sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid'
 
 /** Colors for route segments by type */
 const ROUTE_COLORS = {
@@ -25,9 +25,9 @@ const ROUTE_COLORS = {
  */
 export function RouteOverlay() {
   const selectedRoute = useNavigationStore((s) => s.selectedRoute)
-  const chunkElevationMap = useMapStore((s) => s.chunkElevationMap)
+  const elevationGrid = useMapStore((s) => s.elevationGrid)
   
-  if (!selectedRoute || selectedRoute.steps.length === 0 || !chunkElevationMap) {
+  if (!selectedRoute || selectedRoute.steps.length === 0 || !elevationGrid) {
     return null
   }
   
@@ -41,12 +41,12 @@ export function RouteOverlay() {
           type={step.type}
           index={index}
           totalSteps={selectedRoute.steps.length}
-          chunkElevationMap={chunkElevationMap}
+          elevationGrid={elevationGrid}
         />
       ))}
       
       {/* Animated direction indicator */}
-      <RouteAnimation steps={selectedRoute.steps} chunkElevationMap={chunkElevationMap} />
+      <RouteAnimation steps={selectedRoute.steps} elevationGrid={elevationGrid} />
     </group>
   )
 }
@@ -57,13 +57,13 @@ interface RouteSegmentProps {
   type: 'piste' | 'lift'
   index: number
   totalSteps: number
-  chunkElevationMap: ChunkElevationMap
+  elevationGrid: ElevationGrid
 }
 
 /**
  * Individual route segment rendered as a thick line
  */
-function RouteSegment({ fromCoords, toCoords, type, chunkElevationMap }: RouteSegmentProps) {
+function RouteSegment({ fromCoords, toCoords, type, elevationGrid }: RouteSegmentProps) {
   // Convert geo coords to local 3D coords and project onto terrain
   const points = useMemo(() => {
     const fromLocal = coordsToLocal([[fromCoords[1], fromCoords[0]]], 0)[0]
@@ -73,10 +73,10 @@ function RouteSegment({ fromCoords, toCoords, type, chunkElevationMap }: RouteSe
     
     // Project onto terrain with offset (higher for lifts) - O(1) per point!
     const offset = type === 'lift' ? 12 : 5
-    const projected = projectPointsOnChunks(chunkElevationMap, [fromLocal, toLocal], offset)
+    const projected = projectPointsOnGrid(elevationGrid, [fromLocal, toLocal], offset)
     
     return projected
-  }, [fromCoords, toCoords, type, chunkElevationMap])
+  }, [fromCoords, toCoords, type, elevationGrid])
   
   if (points.length < 2) return null
   
@@ -109,13 +109,13 @@ interface RouteAnimationProps {
     from: { coordinates: [number, number, number] }
     to: { coordinates: [number, number, number] }
   }>
-  chunkElevationMap: ChunkElevationMap
+  elevationGrid: ElevationGrid
 }
 
 /**
  * Animated sphere that travels along the route
  */
-function RouteAnimation({ steps, chunkElevationMap }: RouteAnimationProps) {
+function RouteAnimation({ steps, elevationGrid }: RouteAnimationProps) {
   const meshRef = useRef<THREE.Mesh>(null)
   const progressRef = useRef(0)
   
@@ -130,7 +130,7 @@ function RouteAnimation({ steps, chunkElevationMap }: RouteAnimationProps) {
       )[0]
       
       if (fromLocal) {
-        const y = sampleElevationFromChunks(chunkElevationMap, fromLocal[0], fromLocal[2]) + 8
+        const y = sampleElevation(elevationGrid, fromLocal[0], fromLocal[2]) + 8
         points.push(new THREE.Vector3(fromLocal[0], y, fromLocal[2]))
       }
     }
@@ -144,13 +144,13 @@ function RouteAnimation({ steps, chunkElevationMap }: RouteAnimationProps) {
       )[0]
       
       if (toLocal) {
-        const y = sampleElevationFromChunks(chunkElevationMap, toLocal[0], toLocal[2]) + 8
+        const y = sampleElevation(elevationGrid, toLocal[0], toLocal[2]) + 8
         points.push(new THREE.Vector3(toLocal[0], y, toLocal[2]))
       }
     }
     
     return points
-  }, [steps, chunkElevationMap])
+  }, [steps, elevationGrid])
   
   // Create curve for smooth animation
   const curve = useMemo(() => {

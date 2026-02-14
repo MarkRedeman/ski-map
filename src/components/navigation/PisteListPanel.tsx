@@ -600,7 +600,7 @@ function PeakList({ searchQuery }: PeakListProps) {
         return peak.name.toLowerCase().includes(query)
       })
       // Sort by elevation descending (highest first)
-      .sort((a, b) => b.elevation - a.elevation)
+      .sort((a, b) => (b.elevation ?? 0) - (a.elevation ?? 0))
   }, [peaks, searchQuery])
 
   // Generate Link search params for a peak
@@ -688,7 +688,7 @@ function PeakListItem({ peak, isHovered, isSelected, onHover, searchParams, onCa
           {peak.name}
         </div>
         <div className="text-xs text-white/40">
-          {peak.elevation.toLocaleString()} m
+          {peak.elevation?.toLocaleString() ?? '?'} m
         </div>
       </div>
 
@@ -725,8 +725,8 @@ function PlaceList({ searchQuery }: PlaceListProps) {
       })
       // Sort: towns first, then villages, then hamlets
       .sort((a, b) => {
-        const typeOrder = { town: 0, village: 1, hamlet: 2 }
-        const orderDiff = typeOrder[a.type] - typeOrder[b.type]
+        const typeOrder: Record<string, number> = { town: 0, village: 1, hamlet: 2 }
+        const orderDiff = (typeOrder[a.type] ?? 3) - (typeOrder[b.type] ?? 3)
         if (orderDiff !== 0) return orderDiff
         return a.name.localeCompare(b.name)
       })
