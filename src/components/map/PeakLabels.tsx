@@ -13,7 +13,6 @@ import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { usePeaks } from '@/hooks/usePeaks'
 import { useLifts } from '@/hooks/useLifts'
-import { useTerrainStore } from '@/store/terrainStore'
 import { useMapStore } from '@/stores/useMapStore'
 import { geoToLocal, SOLDEN_CENTER } from '@/lib/geo/coordinates'
 import { sampleElevation } from '@/lib/geo/elevationGrid'
@@ -79,7 +78,7 @@ function PeakLabel({ name, elevation, position }: PeakLabelProps) {
 export function PeakLabels() {
   const { data: peaks } = usePeaks()
   const { data: lifts } = useLifts()
-  const elevationGrid = useTerrainStore((s) => s.elevationGrid)
+  const elevationGrid = useMapStore((s) => s.elevationGrid)
   const showLabels = useMapStore((s) => s.showLabels)
   
   // Track camera distance level for filtering (quantized to avoid constant re-renders)

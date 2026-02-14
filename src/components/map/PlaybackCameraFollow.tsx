@@ -16,7 +16,7 @@ import { useThree, useFrame } from '@react-three/fiber'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
 import { usePlaybackStore } from '@/stores/usePlaybackStore'
-import { useTerrainStore } from '@/store/terrainStore'
+import { useMapStore } from '@/stores/useMapStore'
 import { geoToLocal } from '@/lib/geo/coordinates'
 import { sampleElevation } from '@/lib/geo/elevationGrid'
 import type { SkiRun, RunPoint } from '@/lib/garmin/types'
@@ -159,7 +159,7 @@ export function PlaybackCameraFollow({ ride }: PlaybackCameraFollowProps) {
   const { camera, controls } = useThree()
   const currentTime = usePlaybackStore((s) => s.currentTime)
   const cameraFollowEnabled = usePlaybackStore((s) => s.cameraFollowEnabled)
-  const elevationGrid = useTerrainStore((s) => s.elevationGrid)
+  const elevationGrid = useMapStore((s) => s.elevationGrid)
 
   // Track velocities for smooth movement
   const cameraVelocity = useRef(new THREE.Vector3())

@@ -12,7 +12,6 @@
 
 import { Navigation, ChevronUp, ChevronDown, Settings2 } from 'lucide-react'
 import { useSettingsStore, type ResolutionLevel } from '@/stores/useSettingsStore'
-import { useTerrainStore } from '@/store/terrainStore'
 import { useMapStore } from '@/stores/useMapStore'
 import { useNavigationStore } from '@/stores/useNavigationStore'
 import { useUIStore } from '@/stores/useUIStore'
@@ -23,7 +22,7 @@ const RESOLUTION_LEVELS: ResolutionLevel[] = ['1x', '2x', '4x', '8x', '16x']
 export function ResolutionControl() {
   const resolution = useSettingsStore((s) => s.resolution)
   const setResolution = useSettingsStore((s) => s.setResolution)
-  const isLoading = useTerrainStore((s) => s.isLoading)
+  const isLoading = useMapStore((s) => s.isLoading)
   const showLabels = useMapStore((s) => s.showLabels)
   const showPistes = useMapStore((s) => s.showPistes)
   const showLifts = useMapStore((s) => s.showLifts)

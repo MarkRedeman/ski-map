@@ -8,7 +8,7 @@ import { Line, Sphere, Html } from '@react-three/drei'
 import * as THREE from 'three'
 import type { SkiRun } from '@/lib/garmin/types'
 import { geoToLocal, SOLDEN_CENTER } from '@/lib/geo/coordinates'
-import { useTerrainStore } from '@/store/terrainStore'
+import { useMapStore } from '@/stores/useMapStore'
 import { sampleElevation } from '@/lib/geo/elevationGrid'
 import { useRideSegments } from '@/hooks/useRideSegments'
 import { getSegmentColor } from '@/lib/garmin/pisteMatch'
@@ -33,7 +33,7 @@ const LINE_WIDTH_IDLE = 2
 
 export function RunPath({ run, showMarkers = true }: RunPathProps) {
   const { coordinates } = run
-  const elevationGrid = useTerrainStore((s) => s.elevationGrid)
+  const elevationGrid = useMapStore((s) => s.elevationGrid)
   const rideSegments = useRideSegments(run)
   
   if (coordinates.length < 2) {

@@ -14,7 +14,6 @@ import { useMemo } from 'react'
 import { Line } from '@react-three/drei'
 import { useMapStore } from '@/stores/useMapStore'
 import { useSkiData } from '@/hooks/useSkiData'
-import { useTerrainStore } from '@/store/terrainStore'
 import { geoToLocal } from '@/lib/geo/coordinates'
 import { sampleElevation } from '@/lib/geo/elevationGrid'
 
@@ -27,7 +26,7 @@ const TERRAIN_OFFSET = 5 // Height above terrain
 export function SkiAreaBoundary() {
   const hoveredSkiAreaId = useMapStore((s) => s.hoveredSkiAreaId)
   const { data: skiData } = useSkiData()
-  const elevationGrid = useTerrainStore((s) => s.elevationGrid)
+  const elevationGrid = useMapStore((s) => s.elevationGrid)
   
   // Find the hovered ski area polygon
   const hoveredSkiArea = useMemo(() => {

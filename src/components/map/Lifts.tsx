@@ -3,7 +3,6 @@ import { Line } from '@react-three/drei'
 import { useThree, useFrame } from '@react-three/fiber'
 import { useLifts } from '@/hooks/useLifts'
 import { useMapStore, type LiftType } from '@/stores/useMapStore'
-import { useTerrainStore } from '@/store/terrainStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
 import { sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid'
 
@@ -108,7 +107,7 @@ export function Lifts() {
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes)
   const hoveredLiftId = useMapStore((s) => s.hoveredLiftId)
   const selectedLiftId = useMapStore((s) => s.selectedLiftId)
-  const elevationGrid = useTerrainStore((s) => s.elevationGrid)
+  const elevationGrid = useMapStore((s) => s.elevationGrid)
   const zoomScale = useZoomScale()
 
   // Filter lifts by visible types

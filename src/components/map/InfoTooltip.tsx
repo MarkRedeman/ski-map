@@ -7,7 +7,6 @@
 import { useMemo } from 'react'
 import { Html } from '@react-three/drei'
 import { useMapStore } from '@/stores/useMapStore'
-import { useTerrainStore } from '@/store/terrainStore'
 import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
 import { coordsToLocal } from '@/lib/geo/coordinates'
@@ -65,7 +64,7 @@ export function InfoTooltip() {
   const hoveredLiftId = useMapStore((s) => s.hoveredLiftId)
   const setSelectedPiste = useMapStore((s) => s.setSelectedPiste)
   const setSelectedLift = useMapStore((s) => s.setSelectedLift)
-  const elevationGrid = useTerrainStore((s) => s.elevationGrid)
+  const elevationGrid = useMapStore((s) => s.elevationGrid)
   const { data: pistes } = usePistes()
   const { data: lifts } = useLifts()
 

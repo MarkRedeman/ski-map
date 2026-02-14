@@ -12,7 +12,6 @@ import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { usePlaces } from '@/hooks/usePlaces'
 import { useLifts } from '@/hooks/useLifts'
-import { useTerrainStore } from '@/store/terrainStore'
 import { useMapStore } from '@/stores/useMapStore'
 import { geoToLocal } from '@/lib/geo/coordinates'
 import { sampleElevation } from '@/lib/geo/elevationGrid'
@@ -105,7 +104,7 @@ function PlaceLabel({ name, type, position }: PlaceLabelProps) {
 export function PlaceLabels() {
   const { data: places } = usePlaces()
   const { data: lifts } = useLifts()
-  const elevationGrid = useTerrainStore((s) => s.elevationGrid)
+  const elevationGrid = useMapStore((s) => s.elevationGrid)
   const showLabels = useMapStore((s) => s.showLabels)
   
   // Track camera distance level for filtering

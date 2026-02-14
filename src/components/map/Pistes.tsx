@@ -5,7 +5,6 @@ import { useState } from 'react'
 import { usePistes, filterPistesByDifficulty } from '@/hooks/usePistes'
 import { useNavigationStore, type Difficulty } from '@/stores/useNavigationStore'
 import { useMapStore } from '@/stores/useMapStore'
-import { useTerrainStore } from '@/store/terrainStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
 import { sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid'
 
@@ -73,7 +72,7 @@ export function Pistes() {
   const showPistes = useMapStore((s) => s.showPistes)
   const hoveredPisteId = useMapStore((s) => s.hoveredPisteId)
   const selectedPisteId = useMapStore((s) => s.selectedPisteId)
-  const elevationGrid = useTerrainStore((s) => s.elevationGrid)
+  const elevationGrid = useMapStore((s) => s.elevationGrid)
   const zoomScale = useZoomScale()
 
   const filteredPistes = useMemo(
