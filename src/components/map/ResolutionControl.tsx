@@ -64,7 +64,7 @@ export function ResolutionControl() {
         
         <button
           onClick={toggleControls}
-          className="flex items-center gap-2 rounded-lg bg-black/60 px-3 py-2 backdrop-blur-sm transition-all hover:bg-black/80"
+          className="flex items-center gap-2 rounded-lg bg-black/80 px-3 py-2 shadow-lg shadow-black/30 backdrop-blur-md transition-all hover:bg-black/90"
           title="Expand controls"
         >
           <Settings2 className="h-4 w-4 text-white" />
@@ -98,7 +98,7 @@ export function ResolutionControl() {
   }
 
   return (
-    <div className="absolute bottom-4 right-4 flex flex-col gap-2 rounded-lg bg-black/60 px-3 py-2 backdrop-blur-sm">
+    <div className="absolute bottom-4 right-4 flex flex-col gap-2 rounded-lg bg-black/80 px-3 py-2 shadow-lg shadow-black/30 backdrop-blur-md">
       {/* Header with collapse button */}
       <button
         onClick={toggleControls}

@@ -87,9 +87,9 @@ export function PWAInstallPrompt() {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom duration-300 md:left-auto md:right-4 md:max-w-sm">
-      <div className="flex items-center gap-3 rounded-lg bg-black/80 p-4 backdrop-blur-md border border-white/10">
+      <div className="flex items-center gap-3 rounded-lg bg-black/80 p-4 shadow-lg shadow-black/30 backdrop-blur-md border border-white/10">
         {/* App icon */}
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-lg">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg">
           <Smartphone className="h-5 w-5 text-white" />
         </div>
         

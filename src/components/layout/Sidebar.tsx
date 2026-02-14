@@ -21,7 +21,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'flex-shrink-0 flex flex-col bg-black/80 backdrop-blur-md transition-all duration-300 ease-in-out overflow-hidden',
+        'flex-shrink-0 flex flex-col bg-zinc-950/95 backdrop-blur-md shadow-2xl shadow-black/60 transition-all duration-300 ease-in-out overflow-hidden',
         sidebarOpen ? 'w-80' : 'w-0'
       )}
     >
@@ -39,7 +39,7 @@ export function Sidebar() {
 
         {/* Your Rides section */}
         <section className="border-t border-white/10 flex-shrink-0">
-          <h2 className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/50 bg-white/5">
+          <h2 className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/50 bg-black/30">
             Your Rides
           </h2>
           <RideListPanel />
@@ -47,7 +47,7 @@ export function Sidebar() {
 
         {/* Piste/Lift Browser - takes remaining height */}
         <section className="border-t border-white/10 flex-1 flex flex-col min-h-0">
-          <h2 className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/50 bg-white/5 flex-shrink-0">
+          <h2 className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/50 bg-black/30 flex-shrink-0">
             Browse Slopes & Lifts
           </h2>
           <div className="flex-1 overflow-y-auto">

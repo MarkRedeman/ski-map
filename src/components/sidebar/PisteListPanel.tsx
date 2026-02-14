@@ -183,13 +183,13 @@ export function PisteListPanel() {
                 onClick={() => toggleDifficulty(difficulty)}
                 className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-all ${
                   isEnabled
-                    ? 'bg-white/20 text-white'
-                    : 'bg-white/5 text-white/40 hover:bg-white/10'
+                    ? 'bg-white/10 text-white/70'
+                    : 'bg-white/5 text-white/30 hover:bg-white/10'
                 }`}
               >
                 <div
                   className="h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: DIFFICULTY_COLORS[difficulty], opacity: isEnabled ? 1 : 0.4 }}
+                  style={{ backgroundColor: DIFFICULTY_COLORS[difficulty], opacity: isEnabled ? 0.8 : 0.3 }}
                 />
                 {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
               </button>
@@ -210,11 +210,11 @@ export function PisteListPanel() {
                 onClick={() => toggleLiftType(liftType)}
                 className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium transition-all ${
                   isEnabled
-                    ? 'bg-white/20 text-white'
-                    : 'bg-white/5 text-white/40 hover:bg-white/10'
+                    ? 'bg-white/10 text-white/70'
+                    : 'bg-white/5 text-white/30 hover:bg-white/10'
                 }`}
               >
-                <span className="text-xs">{config.icon}</span>
+                <span className={`text-xs ${isEnabled ? 'opacity-80' : 'opacity-40'}`}>{config.icon}</span>
                 <span className="hidden sm:inline">{liftType}</span>
               </button>
             )

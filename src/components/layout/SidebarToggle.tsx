@@ -15,7 +15,7 @@ export function SidebarToggle() {
   return (
     <button
       onClick={toggleSidebar}
-      className="absolute top-4 left-4 z-10 flex h-10 w-10 items-center justify-center rounded-lg bg-black/60 text-white backdrop-blur-sm transition-all hover:bg-black/80"
+      className="absolute top-4 left-4 z-10 flex h-10 w-10 items-center justify-center rounded-lg bg-black/80 text-white shadow-lg shadow-black/30 backdrop-blur-md transition-all hover:bg-black/90"
       title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
       aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
     >

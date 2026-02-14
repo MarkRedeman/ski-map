@@ -108,7 +108,7 @@ export function PlaybackControls({ ride }: PlaybackControlsProps) {
 
   return (
     <div className="absolute bottom-5 left-1/2 z-10 w-full max-w-[700px] -translate-x-1/2 px-4 md:px-0">
-      <div className="rounded-2xl border border-white/10 bg-black/70 p-4 shadow-2xl backdrop-blur-md">
+        <div className="rounded-2xl border border-white/10 bg-black/80 p-4 shadow-2xl shadow-black/40 backdrop-blur-md">
         {/* Segment markers row */}
         {segments.length > 0 && (
           <div className="relative mb-2 h-6">
@@ -266,7 +266,7 @@ export function PlaybackControls({ ride }: PlaybackControlsProps) {
 
             {/* Speed Dropdown */}
             {speedDropdownOpen && (
-              <div className="absolute bottom-full left-0 mb-2 max-h-48 overflow-y-auto overflow-hidden rounded-lg border border-white/10 bg-black/90 shadow-xl backdrop-blur-md">
+              <div className="absolute bottom-full left-0 mb-2 max-h-48 overflow-y-auto overflow-hidden rounded-lg border border-white/10 bg-black/80 shadow-xl shadow-black/30 backdrop-blur-md">
                 {PLAYBACK_SPEEDS.map((speed) => (
                   <button
                     key={speed}
@@ -276,7 +276,7 @@ export function PlaybackControls({ ride }: PlaybackControlsProps) {
                     }}
                     className={`block w-full px-4 py-2 text-left text-sm font-medium transition-colors ${
                       playbackSpeed === speed
-                        ? 'bg-blue-500/30 text-white'
+                        ? 'bg-amber-500/30 text-white'
                         : 'text-white/70 hover:bg-white/10 hover:text-white'
                     }`}
                   >
@@ -310,7 +310,7 @@ export function PlaybackControls({ ride }: PlaybackControlsProps) {
             onClick={toggleCameraFollow}
             className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
               cameraFollowEnabled
-                ? 'bg-blue-500/30 text-blue-400'
+                ? 'bg-amber-500/30 text-amber-400'
                 : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
             }`}
             title={cameraFollowEnabled ? 'Disable camera follow' : 'Enable camera follow'}

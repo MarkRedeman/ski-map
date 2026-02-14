@@ -112,7 +112,7 @@ export function CompassUI({
   return (
     <button
       onClick={onClick}
-      className="absolute top-4 right-4 flex h-14 w-14 items-center justify-center rounded-full bg-black/60 backdrop-blur-sm transition-transform hover:scale-105 hover:bg-black/70 active:scale-95"
+      className="absolute top-4 right-4 flex h-14 w-14 items-center justify-center rounded-full bg-black/80 shadow-lg shadow-black/30 backdrop-blur-md transition-transform hover:scale-105 hover:bg-black/90 active:scale-95"
       title="Click to reset view to north"
       aria-label="Compass - click to face north"
     >

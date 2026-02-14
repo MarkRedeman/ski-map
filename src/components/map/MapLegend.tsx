@@ -30,7 +30,7 @@ export function MapLegend() {
     return (
       <button
         onClick={toggleLegend}
-        className="absolute bottom-4 left-4 flex items-center gap-2 rounded-lg bg-black/80 px-3 py-2 backdrop-blur-md transition-all hover:bg-black/90"
+        className="absolute bottom-4 left-4 flex items-center gap-2 rounded-lg bg-black/80 px-3 py-2 shadow-lg shadow-black/30 backdrop-blur-md transition-all hover:bg-black/90"
         title="Expand filter panel"
       >
         <SlidersHorizontal className="h-4 w-4 text-white" />
@@ -44,7 +44,7 @@ export function MapLegend() {
   }
 
   return (
-    <div className="absolute bottom-4 left-4 flex flex-col gap-3 rounded-lg bg-black/80 p-3 backdrop-blur-md">
+    <div className="absolute bottom-4 left-4 flex flex-col gap-3 rounded-lg bg-black/80 p-3 shadow-lg shadow-black/30 backdrop-blur-md">
       {/* Header with collapse button */}
       <button
         onClick={toggleLegend}
@@ -139,16 +139,16 @@ function DifficultyToggle({ difficulty, isVisible, onToggle }: DifficultyToggleP
       className={`
         flex items-center gap-1 rounded px-2 py-1 transition-all
         ${isVisible
-          ? 'bg-white/20 text-white'
-          : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60'
+          ? 'bg-white/10 text-white/70'
+          : 'bg-white/5 text-white/30 hover:bg-white/10 hover:text-white/60'
         }
       `}
       title={`${isVisible ? 'Hide' : 'Show'} ${config.label} pistes`}
     >
       {/* Color indicator */}
       <div
-        className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${!isVisible && 'opacity-40'}`}
-        style={{ backgroundColor: config.color }}
+        className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+        style={{ backgroundColor: config.color, opacity: isVisible ? 0.8 : 0.3 }}
       />
       
       {/* Label - capitalize first letter */}
@@ -235,20 +235,20 @@ function LiftTypeToggle({ liftType, isVisible, onToggle }: LiftTypeToggleProps) 
       className={`
         flex items-center gap-1.5 rounded px-2 py-1 text-left transition-all
         ${isVisible
-          ? 'bg-white/20 text-white'
-          : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60'
+          ? 'bg-white/10 text-white/70'
+          : 'bg-white/5 text-white/30 hover:bg-white/10 hover:text-white/60'
         }
       `}
       title={`${isVisible ? 'Hide' : 'Show'} ${liftType}`}
     >
       {/* Color indicator */}
       <div
-        className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${!isVisible && 'opacity-40'}`}
-        style={{ backgroundColor: config.color }}
+        className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+        style={{ backgroundColor: config.color, opacity: isVisible ? 0.8 : 0.3 }}
       />
       
       {/* Icon */}
-      <span className={`text-sm ${!isVisible && 'opacity-40'}`}>{config.icon}</span>
+      <span className={`text-sm ${isVisible ? 'opacity-80' : 'opacity-40'}`}>{config.icon}</span>
       
       {/* Label */}
       <span className={`text-[11px] font-medium whitespace-nowrap ${!isVisible && 'opacity-40'}`}>

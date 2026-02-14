@@ -31,7 +31,7 @@ function TooltipShell({
     <Html position={position} center zIndexRange={[100, 0]}>
       <div
         onClick={onClick}
-        className="cursor-pointer flex min-w-[140px] flex-col gap-1.5 rounded-lg bg-black/80 p-3 backdrop-blur-md transition-colors hover:bg-black/90"
+        className="cursor-pointer flex min-w-[140px] flex-col gap-1.5 rounded-lg bg-black/80 p-3 shadow-lg shadow-black/30 backdrop-blur-md transition-colors hover:bg-black/90"
       >
         {children}
         <div className="text-[10px] text-white/40">Click for details</div>

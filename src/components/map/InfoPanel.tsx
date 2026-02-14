@@ -23,7 +23,7 @@ interface PanelLayoutProps {
 
 function PanelLayout({ icon, title, subtitle, onClose, children }: PanelLayoutProps) {
   return (
-    <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/80 backdrop-blur-md">
+    <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/80 shadow-lg shadow-black/30 backdrop-blur-md">
       {/* Header */}
       <div className="flex items-start justify-between gap-2 p-3 border-b border-white/10">
         <div className="flex items-center gap-2">
