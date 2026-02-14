@@ -3,13 +3,13 @@
  *
  * Features:
  * - Shows: ride name, date, duration, distance
- * - Click navigates to /rides/{ride.id}
+ * - Click links to /rides/{ride.id} (or back to / if already selected)
  * - Delete button on hover with confirmation
  * - Selected and hover state styling
  */
 
 import { useState, useCallback } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDuration, formatDistance } from '@/lib/garmin/parser'
@@ -33,32 +33,31 @@ function formatDate(date: Date): string {
 }
 
 export function RideListItem({ ride, isSelected }: RideListItemProps) {
-  const navigate = useNavigate()
   const deleteMutation = useDeleteRun()
 
   const [isHovered, setIsHovered] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  const handleClick = useCallback(() => {
-    if (!showDeleteConfirm) {
-      if (isSelected) {
-        // Deselect by navigating back to root
-        navigate({ to: '/' })
-      } else {
-        // Select the ride
-        navigate({ to: '/rides/$rideId', params: { rideId: ride.id }, search: { t: 0 } })
+  const handleLinkClick = useCallback(
+    (e: React.MouseEvent) => {
+      // Prevent navigation when delete confirmation is showing
+      if (showDeleteConfirm) {
+        e.preventDefault()
       }
-    }
-  }, [navigate, ride.id, showDeleteConfirm, isSelected])
+    },
+    [showDeleteConfirm]
+  )
 
   const handleDeleteClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
+    e.preventDefault()
     setShowDeleteConfirm(true)
   }, [])
 
   const handleConfirmDelete = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation()
+      e.preventDefault()
       try {
         await deleteMutation.mutateAsync(ride.id)
       } catch {
@@ -71,19 +70,26 @@ export function RideListItem({ ride, isSelected }: RideListItemProps) {
 
   const handleCancelDelete = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
+    e.preventDefault()
     setShowDeleteConfirm(false)
   }, [])
 
+  // Toggle behavior: selected rides deselect (go home), unselected rides select
+  const linkProps = isSelected
+    ? { to: '/' as const }
+    : { to: '/rides/$rideId' as const, params: { rideId: ride.id }, search: { t: 0 } }
+
   return (
-    <div
-      onClick={handleClick}
+    <Link
+      {...linkProps}
+      onClick={handleLinkClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false)
         setShowDeleteConfirm(false)
       }}
       className={cn(
-        'relative cursor-pointer border-b border-white/5 px-3 py-2 transition-colors',
+        'relative block cursor-pointer border-b border-white/5 px-3 py-2 transition-colors',
         isSelected
           ? 'border-l-2 border-l-amber-400 bg-white/15'
           : isHovered
@@ -138,6 +144,6 @@ export function RideListItem({ ride, isSelected }: RideListItemProps) {
           )}
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
