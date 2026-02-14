@@ -61,67 +61,29 @@ export function serializeSelection(selection: Selection | null): string | undefi
 }
 
 /**
- * Convert store selection IDs to Selection object
- * Store uses: "piste-12345678" format
+ * Convert store entity selection to URL Selection object
+ * Store uses: { type: 'piste', id: 'piste-12345678' }
  * URL uses: "piste:12345678" format
  */
-export function storeIdToSelection(
-  selectedPisteId: string | null,
-  selectedLiftId: string | null,
-  selectedPeakId: string | null,
-  selectedPlaceId: string | null
+export function entityToSelection(
+  selectedEntity: { type: SelectionType; id: string } | null
 ): Selection | null {
-  if (selectedPisteId) {
-    return { type: 'piste', id: selectedPisteId.replace('piste-', '') }
-  }
-  if (selectedLiftId) {
-    return { type: 'lift', id: selectedLiftId.replace('lift-', '') }
-  }
-  if (selectedPeakId) {
-    return { type: 'peak', id: selectedPeakId.replace('peak-', '') }
-  }
-  if (selectedPlaceId) {
-    return { type: 'place', id: selectedPlaceId.replace('place-', '') }
-  }
-  return null
+  if (!selectedEntity) return null
+  
+  // Remove the prefix from the ID for the URL
+  const id = selectedEntity.id.replace(`${selectedEntity.type}-`, '')
+  return { type: selectedEntity.type, id }
 }
 
 /**
- * Convert URL Selection to store ID format
+ * Convert URL Selection to store entity format
  * URL: { type: 'piste', id: '12345678' }
- * Store: "piste-12345678"
+ * Store: { type: 'piste', id: 'piste-12345678' }
  */
-export function selectionToStoreId(selection: Selection | null): {
-  selectedPisteId: string | null
-  selectedLiftId: string | null
-  selectedPeakId: string | null
-  selectedPlaceId: string | null
-} {
-  const result = {
-    selectedPisteId: null as string | null,
-    selectedLiftId: null as string | null,
-    selectedPeakId: null as string | null,
-    selectedPlaceId: null as string | null,
-  }
+export function selectionToEntity(selection: Selection | null): { type: SelectionType; id: string } | null {
+  if (!selection) return null
   
-  if (!selection) return result
-  
-  switch (selection.type) {
-    case 'piste':
-      result.selectedPisteId = `piste-${selection.id}`
-      break
-    case 'lift':
-      result.selectedLiftId = `lift-${selection.id}`
-      break
-    case 'peak':
-      result.selectedPeakId = `peak-${selection.id}`
-      break
-    case 'place':
-      result.selectedPlaceId = `place-${selection.id}`
-      break
-  }
-  
-  return result
+  return { type: selection.type, id: `${selection.type}-${selection.id}` }
 }
 
 /**

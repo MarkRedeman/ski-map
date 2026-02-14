@@ -17,8 +17,6 @@ import {
   type SearchParams,
   parseSearchParams,
   buildSearchParams,
-  storeIdToSelection,
-  selectionToStoreId,
 } from '@/lib/url/searchSchema'
 
 /** Debounce delay for URL updates (ms) */
@@ -42,10 +40,7 @@ export function useURLSync() {
   const updateTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   
   // Get store values
-  const selectedPisteId = useMapStore((s) => s.selectedPisteId)
-  const selectedLiftId = useMapStore((s) => s.selectedLiftId)
-  const selectedPeakId = useMapStore((s) => s.selectedPeakId)
-  const selectedPlaceId = useMapStore((s) => s.selectedPlaceId)
+  const selectedEntity = useMapStore((s) => s.selectedEntity)
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes)
   const showTerrain = useMapStore((s) => s.showTerrain)
   const showPistes = useMapStore((s) => s.showPistes)
@@ -53,12 +48,9 @@ export function useURLSync() {
   const showLabels = useMapStore((s) => s.showLabels)
   const enabledDifficulties = useNavigationStore((s) => s.enabledDifficulties)
   const resolution = useSettingsStore((s) => s.resolution)
-  
+
   // Get store setters
-  const setSelectedPiste = useMapStore((s) => s.setSelectedPiste)
-  const setSelectedLift = useMapStore((s) => s.setSelectedLift)
-  const setSelectedPeak = useMapStore((s) => s.setSelectedPeak)
-  const setSelectedPlace = useMapStore((s) => s.setSelectedPlace)
+  const setSelectedEntity = useMapStore((s) => s.setSelectedEntity)
   const setDifficulties = useNavigationStore((s) => s.setDifficulties)
   
   /**
@@ -70,15 +62,8 @@ export function useURLSync() {
     const parsed = parseSearchParams(params)
     
     // Apply selection
-    const storeIds = selectionToStoreId(parsed.selection)
-    if (storeIds.selectedPisteId) {
-      setSelectedPiste(storeIds.selectedPisteId)
-    } else if (storeIds.selectedLiftId) {
-      setSelectedLift(storeIds.selectedLiftId)
-    } else if (storeIds.selectedPeakId) {
-      setSelectedPeak(storeIds.selectedPeakId)
-    } else if (storeIds.selectedPlaceId) {
-      setSelectedPlace(storeIds.selectedPlaceId)
+    if (parsed.selection) {
+      setSelectedEntity(parsed.selection.type, parsed.selection.id)
     }
     
     // Apply difficulties
@@ -134,23 +119,16 @@ export function useURLSync() {
     setTimeout(() => {
       isApplyingURL.current = false
     }, 50)
-  }, [setSelectedPiste, setSelectedLift, setSelectedPeak, setSelectedPlace, setDifficulties])
+  }, [setSelectedEntity, setDifficulties])
   
   /**
    * Update URL from current store state (Store -> URL)
    */
   const updateURLFromStores = useCallback(() => {
     if (isApplyingURL.current) return
-    
-    const selection = storeIdToSelection(
-      selectedPisteId,
-      selectedLiftId,
-      selectedPeakId,
-      selectedPlaceId
-    )
-    
+
     const params = buildSearchParams({
-      selection,
+      selection: selectedEntity,
       difficulties: Array.from(enabledDifficulties) as Difficulty[],
       liftTypes: Array.from(visibleLiftTypes) as LiftType[],
       layers: {
@@ -162,7 +140,7 @@ export function useURLSync() {
       resolution,
       // Don't include camera by default - only for explicit share actions
     })
-    
+
     // Use replace to avoid polluting history with every filter change
     navigate({
       to: '.',
@@ -171,10 +149,7 @@ export function useURLSync() {
     })
   }, [
     navigate,
-    selectedPisteId,
-    selectedLiftId,
-    selectedPeakId,
-    selectedPlaceId,
+    selectedEntity,
     enabledDifficulties,
     visibleLiftTypes,
     showTerrain,
@@ -221,10 +196,7 @@ export function useURLSync() {
     }
   }, [
     updateURLFromStores,
-    selectedPisteId,
-    selectedLiftId,
-    selectedPeakId,
-    selectedPlaceId,
+    selectedEntity,
     enabledDifficulties,
     visibleLiftTypes,
     showTerrain,
@@ -241,10 +213,7 @@ export function useURLSync() {
  * Use this when user explicitly wants to share current view.
  */
 export function useShareableURL(): () => string {
-  const selectedPisteId = useMapStore((s) => s.selectedPisteId)
-  const selectedLiftId = useMapStore((s) => s.selectedLiftId)
-  const selectedPeakId = useMapStore((s) => s.selectedPeakId)
-  const selectedPlaceId = useMapStore((s) => s.selectedPlaceId)
+  const selectedEntity = useMapStore((s) => s.selectedEntity)
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes)
   const showTerrain = useMapStore((s) => s.showTerrain)
   const showPistes = useMapStore((s) => s.showPistes)
@@ -254,17 +223,10 @@ export function useShareableURL(): () => string {
   const cameraTarget = useMapStore((s) => s.cameraTarget)
   const enabledDifficulties = useNavigationStore((s) => s.enabledDifficulties)
   const resolution = useSettingsStore((s) => s.resolution)
-  
+
   return useCallback(() => {
-    const selection = storeIdToSelection(
-      selectedPisteId,
-      selectedLiftId,
-      selectedPeakId,
-      selectedPlaceId
-    )
-    
     const params = buildSearchParams({
-      selection,
+      selection: selectedEntity,
       difficulties: Array.from(enabledDifficulties) as Difficulty[],
       liftTypes: Array.from(visibleLiftTypes) as LiftType[],
       layers: {
@@ -279,23 +241,20 @@ export function useShareableURL(): () => string {
         target: cameraTarget,
       },
     })
-    
+
     // Build full URL
     const url = new URL(window.location.href)
     url.search = '' // Clear existing params
-    
+
     for (const [key, value] of Object.entries(params)) {
       if (value !== undefined) {
         url.searchParams.set(key, value)
       }
     }
-    
+
     return url.toString()
   }, [
-    selectedPisteId,
-    selectedLiftId,
-    selectedPeakId,
-    selectedPlaceId,
+    selectedEntity,
     enabledDifficulties,
     visibleLiftTypes,
     showTerrain,
