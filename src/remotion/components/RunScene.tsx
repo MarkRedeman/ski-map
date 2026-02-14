@@ -4,18 +4,12 @@ import { useMemo } from 'react'
 import * as THREE from 'three'
 import type { VideoSkiRun } from '@/types/skiRun'
 import { getRunValuesAtTime } from '@/types/skiRun'
+import { SOLDEN_CENTER } from '@/config/region'
 
 type RunSceneProps = {
   run: VideoSkiRun
   /** Speed multiplier for playback (default 1 = realtime) */
   speedMultiplier?: number
-}
-
-// Sölden center coordinates for scene positioning
-const SOLDEN_CENTER = {
-  lat: 46.9147,
-  lon: 10.9975,
-  elevation: 2284,
 }
 
 const SCALE = 10 // Scene scale factor

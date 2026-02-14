@@ -174,13 +174,15 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c
 }
 
+import { SOLDEN_CENTER } from '@/config/region'
+
 /**
  * Create a demo run for testing video generation
  */
 export function createDemoVideoRun(): VideoSkiRun {
   const points: VideoRunPoint[] = []
-  const startLat = 46.9147
-  const startLon = 10.9975
+  const startLat = SOLDEN_CENTER.lat
+  const startLon = SOLDEN_CENTER.lon
   const startElevation = 2800
   const startTime = Date.now()
   

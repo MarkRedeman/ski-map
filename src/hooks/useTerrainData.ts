@@ -14,16 +14,9 @@ import {
   buildSatelliteImageFromTiles,
 } from '@/lib/geo/mapboxTiles'
 import { geoToLocal, SOLDEN_CENTER } from '@/lib/geo/coordinates'
+import { SOLDEN_BOUNDS } from '@/config/region'
 import type { ElevationGrid } from '@/lib/geo/elevationGrid'
-import { useTerrainStore } from '@/store/terrainStore'
-
-// Sölden ski area bounds (includes Rettenbach & Tiefenbach glaciers)
-const SOLDEN_BOUNDS = {
-  minLat: 46.84,
-  maxLat: 47.01,
-  minLon: 10.86,
-  maxLon: 11.2,
-}
+import { useMapStore } from '@/stores/useMapStore'
 
 interface UseTerrainDataOptions {
   /** Tile zoom level (default 12) */
@@ -66,8 +59,8 @@ export function useTerrainData({
   enabled = true,
 }: UseTerrainDataOptions = {}) {
   const accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string
-  const setElevationGrid = useTerrainStore((s) => s.setElevationGrid)
-  const setIsLoading = useTerrainStore((s) => s.setIsLoading)
+  const setElevationGrid = useMapStore((s) => s.setElevationGrid)
+  const setIsLoading = useMapStore((s) => s.setIsLoadingTerrain)
 
   const query = useQuery({
     queryKey: ['terrain-data', zoom],

@@ -9,17 +9,10 @@
 import { useMemo, memo } from 'react'
 import { Line } from '@react-three/drei'
 import { useContourLines } from '@/hooks/useContourLines'
-import { useTerrainStore } from '@/store/terrainStore'
+import { useMapStore } from '@/stores/useMapStore'
 import { sampleElevation } from '@/lib/geo/elevationGrid'
 import { useTerrainSettings } from '@/stores/useSettingsStore'
-
-// Sölden ski area bounds (includes Rettenbach & Tiefenbach glaciers)
-const SOLDEN_BOUNDS = {
-  minLat: 46.84,
-  maxLat: 47.01,
-  minLon: 10.86,
-  maxLon: 11.2,
-}
+import { SOLDEN_BOUNDS } from '@/config/region'
 
 interface ContourTerrainProps {
   /** Contour interval in meters (default 50) */
@@ -45,7 +38,7 @@ export const ContourTerrain = memo(function ContourTerrain({
     interval,
   })
   
-  const elevationGrid = useTerrainStore((s) => s.elevationGrid)
+  const elevationGrid = useMapStore((s) => s.elevationGrid)
 
   // Separate major and minor contours for different styling
   // Also project contour points onto actual terrain surface
