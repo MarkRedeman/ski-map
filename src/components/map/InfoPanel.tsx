@@ -3,7 +3,7 @@
  * Shows when an item is clicked, styled to match the map legend
  */
 
-import { X, Mountain, Ruler, Navigation, MapPin } from 'lucide-react'
+import { X, Mountain, Ruler, Users, Navigation, ArrowUp, ArrowDown, MapPin } from 'lucide-react'
 import { useMapStore } from '@/stores/useMapStore'
 import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
@@ -131,7 +131,14 @@ function LiftInfoPanel({ id }: { id: string }) {
   const config = LIFT_TYPE_CONFIG[lift.type as keyof typeof LIFT_TYPE_CONFIG] ?? LIFT_TYPE_CONFIG['Lift']
 
   const handleNavigate = () => {
-    if (lift.coordinates.length > 0) {
+    if (lift.stations?.[1]) {
+      setDestination({
+        id: lift.id,
+        name: lift.name,
+        coordinates: lift.stations[1].coordinates,
+        type: 'lift',
+      })
+    } else if (lift.coordinates.length > 0) {
       const lastCoord = lift.coordinates[lift.coordinates.length - 1]
       if (lastCoord) {
         setDestination({
@@ -161,17 +168,51 @@ function LiftInfoPanel({ id }: { id: string }) {
             <p className="text-xs font-medium text-white">{(lift.length / 1000).toFixed(2)} km</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 rounded bg-white/10 p-2">
-          <div
-            className="h-4 w-4 rounded-full flex-shrink-0"
-            style={{ backgroundColor: config.color }}
-          />
-          <div>
-            <p className="text-[10px] text-white/50">Type</p>
-            <p className="text-xs font-medium text-white">{lift.type}</p>
+        {lift.capacity ? (
+          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+            <Users className="h-4 w-4 text-white/50" />
+            <div>
+              <p className="text-[10px] text-white/50">Capacity</p>
+              <p className="text-xs font-medium text-white">{lift.capacity}/h</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+            <div
+              className="h-4 w-4 rounded-full flex-shrink-0"
+              style={{ backgroundColor: config.color }}
+            />
+            <div>
+              <p className="text-[10px] text-white/50">Type</p>
+              <p className="text-xs font-medium text-white">{lift.type}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Stations */}
+      {lift.stations && lift.stations.length >= 2 && (
+        <div className="px-3 pb-3">
+          <div className="rounded bg-white/10 p-2">
+            <p className="text-[10px] text-white/50 mb-1.5">Stations</p>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-1">
+                <ArrowDown className="h-3 w-3 text-green-400" />
+                <span className="text-white/80 truncate max-w-[80px]">
+                  {lift.stations[0]?.name || 'Bottom'}
+                </span>
+              </div>
+              <div className="h-px flex-1 bg-white/20" />
+              <div className="flex items-center gap-1">
+                <ArrowUp className="h-3 w-3 text-red-400" />
+                <span className="text-white/80 truncate max-w-[80px]">
+                  {lift.stations[1]?.name || 'Top'}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Actions */}
       <div className="p-3 pt-0">

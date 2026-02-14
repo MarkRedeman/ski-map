@@ -194,6 +194,8 @@ function parseLifts(elements: OSMElement[]): Lift[] {
 
     const liftType = way.tags.aerialway
     const name = way.tags.name || `Lift ${way.id}`
+    const firstCoord = coordinates[0]!
+    const lastCoord = coordinates[coordinates.length - 1]!
 
     lifts.push({
       id: `lift-${way.id}`,
@@ -201,6 +203,19 @@ function parseLifts(elements: OSMElement[]): Lift[] {
       type: normalizeLiftType(liftType),
       coordinates,
       length: calculateLength(coordinates),
+      stations: [
+        {
+          name: way.tags['aerialway:station:bottom'],
+          coordinates: [firstCoord[1], firstCoord[0], 0],
+        },
+        {
+          name: way.tags['aerialway:station:top'],
+          coordinates: [lastCoord[1], lastCoord[0], 0],
+        },
+      ],
+      capacity: way.tags['aerialway:capacity']
+        ? parseInt(way.tags['aerialway:capacity'], 10)
+        : undefined,
       skiArea: undefined,
     })
   }
@@ -440,6 +455,11 @@ export interface Lift {
   type: LiftType
   coordinates: [number, number][]
   length: number
+  stations?: {
+    name?: string
+    coordinates: [number, number, number] // [lat, lon, elevation]
+  }[]
+  capacity?: number
   skiArea?: SkiArea
 }
 

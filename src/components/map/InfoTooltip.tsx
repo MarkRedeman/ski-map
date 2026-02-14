@@ -141,6 +141,12 @@ function LiftTooltip({ id }: { id: string }) {
         <span className="text-white/70">{lift.type}</span>
         <span className="text-white/50">&bull;</span>
         <span className="text-white/70">{(lift.length / 1000).toFixed(1)} km</span>
+        {lift.capacity && (
+          <>
+            <span className="text-white/50">&bull;</span>
+            <span className="text-white/70">{lift.capacity}/h</span>
+          </>
+        )}
       </div>
     </TooltipShell>
   )
