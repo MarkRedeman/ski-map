@@ -9,8 +9,8 @@
  * Slides in/out from the left. State managed by useUIStore.
  */
 
-import { LocationButton } from '@/components/navigation/LocationButton'
-import { PisteListPanel } from '@/components/navigation/PisteListPanel'
+import { LocationButton } from '@/components/sidebar/LocationButton'
+import { PisteListPanel } from '@/components/sidebar/PisteListPanel'
 import { RideListPanel } from '@/components/rides/RideListPanel'
 import { useUIStore } from '@/stores/useUIStore'
 import { cn } from '@/lib/utils'

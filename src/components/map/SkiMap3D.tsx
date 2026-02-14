@@ -11,7 +11,6 @@ import { ContourTerrain } from "./ContourTerrain";
 import { Pistes } from "./Pistes";
 import { Lifts } from "./Lifts";
 import { UserMarker } from "./UserMarker";
-import { RouteOverlay } from "./RouteOverlay";
 import { RunPath } from "./RunPath";
 import { PlayerMarker } from "./PlayerMarker";
 import { PlaybackCameraFollow } from "./PlaybackCameraFollow";
@@ -87,7 +86,6 @@ export function SkiMap3D() {
           <Pistes enabledDifficulties={enabledDifficulties} />
           <Lifts />
           <UserMarker />
-          <RouteOverlay />
           {/* Render selected ski run if available */}
           {selectedRun && <RunPath run={selectedRun} />}
           {/* Render player marker for ride playback */}

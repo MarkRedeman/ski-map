@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Sphere, Html, Ring } from '@react-three/drei'
 import * as THREE from 'three'
-import { useRoutePlanningStore } from '@/stores/useRoutePlanningStore'
+import { useGeolocationStore } from '@/stores/useGeolocationStore'
 import { geoToLocal } from '@/lib/geo/coordinates'
 
 // Scale factor from coordinates.ts (meters to scene units)
@@ -15,10 +15,10 @@ const SCALE = 0.1
  * Reads location, accuracy, and heading from the navigation store.
  */
 export function UserMarker() {
-  const userLocation = useRoutePlanningStore((s) => s.userLocation)
-  const isTracking = useRoutePlanningStore((s) => s.isTrackingLocation)
-  const accuracy = useRoutePlanningStore((s) => s.userAccuracy)
-  const heading = useRoutePlanningStore((s) => s.userHeading)
+  const userLocation = useGeolocationStore((s) => s.userLocation)
+  const isTracking = useGeolocationStore((s) => s.isTrackingLocation)
+  const accuracy = useGeolocationStore((s) => s.userAccuracy)
+  const heading = useGeolocationStore((s) => s.userHeading)
   
   const markerRef = useRef<THREE.Mesh>(null)
   const pulseRef = useRef<THREE.Mesh>(null)

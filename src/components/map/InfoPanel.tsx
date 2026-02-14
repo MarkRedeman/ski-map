@@ -3,13 +3,12 @@
  * Shows when an item is clicked, styled to match the map legend
  */
 
-import { X, Mountain, Ruler, Users, Navigation, ArrowUp, ArrowDown, MapPin } from 'lucide-react'
+import { X, Mountain, Ruler, Users, ArrowUp, ArrowDown, MapPin } from 'lucide-react'
 import { useMapStore } from '@/stores/useMapStore'
 import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
 import { usePeaks } from '@/hooks/usePeaks'
 import { usePlaces } from '@/hooks/usePlaces'
-import { useRoutePlanningStore } from '@/stores/useRoutePlanningStore'
 import { LIFT_TYPE_CONFIG } from './Lifts'
 import { PISTE_DIFFICULTY_CONFIG } from './Pistes'
 
@@ -51,29 +50,11 @@ function PanelLayout({ icon, title, subtitle, onClose, children }: PanelLayoutPr
 function PisteInfoPanel({ id }: { id: string }) {
   const { data: pistes } = usePistes()
   const clearSelection = useMapStore((s) => s.clearSelection)
-  const setDestination = useRoutePlanningStore((s) => s.setDestination)
 
   const piste = pistes?.find(p => p.id === id)
   if (!piste) return null
 
   const config = PISTE_DIFFICULTY_CONFIG[piste.difficulty]
-
-  const handleNavigate = () => {
-    if (piste.coordinates.length > 0) {
-      // Get the last point of the last segment
-      const lastSegment = piste.coordinates[piste.coordinates.length - 1]
-      const lastCoord = lastSegment?.[lastSegment.length - 1]
-      if (lastCoord) {
-        setDestination({
-          id: piste.id,
-          name: piste.name,
-          coordinates: [lastCoord[0], lastCoord[1], 0],
-          type: 'piste',
-        })
-      }
-    }
-    clearSelection()
-  }
 
   return (
     <PanelLayout
@@ -104,17 +85,6 @@ function PisteInfoPanel({ id }: { id: string }) {
           </div>
         </div>
       </div>
-
-      {/* Actions */}
-      <div className="p-3 pt-0">
-        <button
-          onClick={handleNavigate}
-          className="flex w-full items-center justify-center gap-2 rounded bg-white/20 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/30"
-        >
-          <Navigation className="h-3.5 w-3.5" />
-          Navigate to End
-        </button>
-      </div>
     </PanelLayout>
   )
 }
@@ -123,34 +93,11 @@ function PisteInfoPanel({ id }: { id: string }) {
 function LiftInfoPanel({ id }: { id: string }) {
   const { data: lifts } = useLifts()
   const clearSelection = useMapStore((s) => s.clearSelection)
-  const setDestination = useRoutePlanningStore((s) => s.setDestination)
 
   const lift = lifts?.find(l => l.id === id)
   if (!lift) return null
 
   const config = LIFT_TYPE_CONFIG[lift.type as keyof typeof LIFT_TYPE_CONFIG] ?? LIFT_TYPE_CONFIG['Lift']
-
-  const handleNavigate = () => {
-    if (lift.stations?.[1]) {
-      setDestination({
-        id: lift.id,
-        name: lift.name,
-        coordinates: lift.stations[1].coordinates,
-        type: 'lift',
-      })
-    } else if (lift.coordinates.length > 0) {
-      const lastCoord = lift.coordinates[lift.coordinates.length - 1]
-      if (lastCoord) {
-        setDestination({
-          id: lift.id,
-          name: lift.name,
-          coordinates: [lastCoord[0], lastCoord[1], 0],
-          type: 'lift',
-        })
-      }
-    }
-    clearSelection()
-  }
 
   return (
     <PanelLayout
@@ -213,17 +160,6 @@ function LiftInfoPanel({ id }: { id: string }) {
           </div>
         </div>
       )}
-
-      {/* Actions */}
-      <div className="p-3 pt-0">
-        <button
-          onClick={handleNavigate}
-          className="flex w-full items-center justify-center gap-2 rounded bg-white/20 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/30"
-        >
-          <Navigation className="h-3.5 w-3.5" />
-          Navigate to Top
-        </button>
-      </div>
     </PanelLayout>
   )
 }

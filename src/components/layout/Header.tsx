@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Mountain, MapPin, Navigation, Activity } from 'lucide-react'
+import { Mountain, MapPin, Activity } from 'lucide-react'
 import { OfflineIndicator } from '@/components/OfflineIndicator'
 
 export function Header() {
@@ -20,13 +20,6 @@ export function Header() {
           >
             <MapPin className="h-4 w-4" />
             <span>Map</span>
-          </Link>
-          <Link
-            to="/"
-            className="flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-          >
-            <Navigation className="h-4 w-4" />
-            <span>Navigate</span>
           </Link>
           <Link
             to="/runs"
