@@ -60,12 +60,14 @@ function PisteInfoPanel({ id }: { id: string }) {
 
   const handleNavigate = () => {
     if (piste.coordinates.length > 0) {
-      const lastCoord = piste.coordinates[piste.coordinates.length - 1]
+      // Get the last point of the last segment
+      const lastSegment = piste.coordinates[piste.coordinates.length - 1]
+      const lastCoord = lastSegment?.[lastSegment.length - 1]
       if (lastCoord) {
         setDestination({
           id: piste.id,
           name: piste.name,
-          coordinates: [lastCoord[0], lastCoord[1], lastCoord[2] ?? 0],
+          coordinates: [lastCoord[0], lastCoord[1], 0],
           type: 'piste',
         })
       }
@@ -135,7 +137,7 @@ function LiftInfoPanel({ id }: { id: string }) {
         setDestination({
           id: lift.id,
           name: lift.name,
-          coordinates: [lastCoord[0], lastCoord[1], lastCoord[2] ?? 0],
+          coordinates: [lastCoord[0], lastCoord[1], 0],
           type: 'lift',
         })
       }

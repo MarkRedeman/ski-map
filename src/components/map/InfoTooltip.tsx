@@ -40,9 +40,9 @@ function TooltipShell({
   )
 }
 
-// Calculate 3D position from the midpoint of a coordinate array
+// Calculate 3D position from the midpoint of a [lon, lat][] coordinate array
 function midpointPosition(
-  coordinates: [number, number, number][],
+  coordinates: [number, number][],
   elevationGrid: ElevationGrid,
 ): [number, number, number] | null {
   if (coordinates.length === 0) return null
@@ -53,6 +53,11 @@ function midpointPosition(
   const [x, , z] = coordsToLocal([[midCoord[0], midCoord[1]]], 0)[0]!
   const y = sampleElevation(elevationGrid, x, z) + 20
   return [x, y, z]
+}
+
+// Flatten multi-segment piste coordinates to a single [lon, lat][] array
+function flattenSegments(segments: [number, number][][]): [number, number][] {
+  return segments.flat()
 }
 
 // Calculate 3D position from a lat/lon point
@@ -76,8 +81,8 @@ function PisteTooltip({ id }: { id: string }) {
 
   const position = useMemo(() => {
     if (!piste || !elevationGrid) return null
-    // Use the raw coordinates (first/only segment for position)
-    return midpointPosition(piste.coordinates, elevationGrid)
+    // Flatten multi-segment coordinates for midpoint calculation
+    return midpointPosition(flattenSegments(piste.coordinates), elevationGrid)
   }, [piste, elevationGrid])
 
   if (!piste || !position) return null
