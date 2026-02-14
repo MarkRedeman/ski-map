@@ -17,6 +17,8 @@ import {
   type SearchParams,
   parseSearchParams,
   buildSearchParams,
+  selectionToEntity,
+  entityToSelection,
 } from '@/lib/url/searchSchema'
 
 /** Debounce delay for URL updates (ms) */
@@ -61,9 +63,12 @@ export function useURLSync() {
     
     const parsed = parseSearchParams(params)
     
-    // Apply selection
+    // Apply selection (convert URL ID to store ID with prefix)
     if (parsed.selection) {
-      setSelectedEntity(parsed.selection.type, parsed.selection.id)
+      const entity = selectionToEntity(parsed.selection)
+      if (entity) {
+        setSelectedEntity(entity.type, entity.id)
+      }
     }
     
     // Apply difficulties
@@ -128,7 +133,7 @@ export function useURLSync() {
     if (isApplyingURL.current) return
 
     const params = buildSearchParams({
-      selection: selectedEntity,
+      selection: entityToSelection(selectedEntity),
       difficulties: Array.from(enabledDifficulties) as Difficulty[],
       liftTypes: Array.from(visibleLiftTypes) as LiftType[],
       layers: {
@@ -226,7 +231,7 @@ export function useShareableURL(): () => string {
 
   return useCallback(() => {
     const params = buildSearchParams({
-      selection: selectedEntity,
+      selection: entityToSelection(selectedEntity),
       difficulties: Array.from(enabledDifficulties) as Difficulty[],
       liftTypes: Array.from(visibleLiftTypes) as LiftType[],
       layers: {
