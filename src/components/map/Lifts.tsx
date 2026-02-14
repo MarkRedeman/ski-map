@@ -5,54 +5,10 @@ import { useLifts } from '@/hooks/useLifts'
 import { useMapStore, type LiftType } from '@/stores/useMapStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
 import { sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid'
+import { LIFT_COLORS } from '@/config/theme'
 
-/** 
- * Lift type color configuration
- * Color scheme: Yellow (gondolas) → Orange → Pink (chair lifts) → Magenta → Light Green (drag lifts)
- * This avoids conflicts with piste difficulty colors (blue, red, black)
- */
-export const LIFT_TYPE_CONFIG: Record<LiftType, { color: string; colorHighlight: string; icon: string }> = {
-  'Gondola': {
-    color: '#eab308',      // Yellow
-    colorHighlight: '#facc15',
-    icon: '🚡',
-  },
-  'Cable Car': {
-    color: '#f59e0b',      // Amber/Orange-Yellow
-    colorHighlight: '#fbbf24',
-    icon: '🚠',
-  },
-  'Chair Lift': {
-    color: '#ec4899',      // Pink
-    colorHighlight: '#f472b6',
-    icon: '🪑',
-  },
-  'T-Bar': {
-    color: '#d946ef',      // Magenta/Fuchsia
-    colorHighlight: '#e879f9',
-    icon: '⏸️',
-  },
-  'Button Lift': {
-    color: '#c026d3',      // Dark Magenta
-    colorHighlight: '#d946ef',
-    icon: '🔘',
-  },
-  'Drag Lift': {
-    color: '#a855f7',      // Purple (between magenta and green)
-    colorHighlight: '#c084fc',
-    icon: '↗️',
-  },
-  'Magic Carpet': {
-    color: '#84cc16',      // Light Green/Lime
-    colorHighlight: '#a3e635',
-    icon: '🟰',
-  },
-  'Lift': {
-    color: '#f59e0b',      // Amber (default, matches Cable Car)
-    colorHighlight: '#fbbf24',
-    icon: '🎿',
-  },
-}
+/** Re-export for consumers that import from Lifts.tsx */
+export const LIFT_TYPE_CONFIG = LIFT_COLORS
 
 /** Height offset above terrain for lift cables (in scene units, ~100m real) */
 const LIFT_CABLE_OFFSET = 10

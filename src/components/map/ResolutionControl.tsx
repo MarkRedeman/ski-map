@@ -55,7 +55,7 @@ export function ResolutionControl() {
         {isTrackingLocation && userLocation && (
           <button
             onClick={handleLocateMe}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors"
             title="Center map on my location"
           >
             <Navigation className="h-4 w-4" />
@@ -71,7 +71,7 @@ export function ResolutionControl() {
           <span className="text-xs font-medium text-white">{resolution}</span>
           {isLoading && (
             <svg
-              className="h-3 w-3 animate-spin text-blue-400"
+              className="h-3 w-3 animate-spin text-amber-400"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -120,7 +120,7 @@ export function ResolutionControl() {
           <>
             <button
               onClick={handleLocateMe}
-              className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors bg-blue-500 text-white hover:bg-blue-600"
+              className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors bg-amber-500 text-white hover:bg-amber-600"
               title="Center map on my location"
             >
               <Navigation className="h-3.5 w-3.5" />
@@ -205,7 +205,7 @@ export function ResolutionControl() {
               className={`
                 rounded px-2 py-1 text-xs font-medium transition-colors
                 ${resolution === level
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-amber-500 text-white'
                   : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
                 }
                 ${isLoading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
@@ -221,7 +221,7 @@ export function ResolutionControl() {
         {isLoading && (
           <div className="ml-1">
             <svg
-              className="h-4 w-4 animate-spin text-blue-400"
+              className="h-4 w-4 animate-spin text-amber-400"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"

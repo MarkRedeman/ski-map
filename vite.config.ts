@@ -18,7 +18,7 @@ export default defineConfig({
         name: 'Sölden Navigator',
         short_name: 'Ski Nav',
         description: 'Navigate the slopes of Sölden with 3D terrain visualization',
-        theme_color: '#0ea5e9',
+        theme_color: '#f59e0b',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: '/',

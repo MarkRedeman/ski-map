@@ -13,6 +13,7 @@ import { useMapStore } from '@/stores/useMapStore'
 import { sampleElevation } from '@/lib/geo/elevationGrid'
 import { useTerrainSettings } from '@/stores/useSettingsStore'
 import { SOLDEN_BOUNDS } from '@/config/region'
+import { LOADING } from '@/config/theme'
 
 interface ContourTerrainProps {
   /** Contour interval in meters (default 50) */
@@ -79,7 +80,7 @@ export const ContourTerrain = memo(function ContourTerrain({
         {/* Simple loading indicator - pulsing ring at origin */}
         <mesh position={[0, 5, 0]}>
           <torusGeometry args={[20, 2, 8, 32]} />
-          <meshBasicMaterial color="#60a5fa" transparent opacity={0.5} />
+          <meshBasicMaterial color={LOADING.contourTerrain} transparent opacity={0.5} />
         </mesh>
       </group>
     )

@@ -7,26 +7,10 @@ import { type Difficulty } from '@/lib/api/overpass'
 import { useMapStore } from '@/stores/useMapStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
 import { sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid'
+import { PISTE_COLORS, DIFFICULTY_COLORS, DIFFICULTY_COLORS_HIGHLIGHT } from '@/config/theme'
 
-const DIFFICULTY_COLORS: Record<Difficulty, string> = {
-  blue: '#3b82f6',
-  red: '#ef4444',
-  black: '#1e293b',
-}
-
-/** Brighter colors for highlighted state */
-const DIFFICULTY_COLORS_HIGHLIGHT: Record<Difficulty, string> = {
-  blue: '#60a5fa',
-  red: '#f87171',
-  black: '#475569',
-}
-
-/** Piste difficulty configuration with colors and icons */
-export const PISTE_DIFFICULTY_CONFIG: Record<Difficulty, { color: string; colorHighlight: string; icon: string; label: string }> = {
-  blue: { color: '#3b82f6', colorHighlight: '#60a5fa', icon: '🔵', label: 'Easy' },
-  red: { color: '#ef4444', colorHighlight: '#f87171', icon: '🔴', label: 'Intermediate' },
-  black: { color: '#1e293b', colorHighlight: '#475569', icon: '⚫', label: 'Expert' },
-}
+/** Re-export for consumers that import from Pistes.tsx */
+export const PISTE_DIFFICULTY_CONFIG = PISTE_COLORS
 
 /** Base line width (in pixels) */
 const BASE_LINE_WIDTH = 7

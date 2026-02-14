@@ -60,7 +60,7 @@ export function LocationButton() {
             error
               ? 'bg-red-500/20 text-red-300'
               : isTracking
-                ? 'bg-blue-500/20 text-blue-300'
+                ? 'bg-amber-500/20 text-amber-300'
                 : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
           )}
         >
@@ -70,9 +70,9 @@ export function LocationButton() {
               <AlertCircle className="h-5 w-5 text-red-400" />
             ) : isTracking ? (
               <>
-                <Locate className="h-5 w-5 text-blue-400" />
+                <Locate className="h-5 w-5 text-amber-400" />
                 {/* Pulsing ring animation */}
-                <span className="absolute inset-0 animate-ping rounded-full bg-blue-400 opacity-50" />
+                <span className="absolute inset-0 animate-ping rounded-full bg-amber-400 opacity-50" />
               </>
             ) : (
               <LocateOff className="h-5 w-5 text-white/50" />
@@ -91,7 +91,7 @@ export function LocationButton() {
             
             {/* Accuracy indicator when tracking */}
             {isTracking && accuracy !== null && !error && (
-              <div className="text-xs text-blue-400">
+              <div className="text-xs text-amber-400">
                 Accuracy: {formatAccuracy(accuracy)} ({Math.round(accuracy)}m)
               </div>
             )}
@@ -101,7 +101,7 @@ export function LocationButton() {
           <div
             className={cn(
               'h-4 w-8 rounded-full transition-colors',
-              isTracking ? 'bg-blue-500' : 'bg-white/20'
+              isTracking ? 'bg-amber-500' : 'bg-white/20'
             )}
           >
             <div
@@ -119,7 +119,7 @@ export function LocationButton() {
             onClick={handleCenterOnMe}
             className={cn(
               'flex items-center justify-center rounded px-3 transition-all',
-              'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+              'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
             )}
             title="Center map on my location"
           >

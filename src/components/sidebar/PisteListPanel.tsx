@@ -21,17 +21,12 @@ import { useMapStore, ALL_LIFT_TYPES, type LiftType } from '@/stores/useMapStore
 import { useDifficultyFilter } from '@/hooks/useDifficultyFilter'
 import { type Difficulty } from '@/lib/api/overpass'
 import { LIFT_TYPE_CONFIG } from '@/components/map/Lifts'
+import { DIFFICULTY_COLORS } from '@/config/theme'
 import { geoToLocal } from '@/lib/geo/coordinates'
 import type { Piste, Lift, Peak, Place } from '@/lib/api/overpass'
 import type { SearchParams } from '@/lib/url/searchSchema'
 
 type Tab = 'pistes' | 'lifts' | 'peaks' | 'villages'
-
-const DIFFICULTY_COLORS: Record<Difficulty, string> = {
-  blue: '#3b82f6',
-  red: '#ef4444',
-  black: '#1e293b',
-}
 
 // Camera distances for different item types (higher = further away)
 const CAMERA_DISTANCES = {

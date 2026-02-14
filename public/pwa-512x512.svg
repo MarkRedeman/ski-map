@@ -1,18 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <!-- Background circle -->
-  <circle cx="256" cy="256" r="240" fill="#0ea5e9"/>
+  <circle cx="256" cy="256" r="240" fill="#f59e0b"/>
   
   <!-- Mountain peaks -->
   <path d="M96 380 L256 140 L416 380 Z" fill="#ffffff"/>
-  <path d="M150 380 L256 230 L362 380 Z" fill="#e0f2fe"/>
+  <path d="M150 380 L256 230 L362 380 Z" fill="#fef3c7"/>
   
   <!-- Ski trail -->
   <path d="M180 270 Q210 295 240 280 Q270 265 300 290 Q330 315 360 300" 
-        stroke="#0369a1" 
+        stroke="#92400e" 
         stroke-width="16" 
         stroke-linecap="round" 
         fill="none"/>
   
   <!-- Snow cap -->
-  <path d="M210 200 L256 140 L302 200 Q256 175 210 200 Z" fill="#f0f9ff"/>
+  <path d="M210 200 L256 140 L302 200 Q256 175 210 200 Z" fill="#fffbeb"/>
 </svg>

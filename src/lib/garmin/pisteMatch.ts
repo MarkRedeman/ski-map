@@ -6,7 +6,7 @@ import type { RideSegment } from './segments'
 import type { RunPoint } from './types'
 import type { Piste, Lift } from '@/lib/api/overpass'
 import type { Difficulty } from '@/lib/api/overpass'
-import { LIFT_TYPE_CONFIG } from '@/components/map/Lifts'
+import { LIFT_COLORS, DIFFICULTY_COLORS, SEMANTIC } from '@/config/theme'
 import type { LiftType } from '@/stores/useMapStore'
 
 // Distance threshold for matching (in meters)
@@ -221,12 +221,10 @@ export function matchSegmentsToLifts(
  * Get color for a piste difficulty
  */
 export function getDifficultyColor(difficulty?: Difficulty): string {
-  switch (difficulty) {
-    case 'blue': return '#3b82f6'        // Blue
-    case 'red': return '#ef4444'         // Red
-    case 'black': return '#1f2937'       // Black (dark gray for visibility)
-    default: return '#6b7280'            // Gray for unknown
+  if (difficulty && difficulty in DIFFICULTY_COLORS) {
+    return DIFFICULTY_COLORS[difficulty]
   }
+  return SEMANTIC.unknown
 }
 
 /**
@@ -236,7 +234,7 @@ export function getDifficultyColorLight(difficulty?: Difficulty): string {
   switch (difficulty) {
     case 'blue': return 'rgba(59, 130, 246, 0.6)'
     case 'red': return 'rgba(239, 68, 68, 0.6)'
-    case 'black': return 'rgba(31, 41, 55, 0.6)'
+    case 'black': return 'rgba(30, 41, 59, 0.6)'
     default: return 'rgba(107, 114, 128, 0.6)'
   }
 }
@@ -251,17 +249,17 @@ export function getSegmentColor(segment: RideSegment): string {
     case 'lift': {
       // Use lift type color if available
       if (segment.liftType) {
-        const config = LIFT_TYPE_CONFIG[segment.liftType as LiftType]
+        const config = LIFT_COLORS[segment.liftType as LiftType]
         if (config) {
           return config.color
         }
       }
       // Default to amber for unknown lift type
-      return LIFT_TYPE_CONFIG['Lift'].color
+      return LIFT_COLORS['Lift'].color
     }
     case 'idle':
-      return '#475569' // Dark gray for idle
+      return SEMANTIC.idle
     default:
-      return '#6b7280'
+      return SEMANTIC.unknown
   }
 }

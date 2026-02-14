@@ -10,6 +10,7 @@ import * as THREE from 'three'
 import { useTerrainData } from '@/hooks/useTerrainData'
 import { useTerrainSettings } from '@/stores/useSettingsStore'
 import { useMapStore } from '@/stores/useMapStore'
+import { LOADING } from '@/config/theme'
 
 export function Terrain3D() {
   const { zoom, segments } = useTerrainSettings()
@@ -133,7 +134,7 @@ export function Terrain3D() {
       <group name="terrain-loading">
         <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[15, 20, 32]} />
-          <meshBasicMaterial color="#3b82f6" transparent opacity={0.5} />
+          <meshBasicMaterial color={LOADING.terrain} transparent opacity={0.5} />
         </mesh>
       </group>
     )

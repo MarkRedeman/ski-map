@@ -16,7 +16,7 @@ function RootLayout() {
         <Suspense
           fallback={
             <div className="flex h-full items-center justify-center">
-              <div className="text-lg text-sky-600">Loading...</div>
+              <div className="text-lg text-amber-600">Loading...</div>
             </div>
           }
         >

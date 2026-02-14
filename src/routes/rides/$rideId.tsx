@@ -113,10 +113,10 @@ function RidePage() {
   // Handle loading state
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center bg-gradient-to-b from-sky-100 to-white">
+      <div className="flex h-full items-center justify-center bg-gradient-to-b from-amber-50 to-white">
         <div className="text-center">
           <div className="mb-4 text-4xl">🎿</div>
-          <div className="text-lg font-medium text-sky-700">Loading rides...</div>
+          <div className="text-lg font-medium text-amber-700">Loading rides...</div>
         </div>
       </div>
     )
@@ -125,7 +125,7 @@ function RidePage() {
   // Handle ride not found
   if (!ride) {
     return (
-      <div className="flex h-full items-center justify-center bg-gradient-to-b from-sky-100 to-white">
+      <div className="flex h-full items-center justify-center bg-gradient-to-b from-amber-50 to-white">
         <div className="text-center">
           <div className="mb-4 text-4xl">🔍</div>
           <div className="text-lg font-medium text-slate-700">Ride not found</div>
@@ -134,7 +134,7 @@ function RidePage() {
           </div>
           <Link
             to="/"
-            className="mt-4 inline-block rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
+            className="mt-4 inline-block rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600"
           >
             Back to Home
           </Link>
@@ -155,10 +155,10 @@ function RidePage() {
         
         <Suspense
           fallback={
-            <div className="flex h-full items-center justify-center bg-gradient-to-b from-sky-100 to-white">
+            <div className="flex h-full items-center justify-center bg-gradient-to-b from-amber-50 to-white">
               <div className="text-center">
                 <div className="mb-4 text-4xl">🎿</div>
-                <div className="text-lg font-medium text-sky-700">Loading 3D terrain...</div>
+                <div className="text-lg font-medium text-amber-700">Loading 3D terrain...</div>
                 <div className="text-sm text-slate-500">Preparing Sölden ski area</div>
               </div>
             </div>
