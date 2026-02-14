@@ -9,7 +9,8 @@
 
 import { ChevronUp, ChevronDown, SlidersHorizontal } from 'lucide-react'
 import { useMapStore, ALL_LIFT_TYPES, type LiftType } from '@/stores/useMapStore'
-import { useNavigationStore, ALL_DIFFICULTIES, type Difficulty } from '@/stores/useNavigationStore'
+import { ALL_DIFFICULTIES, type Difficulty } from '@/lib/api/overpass'
+import { useDifficultyFilter } from '@/hooks/useDifficultyFilter'
 import { useUIStore } from '@/stores/useUIStore'
 import { LIFT_TYPE_CONFIG } from './Lifts'
 import { PISTE_DIFFICULTY_CONFIG } from './Pistes'
@@ -19,7 +20,7 @@ export function MapLegend() {
   const toggleLegend = useUIStore((s) => s.toggleLegend)
 
   // Count active filters for collapsed state indicator
-  const enabledDifficulties = useNavigationStore((s) => s.enabledDifficulties)
+  const { enabledDifficulties } = useDifficultyFilter()
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes)
   const activeFilters = enabledDifficulties.size + visibleLiftTypes.size
   const totalFilters = ALL_DIFFICULTIES.length + ALL_LIFT_TYPES.length - 1 // -1 for 'Lift' type we hide
@@ -68,9 +69,7 @@ export function MapLegend() {
  * Piste difficulty filter section
  */
 function PisteLegend() {
-  const enabledDifficulties = useNavigationStore((s) => s.enabledDifficulties)
-  const toggleDifficulty = useNavigationStore((s) => s.toggleDifficulty)
-  const setDifficulties = useNavigationStore((s) => s.setDifficulties)
+  const { enabledDifficulties, toggleDifficulty, setDifficulties } = useDifficultyFilter()
   
   const allVisible = enabledDifficulties.size === ALL_DIFFICULTIES.length
   const noneVisible = enabledDifficulties.size === 0

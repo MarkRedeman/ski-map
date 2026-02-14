@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigationStore } from '@/stores/useNavigationStore'
+import { useRoutePlanningStore } from '@/stores/useNavigationStore'
 
 export interface GeolocationError {
   code: number
@@ -38,7 +38,7 @@ export function useGeolocation(): GeolocationState & {
     userHeading,
     isTrackingLocation, 
     setIsTrackingLocation 
-  } = useNavigationStore()
+  } = useRoutePlanningStore()
 
   const handlePositionSuccess = useCallback((position: GeolocationPosition) => {
     const { latitude, longitude, altitude, accuracy: posAccuracy, heading: posHeading } = position.coords

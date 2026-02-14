@@ -1,10 +1,5 @@
 import { create } from 'zustand'
-import { subscribeWithSelector } from 'zustand/middleware'
-
-export type Difficulty = 'blue' | 'red' | 'black'
-
-/** All available difficulty levels in order from easiest to hardest */
-export const ALL_DIFFICULTIES: Difficulty[] = ['blue', 'red', 'black']
+import type { Difficulty } from '@/lib/api/overpass'
 
 export interface Location {
   id: string
@@ -35,13 +30,8 @@ export interface Route {
   maxDifficulty: Difficulty
 }
 
-interface NavigationState {
-  // Filters
-  enabledDifficulties: Set<Difficulty>
-  toggleDifficulty: (difficulty: Difficulty) => void
-  setDifficulties: (difficulties: Difficulty[]) => void
-
-  // Navigation
+interface RoutePlanningState {
+  // Route planning
   fromLocation: Location | null
   toLocation: Location | null
   setFromLocation: (location: Location | null) => void
@@ -57,7 +47,7 @@ interface NavigationState {
   isCalculating: boolean
   setIsCalculating: (calculating: boolean) => void
 
-  // User location
+  // User location / geolocation
   userLocation: [number, number, number] | null // [lat, lon, elevation]
   setUserLocation: (location: [number, number, number] | null) => void
   userAccuracy: number | null // GPS accuracy in meters
@@ -68,66 +58,44 @@ interface NavigationState {
   setIsTrackingLocation: (tracking: boolean) => void
 }
 
-export const useNavigationStore = create<NavigationState>()(
-  subscribeWithSelector((set) => ({
-    // Default: all difficulties enabled
-    enabledDifficulties: new Set<Difficulty>(['blue', 'red', 'black']),
-    
-    toggleDifficulty: (difficulty) =>
-      set((state) => {
-        const newSet = new Set(state.enabledDifficulties)
-        if (newSet.has(difficulty)) {
-          // Don't allow disabling all difficulties
-          if (newSet.size > 1) {
-            newSet.delete(difficulty)
-          }
-        } else {
-          newSet.add(difficulty)
-        }
-        return { enabledDifficulties: newSet }
-      }),
+export const useRoutePlanningStore = create<RoutePlanningState>()((set) => ({
+  fromLocation: null,
+  toLocation: null,
+  
+  setFromLocation: (location) => set({ fromLocation: location }),
+  setToLocation: (location) => set({ toLocation: location }),
+  
+  swapLocations: () =>
+    set((state) => ({
+      fromLocation: state.toLocation,
+      toLocation: state.fromLocation,
+    })),
+  
+  setDestination: (dest) =>
+    set({
+      toLocation: {
+        id: dest.id,
+        name: dest.name,
+        coordinates: dest.coordinates,
+        type: dest.type === 'piste' ? 'piste_end' : 'lift_station',
+      },
+    }),
 
-    setDifficulties: (difficulties) =>
-      set({ enabledDifficulties: new Set(difficulties) }),
+  selectedRoute: null,
+  setSelectedRoute: (route) => set({ selectedRoute: route }),
+  
+  isCalculating: false,
+  setIsCalculating: (calculating) => set({ isCalculating: calculating }),
 
-    fromLocation: null,
-    toLocation: null,
-    
-    setFromLocation: (location) => set({ fromLocation: location }),
-    setToLocation: (location) => set({ toLocation: location }),
-    
-    swapLocations: () =>
-      set((state) => ({
-        fromLocation: state.toLocation,
-        toLocation: state.fromLocation,
-      })),
-    
-    setDestination: (dest) =>
-      set({
-        toLocation: {
-          id: dest.id,
-          name: dest.name,
-          coordinates: dest.coordinates,
-          type: dest.type === 'piste' ? 'piste_end' : 'lift_station',
-        },
-      }),
-
-    selectedRoute: null,
-    setSelectedRoute: (route) => set({ selectedRoute: route }),
-    
-    isCalculating: false,
-    setIsCalculating: (calculating) => set({ isCalculating: calculating }),
-
-    userLocation: null,
-    setUserLocation: (location) => set({ userLocation: location }),
-    
-    userAccuracy: null,
-    setUserAccuracy: (accuracy) => set({ userAccuracy: accuracy }),
-    
-    userHeading: null,
-    setUserHeading: (heading) => set({ userHeading: heading }),
-    
-    isTrackingLocation: false,
-    setIsTrackingLocation: (tracking) => set({ isTrackingLocation: tracking }),
-  }))
-)
+  userLocation: null,
+  setUserLocation: (location) => set({ userLocation: location }),
+  
+  userAccuracy: null,
+  setUserAccuracy: (accuracy) => set({ userAccuracy: accuracy }),
+  
+  userHeading: null,
+  setUserHeading: (heading) => set({ userHeading: heading }),
+  
+  isTrackingLocation: false,
+  setIsTrackingLocation: (tracking) => set({ isTrackingLocation: tracking }),
+}))

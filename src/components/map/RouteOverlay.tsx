@@ -7,7 +7,7 @@ import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Line } from '@react-three/drei'
 import * as THREE from 'three'
-import { useNavigationStore } from '@/stores/useNavigationStore'
+import { useRoutePlanningStore } from '@/stores/useNavigationStore'
 import { useMapStore } from '@/stores/useMapStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
 import { projectPointsOnGrid, sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid'
@@ -24,7 +24,7 @@ const ROUTE_COLORS = {
  * Renders the selected route with glowing, animated lines
  */
 export function RouteOverlay() {
-  const selectedRoute = useNavigationStore((s) => s.selectedRoute)
+  const selectedRoute = useRoutePlanningStore((s) => s.selectedRoute)
   const elevationGrid = useMapStore((s) => s.elevationGrid)
   
   if (!selectedRoute || selectedRoute.steps.length === 0 || !elevationGrid) {

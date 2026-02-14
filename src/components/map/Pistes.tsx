@@ -3,7 +3,7 @@ import { Line } from '@react-three/drei'
 import { useThree, useFrame } from '@react-three/fiber'
 import { useState } from 'react'
 import { usePistes, filterPistesByDifficulty } from '@/hooks/usePistes'
-import { useNavigationStore, type Difficulty } from '@/stores/useNavigationStore'
+import { type Difficulty } from '@/lib/api/overpass'
 import { useMapStore } from '@/stores/useMapStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
 import { sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid'
@@ -62,13 +62,16 @@ function useZoomScale(): number {
   return scale
 }
 
+interface PistesProps {
+  enabledDifficulties: Set<Difficulty>
+}
+
 /**
  * Renders all ski pistes as 3D lines that follow terrain elevation
  * Each piste may have multiple segments (coordinate arrays)
  */
-export function Pistes() {
+export function Pistes({ enabledDifficulties }: PistesProps) {
   const { data: pistes, isLoading } = usePistes()
-  const enabledDifficulties = useNavigationStore((s) => s.enabledDifficulties)
   const showPistes = useMapStore((s) => s.showPistes)
   const hoveredPisteId = useMapStore((s) => s.getHoveredId('piste'))
   const selectedPisteId = useMapStore((s) => s.getSelectedId('piste'))

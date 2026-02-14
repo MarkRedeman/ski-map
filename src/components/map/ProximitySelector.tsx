@@ -11,7 +11,7 @@ import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
-import { useNavigationStore } from '@/stores/useNavigationStore'
+import { type Difficulty } from '@/lib/api/overpass'
 import { useMapStore } from '@/stores/useMapStore'
 import { coordsToLocal } from '@/lib/geo/coordinates'
 import { projectPointsOnGrid } from '@/lib/geo/elevationGrid'
@@ -26,13 +26,16 @@ const MAX_CLICK_DISTANCE = 25
 /** Raycaster for terrain intersection */
 const raycaster = new THREE.Raycaster()
 
-export function ProximitySelector() {
+interface ProximitySelectorProps {
+  enabledDifficulties: Set<Difficulty>
+}
+
+export function ProximitySelector({ enabledDifficulties }: ProximitySelectorProps) {
   const { camera, gl } = useThree()
   const terrainGroup = useMapStore((s) => s.terrainGroup)
   const elevationGrid = useMapStore((s) => s.elevationGrid)
   const setHoveredEntity = useMapStore((s) => s.setHoveredEntity)
   const setSelectedEntity = useMapStore((s) => s.setSelectedEntity)
-  const enabledDifficulties = useNavigationStore((s) => s.enabledDifficulties)
   const showPistes = useMapStore((s) => s.showPistes)
   const showLifts = useMapStore((s) => s.showLifts)
   

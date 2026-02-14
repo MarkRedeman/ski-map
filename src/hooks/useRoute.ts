@@ -4,7 +4,8 @@
 
 import { useQuery, queryOptions } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import type { Location, Difficulty, Route } from '@/stores/useNavigationStore'
+import type { Difficulty } from '@/lib/api/overpass'
+import type { Location, Route } from '@/stores/useNavigationStore'
 import { buildGraph, findRoute } from '@/lib/routing'
 import { usePistes } from './usePistes'
 import { useLifts } from './useLifts'

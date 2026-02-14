@@ -3,6 +3,9 @@
  * 
  * Bidirectional synchronization between URL search params and Zustand stores.
  * 
+ * Syncs: entity selection, lift types, layer visibility, resolution, camera.
+ * Does NOT sync difficulty filter — that is URL-native via useDifficultyFilter().
+ * 
  * - On mount: Reads URL params and applies them to stores
  * - On store change: Updates URL params (debounced)
  * - Uses TanStack Router's navigate for URL updates (enables back/forward)
@@ -11,14 +14,15 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useMapStore, type LiftType } from '@/stores/useMapStore'
-import { useNavigationStore, type Difficulty } from '@/stores/useNavigationStore'
 import { useSettingsStore } from '@/stores/useSettingsStore'
+import type { Difficulty } from '@/lib/api/overpass'
 import {
   type SearchParams,
   parseSearchParams,
   buildSearchParams,
   selectionToEntity,
   entityToSelection,
+  DEFAULT_DIFFICULTIES,
 } from '@/lib/url/searchSchema'
 
 /** Debounce delay for URL updates (ms) */
@@ -41,22 +45,21 @@ export function useURLSync() {
   // Debounce timer for URL updates
   const updateTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   
-  // Get store values
+  // Get store values (no difficulty — that's URL-native)
   const selectedEntity = useMapStore((s) => s.selectedEntity)
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes)
   const showTerrain = useMapStore((s) => s.showTerrain)
   const showPistes = useMapStore((s) => s.showPistes)
   const showLifts = useMapStore((s) => s.showLifts)
   const showLabels = useMapStore((s) => s.showLabels)
-  const enabledDifficulties = useNavigationStore((s) => s.enabledDifficulties)
   const resolution = useSettingsStore((s) => s.resolution)
 
   // Get store setters
   const setSelectedEntity = useMapStore((s) => s.setSelectedEntity)
-  const setDifficulties = useNavigationStore((s) => s.setDifficulties)
   
   /**
    * Apply URL params to stores (URL -> Store)
+   * Difficulty is handled by useDifficultyFilter, not here.
    */
   const applyURLToStores = useCallback((params: SearchParams) => {
     isApplyingURL.current = true
@@ -69,11 +72,6 @@ export function useURLSync() {
       if (entity) {
         setSelectedEntity(entity.type, entity.id)
       }
-    }
-    
-    // Apply difficulties
-    if (parsed.difficulties && parsed.difficulties.length > 0) {
-      setDifficulties(parsed.difficulties)
     }
     
     // Apply lift types
@@ -124,17 +122,21 @@ export function useURLSync() {
     setTimeout(() => {
       isApplyingURL.current = false
     }, 50)
-  }, [setSelectedEntity, setDifficulties])
+  }, [setSelectedEntity])
   
   /**
    * Update URL from current store state (Store -> URL)
+   * Preserves existing diff param (managed by useDifficultyFilter).
    */
   const updateURLFromStores = useCallback(() => {
     if (isApplyingURL.current) return
 
+    // Build params from store state, using default difficulties as placeholder
+    // since buildSearchParams requires it. The actual diff param is preserved
+    // via the ...prev spread.
     const params = buildSearchParams({
       selection: entityToSelection(selectedEntity),
-      difficulties: Array.from(enabledDifficulties) as Difficulty[],
+      difficulties: DEFAULT_DIFFICULTIES as Difficulty[],
       liftTypes: Array.from(visibleLiftTypes) as LiftType[],
       layers: {
         terrain: showTerrain,
@@ -143,8 +145,10 @@ export function useURLSync() {
         labels: showLabels,
       },
       resolution,
-      // Don't include camera by default - only for explicit share actions
     })
+
+    // Remove diff from params — it's managed by useDifficultyFilter
+    delete params.diff
 
     // Use replace to avoid polluting history with every filter change
     navigate({
@@ -155,7 +159,6 @@ export function useURLSync() {
   }, [
     navigate,
     selectedEntity,
-    enabledDifficulties,
     visibleLiftTypes,
     showTerrain,
     showPistes,
@@ -169,8 +172,8 @@ export function useURLSync() {
     if (hasAppliedInitialURL.current) return
     hasAppliedInitialURL.current = true
     
-    // Check if URL has any meaningful params
-    const hasParams = search.select || search.diff || search.lifts || 
+    // Check if URL has any meaningful params (diff excluded — handled by useDifficultyFilter)
+    const hasParams = search.select || search.lifts || 
                       search.show || search.resolution || search.cam
     
     if (hasParams) {
@@ -202,7 +205,6 @@ export function useURLSync() {
   }, [
     updateURLFromStores,
     selectedEntity,
-    enabledDifficulties,
     visibleLiftTypes,
     showTerrain,
     showPistes,
@@ -216,8 +218,10 @@ export function useURLSync() {
  * Hook to get a shareable URL with current camera position
  * 
  * Use this when user explicitly wants to share current view.
+ * Reads difficulty from URL search params (since it's URL-native).
  */
 export function useShareableURL(): () => string {
+  const search = useSearch({ strict: false }) as SearchParams
   const selectedEntity = useMapStore((s) => s.selectedEntity)
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes)
   const showTerrain = useMapStore((s) => s.showTerrain)
@@ -226,13 +230,19 @@ export function useShareableURL(): () => string {
   const showLabels = useMapStore((s) => s.showLabels)
   const cameraPosition = useMapStore((s) => s.cameraPosition)
   const cameraTarget = useMapStore((s) => s.cameraTarget)
-  const enabledDifficulties = useNavigationStore((s) => s.enabledDifficulties)
   const resolution = useSettingsStore((s) => s.resolution)
 
   return useCallback(() => {
+    // Parse current difficulty from URL
+    const currentDifficulties = search.diff
+      ? search.diff.split(',').filter((d): d is Difficulty =>
+          ['blue', 'red', 'black'].includes(d)
+        )
+      : DEFAULT_DIFFICULTIES as Difficulty[]
+
     const params = buildSearchParams({
       selection: entityToSelection(selectedEntity),
-      difficulties: Array.from(enabledDifficulties) as Difficulty[],
+      difficulties: currentDifficulties,
       liftTypes: Array.from(visibleLiftTypes) as LiftType[],
       layers: {
         terrain: showTerrain,
@@ -259,8 +269,8 @@ export function useShareableURL(): () => string {
 
     return url.toString()
   }, [
+    search.diff,
     selectedEntity,
-    enabledDifficulties,
     visibleLiftTypes,
     showTerrain,
     showPistes,

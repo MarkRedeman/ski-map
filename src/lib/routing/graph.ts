@@ -3,7 +3,7 @@
  */
 
 import type { Piste, Lift } from '@/lib/api/overpass'
-import type { Difficulty } from '@/stores/useNavigationStore'
+import type { Difficulty } from '@/lib/api/overpass'
 import type { SkiGraph, SkiNode, SkiEdge, SkiNodeType } from './types'
 import { distanceMeters } from '@/lib/geo/coordinates'
 

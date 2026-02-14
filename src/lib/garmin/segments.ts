@@ -4,7 +4,7 @@
  */
 
 import type { RunPoint } from './types'
-import type { Difficulty } from '@/stores/useNavigationStore'
+import type { Difficulty } from '@/lib/api/overpass'
 
 /** Segment activity types */
 export type SegmentType = 'skiing' | 'lift' | 'idle'

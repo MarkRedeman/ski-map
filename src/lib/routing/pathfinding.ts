@@ -2,7 +2,8 @@
  * Dijkstra's algorithm for ski route pathfinding
  */
 
-import type { Difficulty, Route, RouteStep, Location } from '@/stores/useNavigationStore'
+import type { Difficulty } from '@/lib/api/overpass'
+import type { Route, RouteStep, Location } from '@/stores/useNavigationStore'
 import type { SkiGraph, SkiEdge, PathResult } from './types'
 import { getOutgoingEdges, findNode } from './graph'
 

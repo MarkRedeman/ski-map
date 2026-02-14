@@ -1,4 +1,5 @@
-import { useNavigationStore, type Difficulty } from '@/stores/useNavigationStore'
+import { type Difficulty } from '@/lib/api/overpass'
+import { useDifficultyFilter } from '@/hooks/useDifficultyFilter'
 import { cn } from '@/lib/utils'
 
 const difficulties: { value: Difficulty; label: string; color: string }[] = [
@@ -8,7 +9,7 @@ const difficulties: { value: Difficulty; label: string; color: string }[] = [
 ]
 
 export function DifficultyFilter() {
-  const { enabledDifficulties, toggleDifficulty } = useNavigationStore()
+  const { enabledDifficulties, toggleDifficulty } = useDifficultyFilter()
 
   return (
     <div className="flex flex-wrap gap-1.5">

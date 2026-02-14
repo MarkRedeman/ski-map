@@ -9,7 +9,7 @@ import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
 import { usePeaks } from '@/hooks/usePeaks'
 import { usePlaces } from '@/hooks/usePlaces'
-import { useNavigationStore } from '@/stores/useNavigationStore'
+import { useRoutePlanningStore } from '@/stores/useNavigationStore'
 import { LIFT_TYPE_CONFIG } from './Lifts'
 import { PISTE_DIFFICULTY_CONFIG } from './Pistes'
 
@@ -51,7 +51,7 @@ function PanelLayout({ icon, title, subtitle, onClose, children }: PanelLayoutPr
 function PisteInfoPanel({ id }: { id: string }) {
   const { data: pistes } = usePistes()
   const clearSelection = useMapStore((s) => s.clearSelection)
-  const setDestination = useNavigationStore((s) => s.setDestination)
+  const setDestination = useRoutePlanningStore((s) => s.setDestination)
 
   const piste = pistes?.find(p => p.id === id)
   if (!piste) return null
@@ -123,7 +123,7 @@ function PisteInfoPanel({ id }: { id: string }) {
 function LiftInfoPanel({ id }: { id: string }) {
   const { data: lifts } = useLifts()
   const clearSelection = useMapStore((s) => s.clearSelection)
-  const setDestination = useNavigationStore((s) => s.setDestination)
+  const setDestination = useRoutePlanningStore((s) => s.setDestination)
 
   const lift = lifts?.find(l => l.id === id)
   if (!lift) return null

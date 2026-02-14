@@ -5,7 +5,7 @@
 import type { RideSegment } from './segments'
 import type { RunPoint } from './types'
 import type { Piste, Lift } from '@/lib/api/overpass'
-import type { Difficulty } from '@/stores/useNavigationStore'
+import type { Difficulty } from '@/lib/api/overpass'
 import { LIFT_TYPE_CONFIG } from '@/components/map/Lifts'
 import type { LiftType } from '@/stores/useMapStore'
 

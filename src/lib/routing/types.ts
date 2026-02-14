@@ -2,7 +2,7 @@
  * Navigation graph types for ski routing
  */
 
-import type { Difficulty } from '@/stores/useNavigationStore'
+import type { Difficulty } from '@/lib/api/overpass'
 
 /**
  * Node types in the ski navigation graph

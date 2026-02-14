@@ -10,7 +10,7 @@
 
 import { z } from 'zod'
 import type { LiftType } from '@/stores/useMapStore'
-import type { Difficulty } from '@/stores/useNavigationStore'
+import type { Difficulty } from '@/lib/api/overpass'
 import type { ResolutionLevel } from '@/stores/useSettingsStore'
 
 // Selection types

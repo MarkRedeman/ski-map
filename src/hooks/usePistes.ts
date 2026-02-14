@@ -5,7 +5,7 @@
  */
 
 import { useSkiData, type Piste, type SkiArea } from './useSkiData'
-import type { Difficulty } from '@/stores/useNavigationStore'
+import type { Difficulty } from '@/lib/api/overpass'
 
 /**
  * Hook to get pistes from the combined ski data query

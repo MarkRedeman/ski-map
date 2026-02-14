@@ -13,7 +13,7 @@
 import { Navigation, ChevronUp, ChevronDown, Settings2 } from 'lucide-react'
 import { useSettingsStore, type ResolutionLevel } from '@/stores/useSettingsStore'
 import { useMapStore } from '@/stores/useMapStore'
-import { useNavigationStore } from '@/stores/useNavigationStore'
+import { useRoutePlanningStore } from '@/stores/useNavigationStore'
 import { useUIStore } from '@/stores/useUIStore'
 import { geoToLocal } from '@/lib/geo/coordinates'
 
@@ -29,8 +29,8 @@ export function ResolutionControl() {
   const toggleLayer = useMapStore((s) => s.toggleLayer)
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
   
-  const userLocation = useNavigationStore((s) => s.userLocation)
-  const isTrackingLocation = useNavigationStore((s) => s.isTrackingLocation)
+  const userLocation = useRoutePlanningStore((s) => s.userLocation)
+  const isTrackingLocation = useRoutePlanningStore((s) => s.isTrackingLocation)
   
   const controlsExpanded = useUIStore((s) => s.controlsExpanded)
   const toggleControls = useUIStore((s) => s.toggleControls)

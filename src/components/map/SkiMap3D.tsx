@@ -28,9 +28,11 @@ import { MapLegend } from "./MapLegend";
 import { CameraNavigator } from "./CameraNavigator";
 import { SkiAreaBoundary } from "./SkiAreaBoundary";
 import { useSelectedRun } from "@/hooks/useRuns";
+import { useDifficultyFilter } from "@/hooks/useDifficultyFilter";
 
 export function SkiMap3D() {
   const selectedRun = useSelectedRun();
+  const { enabledDifficulties } = useDifficultyFilter();
   
   // Compass state - needs to bridge Canvas (controller) and DOM (UI)
   const [compassRotation, setCompassRotation] = useState(0);
@@ -82,7 +84,7 @@ export function SkiMap3D() {
           {/* Contour lines at actual elevations */}
           <ContourTerrain />
           {/* Pistes and lifts follow terrain */}
-          <Pistes />
+          <Pistes enabledDifficulties={enabledDifficulties} />
           <Lifts />
           <UserMarker />
           <RouteOverlay />
@@ -98,7 +100,7 @@ export function SkiMap3D() {
           {/* Ski area boundary polygon (shown on hover) */}
           <SkiAreaBoundary />
           {/* Proximity-based selection handler */}
-          <ProximitySelector />
+          <ProximitySelector enabledDifficulties={enabledDifficulties} />
         </Suspense>
 
         {/* Keyboard Controls */}

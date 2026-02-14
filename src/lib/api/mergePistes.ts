@@ -7,7 +7,7 @@
  */
 
 import type { Piste, RawPiste } from './overpass'
-import type { Difficulty } from '@/stores/useNavigationStore'
+import type { Difficulty } from './overpass'
 
 /**
  * Calculate distance between two coordinates in meters (Haversine formula)

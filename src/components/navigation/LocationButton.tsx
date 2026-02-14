@@ -1,6 +1,6 @@
 import { Locate, LocateOff, AlertCircle, Navigation, MapPinOff } from 'lucide-react'
 import { useGeolocation } from '@/hooks/useGeolocation'
-import { useNavigationStore } from '@/stores/useNavigationStore'
+import { useRoutePlanningStore } from '@/stores/useNavigationStore'
 import { useMapStore } from '@/stores/useMapStore'
 import { geoToLocal, isInSoldenBounds } from '@/lib/geo/coordinates'
 import { cn } from '@/lib/utils'
@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
  */
 export function LocationButton() {
   const { isTracking, error, accuracy, startTracking, stopTracking } = useGeolocation()
-  const userLocation = useNavigationStore((s) => s.userLocation)
+  const userLocation = useRoutePlanningStore((s) => s.userLocation)
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
 
   // Check if user is within Sölden ski area bounds

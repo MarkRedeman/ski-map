@@ -391,6 +391,9 @@ function computeCentroid(polygon: [number, number][]): [number, number] {
 /** Piste difficulty levels */
 export type Difficulty = 'blue' | 'red' | 'black'
 
+/** All available difficulty levels in order from easiest to hardest */
+export const ALL_DIFFICULTIES: Difficulty[] = ['blue', 'red', 'black']
+
 /** Ski area identity */
 export interface SkiArea {
   id: string

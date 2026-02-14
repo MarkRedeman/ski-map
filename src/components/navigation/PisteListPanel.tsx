@@ -18,7 +18,8 @@ import { useLifts } from '@/hooks/useLifts'
 import { usePeaks } from '@/hooks/usePeaks'
 import { usePlaces } from '@/hooks/usePlaces'
 import { useMapStore, ALL_LIFT_TYPES, type LiftType } from '@/stores/useMapStore'
-import { useNavigationStore, type Difficulty } from '@/stores/useNavigationStore'
+import { useDifficultyFilter } from '@/hooks/useDifficultyFilter'
+import { type Difficulty } from '@/lib/api/overpass'
 import { LIFT_TYPE_CONFIG } from '@/components/map/Lifts'
 import { geoToLocal } from '@/lib/geo/coordinates'
 import type { Piste, Lift, Peak, Place } from '@/lib/api/overpass'
@@ -105,9 +106,8 @@ export function PisteListPanel() {
   const [activeTab, setActiveTab] = useState<Tab>('pistes')
   const [searchQuery, setSearchQuery] = useState('')
   
-  // Use global stores for filters (synced with MapLegend)
-  const enabledDifficulties = useNavigationStore((s) => s.enabledDifficulties)
-  const toggleDifficulty = useNavigationStore((s) => s.toggleDifficulty)
+  // Use URL-native difficulty filter (synced with MapLegend)
+  const { enabledDifficulties, toggleDifficulty } = useDifficultyFilter()
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes)
   const toggleLiftType = useMapStore((s) => s.toggleLiftType)
 

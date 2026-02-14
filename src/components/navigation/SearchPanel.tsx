@@ -1,21 +1,22 @@
 import { useState, useMemo, useCallback } from 'react'
 import { MapPin, Navigation, ArrowRightLeft, Loader2 } from 'lucide-react'
-import { useNavigationStore, type Location } from '@/stores/useNavigationStore'
+import { useRoutePlanningStore, type Location } from '@/stores/useNavigationStore'
+import { useDifficultyFilter } from '@/hooks/useDifficultyFilter'
 import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
 import { useRouteCalculation } from '@/hooks/useRoute'
 import { cn } from '@/lib/utils'
 
 export function SearchPanel() {
-  const fromLocation = useNavigationStore((s) => s.fromLocation)
-  const toLocation = useNavigationStore((s) => s.toLocation)
-  const setFromLocation = useNavigationStore((s) => s.setFromLocation)
-  const setToLocation = useNavigationStore((s) => s.setToLocation)
-  const swapLocations = useNavigationStore((s) => s.swapLocations)
-  const isCalculating = useNavigationStore((s) => s.isCalculating)
-  const setIsCalculating = useNavigationStore((s) => s.setIsCalculating)
-  const setSelectedRoute = useNavigationStore((s) => s.setSelectedRoute)
-  const enabledDifficulties = useNavigationStore((s) => s.enabledDifficulties)
+  const fromLocation = useRoutePlanningStore((s) => s.fromLocation)
+  const toLocation = useRoutePlanningStore((s) => s.toLocation)
+  const setFromLocation = useRoutePlanningStore((s) => s.setFromLocation)
+  const setToLocation = useRoutePlanningStore((s) => s.setToLocation)
+  const swapLocations = useRoutePlanningStore((s) => s.swapLocations)
+  const isCalculating = useRoutePlanningStore((s) => s.isCalculating)
+  const setIsCalculating = useRoutePlanningStore((s) => s.setIsCalculating)
+  const setSelectedRoute = useRoutePlanningStore((s) => s.setSelectedRoute)
+  const { enabledDifficulties } = useDifficultyFilter()
 
   const [fromQuery, setFromQuery] = useState('')
   const [toQuery, setToQuery] = useState('')
