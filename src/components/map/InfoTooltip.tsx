@@ -60,25 +60,23 @@ function getLongestSegment(segments: [number, number][][]): [number, number][] {
 }
 
 export function InfoTooltip() {
-  const hoveredPisteId = useMapStore((s) => s.hoveredPisteId)
-  const hoveredLiftId = useMapStore((s) => s.hoveredLiftId)
-  const setSelectedPiste = useMapStore((s) => s.setSelectedPiste)
-  const setSelectedLift = useMapStore((s) => s.setSelectedLift)
+  const hoveredEntity = useMapStore((s) => s.hoveredEntity)
+  const setSelectedEntity = useMapStore((s) => s.setSelectedEntity)
   const elevationGrid = useMapStore((s) => s.elevationGrid)
   const { data: pistes } = usePistes()
   const { data: lifts } = useLifts()
 
   // Find hovered piste
   const hoveredPiste = useMemo(() => {
-    if (!hoveredPisteId || !pistes) return null
-    return pistes.find((p) => p.id === hoveredPisteId) ?? null
-  }, [hoveredPisteId, pistes])
+    if (!hoveredEntity || hoveredEntity.type !== 'piste' || !pistes) return null
+    return pistes.find((p) => p.id === hoveredEntity.id) ?? null
+  }, [hoveredEntity, pistes])
 
   // Find hovered lift
   const hoveredLift = useMemo(() => {
-    if (!hoveredLiftId || !lifts) return null
-    return lifts.find((l) => l.id === hoveredLiftId) ?? null
-  }, [hoveredLiftId, lifts])
+    if (!hoveredEntity || hoveredEntity.type !== 'lift' || !lifts) return null
+    return lifts.find((l) => l.id === hoveredEntity.id) ?? null
+  }, [hoveredEntity, lifts])
 
   // Calculate tooltip position (middle of the path)
   const position = useMemo(() => {
@@ -121,7 +119,7 @@ export function InfoTooltip() {
     const length = hoveredPiste.length ?? calculateTotalLength(hoveredPiste.coordinates)
 
     const handleClick = () => {
-      setSelectedPiste(hoveredPiste.id)
+      setSelectedEntity('piste', hoveredPiste.id)
     }
 
     return (
@@ -162,7 +160,7 @@ export function InfoTooltip() {
     const length = calculateSegmentLength(hoveredLift.coordinates)
 
     const handleClick = () => {
-      setSelectedLift(hoveredLift.id)
+      setSelectedEntity('lift', hoveredLift.id)
     }
 
     return (

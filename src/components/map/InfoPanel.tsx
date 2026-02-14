@@ -41,10 +41,7 @@ function calculateTotalLength(segments: [number, number][][]): number {
 }
 
 export function InfoPanel() {
-  const selectedPisteId = useMapStore((s) => s.selectedPisteId)
-  const selectedLiftId = useMapStore((s) => s.selectedLiftId)
-  const selectedPeakId = useMapStore((s) => s.selectedPeakId)
-  const selectedPlaceId = useMapStore((s) => s.selectedPlaceId)
+  const selectedEntity = useMapStore((s) => s.selectedEntity)
   const clearSelection = useMapStore((s) => s.clearSelection)
   const setDestination = useNavigationStore((s) => s.setDestination)
   const { data: pistes } = usePistes()
@@ -54,27 +51,27 @@ export function InfoPanel() {
 
   // Find selected piste
   const selectedPiste = useMemo(() => {
-    if (!selectedPisteId || !pistes) return null
-    return pistes.find((p) => p.id === selectedPisteId) ?? null
-  }, [selectedPisteId, pistes])
+    if (!selectedEntity || selectedEntity.type !== 'piste' || !pistes) return null
+    return pistes.find((p) => p.id === selectedEntity.id) ?? null
+  }, [selectedEntity, pistes])
 
   // Find selected lift
   const selectedLift = useMemo(() => {
-    if (!selectedLiftId || !lifts) return null
-    return lifts.find((l) => l.id === selectedLiftId) ?? null
-  }, [selectedLiftId, lifts])
+    if (!selectedEntity || selectedEntity.type !== 'lift' || !lifts) return null
+    return lifts.find((l) => l.id === selectedEntity.id) ?? null
+  }, [selectedEntity, lifts])
 
   // Find selected peak
   const selectedPeak = useMemo(() => {
-    if (!selectedPeakId || !peaks) return null
-    return peaks.find((p) => p.id === selectedPeakId) ?? null
-  }, [selectedPeakId, peaks])
+    if (!selectedEntity || selectedEntity.type !== 'peak' || !peaks) return null
+    return peaks.find((p) => p.id === selectedEntity.id) ?? null
+  }, [selectedEntity, peaks])
 
   // Find selected place
   const selectedPlace = useMemo(() => {
-    if (!selectedPlaceId || !places) return null
-    return places.find((p) => p.id === selectedPlaceId) ?? null
-  }, [selectedPlaceId, places])
+    if (!selectedEntity || selectedEntity.type !== 'place' || !places) return null
+    return places.find((p) => p.id === selectedEntity.id) ?? null
+  }, [selectedEntity, places])
 
   if (!selectedPiste && !selectedLift && !selectedPeak && !selectedPlace) return null
 

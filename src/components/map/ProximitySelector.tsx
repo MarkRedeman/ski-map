@@ -30,10 +30,8 @@ export function ProximitySelector() {
   const { camera, gl } = useThree()
   const terrainGroup = useMapStore((s) => s.terrainGroup)
   const elevationGrid = useMapStore((s) => s.elevationGrid)
-  const setHoveredPiste = useMapStore((s) => s.setHoveredPiste)
-  const setHoveredLift = useMapStore((s) => s.setHoveredLift)
-  const setSelectedPiste = useMapStore((s) => s.setSelectedPiste)
-  const setSelectedLift = useMapStore((s) => s.setSelectedLift)
+  const setHoveredEntity = useMapStore((s) => s.setHoveredEntity)
+  const setSelectedEntity = useMapStore((s) => s.setSelectedEntity)
   const enabledDifficulties = useNavigationStore((s) => s.enabledDifficulties)
   const showPistes = useMapStore((s) => s.showPistes)
   const showLifts = useMapStore((s) => s.showLifts)
@@ -111,8 +109,7 @@ export function ProximitySelector() {
     
     const point = getTerrainPoint(event)
     if (!point) {
-      setHoveredPiste(null)
-      setHoveredLift(null)
+      setHoveredEntity('piste', null)
       return
     }
     
@@ -124,43 +121,31 @@ export function ProximitySelector() {
     )
     
     if (nearest) {
-      if (nearest.feature.type === 'piste') {
-        setHoveredPiste(nearest.feature.id)
-        setHoveredLift(null)
-      } else {
-        setHoveredLift(nearest.feature.id)
-        setHoveredPiste(null)
-      }
+      setHoveredEntity(nearest.feature.type, nearest.feature.id)
     } else {
-      setHoveredPiste(null)
-      setHoveredLift(null)
+      setHoveredEntity('piste', null)
     }
-  }, [getTerrainPoint, setHoveredPiste, setHoveredLift])
+  }, [getTerrainPoint, setHoveredEntity])
   
   // Handle click for selection
   const handleClick = useCallback((event: MouseEvent) => {
     const point = getTerrainPoint(event as unknown as PointerEvent)
     if (!point) return
-    
+
     const nearest = featureSpatialIndex.findNearest(
       point.x,
       point.y,
       point.z,
       MAX_CLICK_DISTANCE
     )
-    
+
     if (nearest) {
-      if (nearest.feature.type === 'piste') {
-        setSelectedPiste(nearest.feature.id)
-      } else {
-        setSelectedLift(nearest.feature.id)
-      }
+      setSelectedEntity(nearest.feature.type, nearest.feature.id)
     } else {
       // Clear selection when clicking on empty terrain
-      setSelectedPiste(null)
-      setSelectedLift(null)
+      setSelectedEntity('piste', null)
     }
-  }, [getTerrainPoint, setSelectedPiste, setSelectedLift])
+  }, [getTerrainPoint, setSelectedEntity])
   
   // Attach event listeners
   useEffect(() => {

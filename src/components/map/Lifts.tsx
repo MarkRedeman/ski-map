@@ -105,8 +105,8 @@ export function Lifts() {
   const { data: lifts, isLoading } = useLifts()
   const showLifts = useMapStore((s) => s.showLifts)
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes)
-  const hoveredLiftId = useMapStore((s) => s.hoveredLiftId)
-  const selectedLiftId = useMapStore((s) => s.selectedLiftId)
+  const hoveredLiftId = useMapStore((s) => s.getHoveredId('lift'))
+  const selectedLiftId = useMapStore((s) => s.getSelectedId('lift'))
   const elevationGrid = useMapStore((s) => s.elevationGrid)
   const zoomScale = useZoomScale()
 

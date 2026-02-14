@@ -70,8 +70,8 @@ export function Pistes() {
   const { data: pistes, isLoading } = usePistes()
   const enabledDifficulties = useNavigationStore((s) => s.enabledDifficulties)
   const showPistes = useMapStore((s) => s.showPistes)
-  const hoveredPisteId = useMapStore((s) => s.hoveredPisteId)
-  const selectedPisteId = useMapStore((s) => s.selectedPisteId)
+  const hoveredPisteId = useMapStore((s) => s.getHoveredId('piste'))
+  const selectedPisteId = useMapStore((s) => s.getSelectedId('piste'))
   const elevationGrid = useMapStore((s) => s.elevationGrid)
   const zoomScale = useZoomScale()
 
