@@ -3,8 +3,7 @@
  * Shows when an item is clicked, styled to match the map legend
  */
 
-import { useMemo } from 'react'
-import { X, Mountain, Ruler, Users, Navigation, ArrowUp, ArrowDown, MapPin } from 'lucide-react'
+import { X, Mountain, Ruler, Navigation, MapPin } from 'lucide-react'
 import { useMapStore } from '@/stores/useMapStore'
 import { usePistes } from '@/hooks/usePistes'
 import { useLifts } from '@/hooks/useLifts'
@@ -13,343 +12,329 @@ import { usePlaces } from '@/hooks/usePlaces'
 import { useNavigationStore } from '@/stores/useNavigationStore'
 import { LIFT_TYPE_CONFIG } from './Lifts'
 import { PISTE_DIFFICULTY_CONFIG } from './Pistes'
+import type { Piste } from '@/lib/api/overpass'
+import type { Lift } from '@/lib/api/overpass'
+import type { Peak } from '@/lib/api/overpass'
+import type { Place } from '@/lib/api/overpass'
 
-/**
- * Calculate approximate length from single-segment coordinates in meters
- */
-function calculateLength(coordinates: [number, number][]): number {
-  let length = 0
-  for (let i = 1; i < coordinates.length; i++) {
-    const [lon1, lat1] = coordinates[i - 1]!
-    const [lon2, lat2] = coordinates[i]!
-    const dLat = (lat2 - lat1) * (Math.PI / 180)
-    const dLon = (lon2 - lon1) * (Math.PI / 180)
-    const a = Math.sin(dLat / 2) ** 2 + 
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-              Math.sin(dLon / 2) ** 2
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    length += 6371000 * c
+// Common layout component for all info panels
+interface PanelLayoutProps {
+  icon: React.ReactNode
+  title: string
+  subtitle?: string
+  onClose: () => void
+  children: React.ReactNode
+}
+
+function PanelLayout({ icon, title, subtitle, onClose, children }: PanelLayoutProps) {
+  return (
+    <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/80 backdrop-blur-md">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2 p-3 border-b border-white/10">
+        <div className="flex items-center gap-2">
+          {icon}
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-white truncate">{title}</h2>
+            {subtitle && <p className="text-xs text-white/60">{subtitle}</p>}
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          className="rounded p-1 transition-colors hover:bg-white/20 flex-shrink-0"
+          aria-label="Close"
+        >
+          <X className="h-4 w-4 text-white/70" />
+        </button>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+// Piste-specific info panel
+interface PisteInfoPanelProps {
+  piste: Piste
+  onClose: () => void
+  onNavigate: () => void
+}
+
+function PisteInfoPanel({ piste, onClose, onNavigate }: PisteInfoPanelProps) {
+  const config = PISTE_DIFFICULTY_CONFIG[piste.difficulty]
+
+  return (
+    <PanelLayout
+      icon={
+        <div
+          className="h-4 w-4 rounded-full flex-shrink-0"
+          style={{ backgroundColor: config.color }}
+        />
+      }
+      title={piste.name}
+      subtitle={`${config.label} Piste${piste.ref ? ` #${piste.ref}` : ''}`}
+      onClose={onClose}
+    >
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-2 p-3">
+        <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+          <Ruler className="h-4 w-4 text-white/50" />
+          <div>
+            <p className="text-[10px] text-white/50">Length</p>
+            <p className="text-xs font-medium text-white">{(piste.length / 1000).toFixed(2)} km</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+          <Mountain className="h-4 w-4 text-white/50" />
+          <div>
+            <p className="text-[10px] text-white/50">Difficulty</p>
+            <p className="text-xs font-medium text-white">{config.label}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="p-3 pt-0">
+        <button
+          onClick={onNavigate}
+          className="flex w-full items-center justify-center gap-2 rounded bg-white/20 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/30"
+        >
+          <Navigation className="h-3.5 w-3.5" />
+          Navigate to End
+        </button>
+      </div>
+    </PanelLayout>
+  )
+}
+
+// Lift-specific info panel
+interface LiftInfoPanelProps {
+  lift: Lift
+  onClose: () => void
+  onNavigate: () => void
+}
+
+function LiftInfoPanel({ lift, onClose, onNavigate }: LiftInfoPanelProps) {
+  const config = LIFT_TYPE_CONFIG[lift.type as keyof typeof LIFT_TYPE_CONFIG] ?? LIFT_TYPE_CONFIG['Lift']
+
+  return (
+    <PanelLayout
+      icon={<span className="text-lg">{config.icon}</span>}
+      title={lift.name}
+      subtitle={lift.type}
+      onClose={onClose}
+    >
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-2 p-3">
+        <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+          <Ruler className="h-4 w-4 text-white/50" />
+          <div>
+            <p className="text-[10px] text-white/50">Length</p>
+            <p className="text-xs font-medium text-white">{(lift.length / 1000).toFixed(2)} km</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+          <div
+            className="h-4 w-4 rounded-full flex-shrink-0"
+            style={{ backgroundColor: config.color }}
+          />
+          <div>
+            <p className="text-[10px] text-white/50">Type</p>
+            <p className="text-xs font-medium text-white">{lift.type}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="p-3 pt-0">
+        <button
+          onClick={onNavigate}
+          className="flex w-full items-center justify-center gap-2 rounded bg-white/20 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/30"
+        >
+          <Navigation className="h-3.5 w-3.5" />
+          Navigate to Top
+        </button>
+      </div>
+    </PanelLayout>
+  )
+}
+
+// Peak-specific info panel
+interface PeakInfoPanelProps {
+  peak: Peak
+  onClose: () => void
+}
+
+function PeakInfoPanel({ peak, onClose }: PeakInfoPanelProps) {
+  return (
+    <PanelLayout
+      icon={<Mountain className="h-4 w-4 text-amber-400" />}
+      title={peak.name}
+      subtitle="Mountain Peak"
+      onClose={onClose}
+    >
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-2 p-3">
+        <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+          <Mountain className="h-4 w-4 text-white/50" />
+          <div>
+            <p className="text-[10px] text-white/50">Elevation</p>
+            <p className="text-xs font-medium text-white">{peak.elevation?.toLocaleString() ?? 'Unknown'} m</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+          <MapPin className="h-4 w-4 text-white/50" />
+          <div>
+            <p className="text-[10px] text-white/50">Coordinates</p>
+            <p className="text-xs font-medium text-white">
+              {peak.lat.toFixed(4)}°
+            </p>
+          </div>
+        </div>
+      </div>
+    </PanelLayout>
+  )
+}
+
+// Place-specific info panel
+interface PlaceInfoPanelProps {
+  place: Place
+  onClose: () => void
+}
+
+function PlaceInfoPanel({ place, onClose }: PlaceInfoPanelProps) {
+  const getPlaceIcon = () => {
+    switch (place.type) {
+      case 'town': return '🏘️'
+      case 'village': return '🏠'
+      case 'hamlet': return '🏡'
+      default: return '📍'
+    }
   }
-  return length
+
+  const getPlaceTypeLabel = () => {
+    switch (place.type) {
+      case 'town': return 'Town'
+      case 'village': return 'Village'
+      case 'hamlet': return 'Hamlet'
+      default: return place.type.charAt(0).toUpperCase() + place.type.slice(1)
+    }
+  }
+
+  return (
+    <PanelLayout
+      icon={<span className="text-lg">{getPlaceIcon()}</span>}
+      title={place.name}
+      subtitle={getPlaceTypeLabel()}
+      onClose={onClose}
+    >
+      {/* Stats */}
+      <div className="p-3">
+        <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+          <MapPin className="h-4 w-4 text-white/50" />
+          <div>
+            <p className="text-[10px] text-white/50">Location</p>
+            <p className="text-xs font-medium text-white">
+              {place.lat.toFixed(4)}°N, {place.lon.toFixed(4)}°E
+            </p>
+          </div>
+        </div>
+      </div>
+    </PanelLayout>
+  )
 }
 
-/**
- * Calculate total length of all segments in a multi-segment piste
- */
-function calculateTotalLength(segments: [number, number][][]): number {
-  return segments.reduce((total, seg) => total + calculateLength(seg), 0)
-}
+// Loader components — each calls its own hook at the top level (Rules of Hooks)
+// Then looks up the entity and renders the presentation component
 
-export function InfoPanel() {
-  const selectedEntity = useMapStore((s) => s.selectedEntity)
+function PisteInfoPanelLoader({ id }: { id: string }) {
+  const { data: pistes } = usePistes()
   const clearSelection = useMapStore((s) => s.clearSelection)
   const setDestination = useNavigationStore((s) => s.setDestination)
-  const { data: pistes } = usePistes()
-  const { data: lifts } = useLifts()
-  const { data: peaks } = usePeaks()
-  const { data: places } = usePlaces()
 
-  // Find selected piste
-  const selectedPiste = useMemo(() => {
-    if (!selectedEntity || selectedEntity.type !== 'piste' || !pistes) return null
-    return pistes.find((p) => p.id === selectedEntity.id) ?? null
-  }, [selectedEntity, pistes])
+  const piste = pistes?.find(p => p.id === id)
+  if (!piste) return null
 
-  // Find selected lift
-  const selectedLift = useMemo(() => {
-    if (!selectedEntity || selectedEntity.type !== 'lift' || !lifts) return null
-    return lifts.find((l) => l.id === selectedEntity.id) ?? null
-  }, [selectedEntity, lifts])
-
-  // Find selected peak
-  const selectedPeak = useMemo(() => {
-    if (!selectedEntity || selectedEntity.type !== 'peak' || !peaks) return null
-    return peaks.find((p) => p.id === selectedEntity.id) ?? null
-  }, [selectedEntity, peaks])
-
-  // Find selected place
-  const selectedPlace = useMemo(() => {
-    if (!selectedEntity || selectedEntity.type !== 'place' || !places) return null
-    return places.find((p) => p.id === selectedEntity.id) ?? null
-  }, [selectedEntity, places])
-
-  if (!selectedPiste && !selectedLift && !selectedPeak && !selectedPlace) return null
-
-  // Handle navigate to
-  const handleNavigateTo = () => {
-    if (selectedPiste?.endPoint) {
-      setDestination({
-        id: selectedPiste.id,
-        name: selectedPiste.name,
-        coordinates: selectedPiste.endPoint,
-        type: 'piste',
-      })
-    } else if (selectedLift?.stations?.[1]) {
-      setDestination({
-        id: selectedLift.id,
-        name: selectedLift.name,
-        coordinates: selectedLift.stations[1].coordinates,
-        type: 'lift',
-      })
+  const handleNavigate = () => {
+    // Navigate to the end of the piste (last coordinate of last segment)
+    if (piste.coordinates.length > 0) {
+      const lastCoord = piste.coordinates[piste.coordinates.length - 1]
+      if (lastCoord) {
+        setDestination({
+          id: piste.id,
+          name: piste.name,
+          coordinates: [lastCoord[0], lastCoord[1], lastCoord[2] ?? 0],
+          type: 'piste',
+        })
+      }
     }
     clearSelection()
   }
 
-  // Render piste info
-  if (selectedPiste) {
-    const config = PISTE_DIFFICULTY_CONFIG[selectedPiste.difficulty]
-    const length = selectedPiste.length ?? calculateTotalLength(selectedPiste.coordinates)
+  return <PisteInfoPanel piste={piste} onClose={clearSelection} onNavigate={handleNavigate} />
+}
 
-    return (
-      <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/80 backdrop-blur-md">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-2 p-3 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <div
-              className="h-4 w-4 rounded-full flex-shrink-0"
-              style={{ backgroundColor: config.color }}
-            />
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-white truncate">{selectedPiste.name}</h2>
-              <p className="text-xs text-white/60">
-                {config.label} Piste
-                {selectedPiste.ref && <span className="ml-1 font-mono">#{selectedPiste.ref}</span>}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={clearSelection}
-            className="rounded p-1 transition-colors hover:bg-white/20 flex-shrink-0"
-            aria-label="Close"
-          >
-            <X className="h-4 w-4 text-white/70" />
-          </button>
-        </div>
+function LiftInfoPanelLoader({ id }: { id: string }) {
+  const { data: lifts } = useLifts()
+  const clearSelection = useMapStore((s) => s.clearSelection)
+  const setDestination = useNavigationStore((s) => s.setDestination)
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-2 p-3">
-          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
-            <Ruler className="h-4 w-4 text-white/50" />
-            <div>
-              <p className="text-[10px] text-white/50">Length</p>
-              <p className="text-xs font-medium text-white">{(length / 1000).toFixed(2)} km</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
-            <Mountain className="h-4 w-4 text-white/50" />
-            <div>
-              <p className="text-[10px] text-white/50">Difficulty</p>
-              <p className="text-xs font-medium text-white">{config.label}</p>
-            </div>
-          </div>
-        </div>
+  const lift = lifts?.find(l => l.id === id)
+  if (!lift) return null
 
-        {/* Actions */}
-        <div className="p-3 pt-0">
-          <button
-            onClick={handleNavigateTo}
-            className="flex w-full items-center justify-center gap-2 rounded bg-white/20 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/30"
-          >
-            <Navigation className="h-3.5 w-3.5" />
-            Navigate to End
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // Render lift info
-  if (selectedLift) {
-    const config = LIFT_TYPE_CONFIG[selectedLift.type as keyof typeof LIFT_TYPE_CONFIG] ?? LIFT_TYPE_CONFIG['Lift']
-    const length = calculateLength(selectedLift.coordinates)
-
-    return (
-      <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/80 backdrop-blur-md">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-2 p-3 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">{config.icon}</span>
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-white truncate">{selectedLift.name}</h2>
-              <p className="text-xs text-white/60">{selectedLift.type}</p>
-            </div>
-          </div>
-          <button
-            onClick={clearSelection}
-            className="rounded p-1 transition-colors hover:bg-white/20 flex-shrink-0"
-            aria-label="Close"
-          >
-            <X className="h-4 w-4 text-white/70" />
-          </button>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-2 p-3">
-          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
-            <Ruler className="h-4 w-4 text-white/50" />
-            <div>
-              <p className="text-[10px] text-white/50">Length</p>
-              <p className="text-xs font-medium text-white">{(length / 1000).toFixed(2)} km</p>
-            </div>
-          </div>
-          {selectedLift.capacity ? (
-            <div className="flex items-center gap-2 rounded bg-white/10 p-2">
-              <Users className="h-4 w-4 text-white/50" />
-              <div>
-                <p className="text-[10px] text-white/50">Capacity</p>
-                <p className="text-xs font-medium text-white">{selectedLift.capacity}/h</p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 rounded bg-white/10 p-2">
-              <div
-                className="h-4 w-4 rounded-full flex-shrink-0"
-                style={{ backgroundColor: config.color }}
-              />
-              <div>
-                <p className="text-[10px] text-white/50">Type</p>
-                <p className="text-xs font-medium text-white">{selectedLift.type}</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Stations */}
-        {selectedLift.stations && selectedLift.stations.length >= 2 && (
-          <div className="px-3 pb-3">
-            <div className="rounded bg-white/10 p-2">
-              <p className="text-[10px] text-white/50 mb-1.5">Stations</p>
-              <div className="flex items-center gap-2 text-xs">
-                <div className="flex items-center gap-1">
-                  <ArrowDown className="h-3 w-3 text-green-400" />
-                  <span className="text-white/80 truncate max-w-[80px]">
-                    {selectedLift.stations[0]?.name || 'Bottom'}
-                  </span>
-                </div>
-                <div className="h-px flex-1 bg-white/20" />
-                <div className="flex items-center gap-1">
-                  <ArrowUp className="h-3 w-3 text-red-400" />
-                  <span className="text-white/80 truncate max-w-[80px]">
-                    {selectedLift.stations[1]?.name || 'Top'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="p-3 pt-0">
-          <button
-            onClick={handleNavigateTo}
-            className="flex w-full items-center justify-center gap-2 rounded bg-white/20 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/30"
-          >
-            <Navigation className="h-3.5 w-3.5" />
-            Navigate to Top
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // Render peak info
-  if (selectedPeak) {
-    return (
-      <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/80 backdrop-blur-md">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-2 p-3 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">⛰️</span>
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-white truncate">{selectedPeak.name}</h2>
-              <p className="text-xs text-white/60">Mountain Peak</p>
-            </div>
-          </div>
-          <button
-            onClick={clearSelection}
-            className="rounded p-1 transition-colors hover:bg-white/20 flex-shrink-0"
-            aria-label="Close"
-          >
-            <X className="h-4 w-4 text-white/70" />
-          </button>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-2 p-3">
-          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
-            <Mountain className="h-4 w-4 text-white/50" />
-            <div>
-              <p className="text-[10px] text-white/50">Elevation</p>
-              <p className="text-xs font-medium text-white">{selectedPeak.elevation.toLocaleString()} m</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
-            <MapPin className="h-4 w-4 text-white/50" />
-            <div>
-              <p className="text-[10px] text-white/50">Coordinates</p>
-              <p className="text-xs font-medium text-white">
-                {selectedPeak.lat.toFixed(4)}°
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Render place info
-  if (selectedPlace) {
-    const getPlaceIcon = () => {
-      switch (selectedPlace.type) {
-        case 'town': return '🏘️'
-        case 'village': return '🏠'
-        case 'hamlet': return '🏡'
+  const handleNavigate = () => {
+    // Navigate to the end of the lift (top station)
+    if (lift.coordinates.length > 0) {
+      const lastCoord = lift.coordinates[lift.coordinates.length - 1]
+      if (lastCoord) {
+        setDestination({
+          id: lift.id,
+          name: lift.name,
+          coordinates: [lastCoord[0], lastCoord[1], lastCoord[2] ?? 0],
+          type: 'lift',
+        })
       }
     }
-
-    const getPlaceTypeLabel = () => {
-      switch (selectedPlace.type) {
-        case 'town': return 'Town'
-        case 'village': return 'Village'
-        case 'hamlet': return 'Hamlet'
-      }
-    }
-
-    return (
-      <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/80 backdrop-blur-md">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-2 p-3 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">{getPlaceIcon()}</span>
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-white truncate">{selectedPlace.name}</h2>
-              <p className="text-xs text-white/60">{getPlaceTypeLabel()}</p>
-            </div>
-          </div>
-          <button
-            onClick={clearSelection}
-            className="rounded p-1 transition-colors hover:bg-white/20 flex-shrink-0"
-            aria-label="Close"
-          >
-            <X className="h-4 w-4 text-white/70" />
-          </button>
-        </div>
-
-        {/* Stats */}
-        <div className="p-3">
-          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
-            <MapPin className="h-4 w-4 text-white/50" />
-            <div>
-              <p className="text-[10px] text-white/50">Location</p>
-              <p className="text-xs font-medium text-white">
-                {selectedPlace.lat.toFixed(4)}°N, {selectedPlace.lon.toFixed(4)}°E
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    clearSelection()
   }
 
-  return null
+  return <LiftInfoPanel lift={lift} onClose={clearSelection} onNavigate={handleNavigate} />
+}
+
+function PeakInfoPanelLoader({ id }: { id: string }) {
+  const { data: peaks } = usePeaks()
+  const clearSelection = useMapStore((s) => s.clearSelection)
+
+  const peak = peaks?.find(p => p.id === id)
+  if (!peak) return null
+
+  return <PeakInfoPanel peak={peak} onClose={clearSelection} />
+}
+
+function PlaceInfoPanelLoader({ id }: { id: string }) {
+  const { data: places } = usePlaces()
+  const clearSelection = useMapStore((s) => s.clearSelection)
+
+  const place = places?.find(p => p.id === id)
+  if (!place) return null
+
+  return <PlaceInfoPanel place={place} onClose={clearSelection} />
+}
+
+// Main InfoPanel component - delegates to type-specific loaders
+export function InfoPanel() {
+  const selectedEntity = useMapStore((s) => s.selectedEntity)
+
+  if (!selectedEntity) return null
+
+  switch (selectedEntity.type) {
+    case 'piste':
+      return <PisteInfoPanelLoader id={selectedEntity.id} />
+    case 'lift':
+      return <LiftInfoPanelLoader id={selectedEntity.id} />
+    case 'peak':
+      return <PeakInfoPanelLoader id={selectedEntity.id} />
+    case 'place':
+      return <PlaceInfoPanelLoader id={selectedEntity.id} />
+    default:
+      return null
+  }
 }
