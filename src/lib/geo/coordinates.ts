@@ -3,18 +3,16 @@
  * lat/lon coordinates and local 3D scene coordinates
  */
 
-// Sölden ski area center point (Giggijoch)
-export const SOLDEN_CENTER = {
-  lat: 46.9147,
-  lon: 10.9975,
-  elevation: 2284, // meters
-};
+import { SOLDEN_CENTER, SOLDEN_BOUNDS } from '@/config/region'
+
+// Re-export for backward compatibility
+export { SOLDEN_CENTER, SOLDEN_BOUNDS }
 
 // Scale factor: meters per unit in 3D scene
-const SCALE = 0.1; // 1 unit = 10 meters
+const SCALE = 0.1 // 1 unit = 10 meters
 
 // Earth's radius in meters
-const EARTH_RADIUS = 6371000;
+const EARTH_RADIUS = 6371000
 
 /**
  * Convert latitude/longitude to local X/Z coordinates centered on Sölden
@@ -23,23 +21,23 @@ const EARTH_RADIUS = 6371000;
 export function geoToLocal(
   lat: number,
   lon: number,
-  elevation = 0,
+  elevation = 0
 ): [number, number, number] {
   // Calculate distance from center
-  const dLat = (lat - SOLDEN_CENTER.lat) * (Math.PI / 180);
-  const dLon = (lon - SOLDEN_CENTER.lon) * (Math.PI / 180);
+  const dLat = (lat - SOLDEN_CENTER.lat) * (Math.PI / 180)
+  const dLon = (lon - SOLDEN_CENTER.lon) * (Math.PI / 180)
 
   // Approximate meters from center
-  const latMeters = dLat * EARTH_RADIUS;
+  const latMeters = dLat * EARTH_RADIUS
   const lonMeters =
-    dLon * EARTH_RADIUS * Math.cos((SOLDEN_CENTER.lat * Math.PI) / 180);
+    dLon * EARTH_RADIUS * Math.cos((SOLDEN_CENTER.lat * Math.PI) / 180)
 
   // Convert to scene coordinates (Z = north, X = east, Y = up)
-  const x = lonMeters * SCALE;
-  const y = (elevation - SOLDEN_CENTER.elevation) * SCALE;
-  const z = -latMeters * SCALE; // Negative because north is -Z in Three.js convention
+  const x = lonMeters * SCALE
+  const y = (elevation - SOLDEN_CENTER.elevation) * SCALE
+  const z = -latMeters * SCALE // Negative because north is -Z in Three.js convention
 
-  return [x, y, z];
+  return [x, y, z]
 }
 
 /**
@@ -47,9 +45,9 @@ export function geoToLocal(
  */
 export function coordsToLocal(
   coordinates: [number, number][],
-  elevation = 0,
+  elevation = 0
 ): [number, number, number][] {
-  return coordinates.map(([lon, lat]) => geoToLocal(lat, lon, elevation));
+  return coordinates.map(([lon, lat]) => geoToLocal(lat, lon, elevation))
 }
 
 /**
@@ -58,21 +56,21 @@ export function coordsToLocal(
 export function localToGeo(
   x: number,
   y: number,
-  z: number,
+  z: number
 ): { lat: number; lon: number; elevation: number } {
-  const lonMeters = x / SCALE;
-  const latMeters = -z / SCALE;
-  const elevation = y / SCALE + SOLDEN_CENTER.elevation;
+  const lonMeters = x / SCALE
+  const latMeters = -z / SCALE
+  const elevation = y / SCALE + SOLDEN_CENTER.elevation
 
-  const dLat = latMeters / EARTH_RADIUS;
+  const dLat = latMeters / EARTH_RADIUS
   const dLon =
-    lonMeters / (EARTH_RADIUS * Math.cos((SOLDEN_CENTER.lat * Math.PI) / 180));
+    lonMeters / (EARTH_RADIUS * Math.cos((SOLDEN_CENTER.lat * Math.PI) / 180))
 
   return {
     lat: SOLDEN_CENTER.lat + dLat * (180 / Math.PI),
     lon: SOLDEN_CENTER.lon + dLon * (180 / Math.PI),
     elevation,
-  };
+  }
 }
 
 /**
@@ -82,21 +80,21 @@ export function distanceMeters(
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number,
+  lon2: number
 ): number {
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const dLat = (lat2 - lat1) * (Math.PI / 180)
+  const dLon = (lon2 - lon1) * (Math.PI / 180)
 
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
       Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+      Math.sin(dLon / 2)
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 
-  return EARTH_RADIUS * c;
+  return EARTH_RADIUS * c
 }
 
 /**
@@ -104,25 +102,19 @@ export function distanceMeters(
  * Includes padding to ensure all pistes are covered by terrain
  */
 export function getSoldenBounds() {
-  // Extended bounds to cover entire ski area including Rettenbach & Tiefenbach glaciers
-  // Original: 46.87-46.98 lat, 10.95-11.15 lon
-  // Extended to include glaciers to the southwest
-  const minLat = 46.84;
-  const maxLat = 47.01;
-  const minLon = 10.86;
-  const maxLon = 11.2;
+  const { minLat, maxLat, minLon, maxLon } = SOLDEN_BOUNDS
 
-  const [minX, , minZ] = geoToLocal(minLat, minLon);
-  const [maxX, , maxZ] = geoToLocal(maxLat, maxLon);
+  const [minX, , minZ] = geoToLocal(minLat, minLon)
+  const [maxX, , maxZ] = geoToLocal(maxLat, maxLon)
 
-  const actualMinX = Math.min(minX, maxX);
-  const actualMaxX = Math.max(minX, maxX);
-  const actualMinZ = Math.min(minZ, maxZ);
-  const actualMaxZ = Math.max(minZ, maxZ);
+  const actualMinX = Math.min(minX, maxX)
+  const actualMaxX = Math.max(minX, maxX)
+  const actualMinZ = Math.min(minZ, maxZ)
+  const actualMaxZ = Math.max(minZ, maxZ)
 
   // Calculate actual center of the bounding box (not 0,0!)
-  const centerX = (actualMinX + actualMaxX) / 2;
-  const centerZ = (actualMinZ + actualMaxZ) / 2;
+  const centerX = (actualMinX + actualMaxX) / 2
+  const centerZ = (actualMinZ + actualMaxZ) / 2
 
   return {
     minX: actualMinX,
@@ -133,19 +125,12 @@ export function getSoldenBounds() {
     centerZ,
     width: Math.abs(actualMaxX - actualMinX),
     depth: Math.abs(actualMaxZ - actualMinZ),
-  };
+  }
 }
-
-/** Sölden ski area geographic bounds */
-export const SOLDEN_BOUNDS = {
-  minLat: 46.84,
-  maxLat: 47.01,
-  minLon: 10.86,
-  maxLon: 11.2,
-};
 
 /**
  * Check if a geographic coordinate is within the Sölden ski area bounds
+ * @deprecated Use isInRegionBounds from @/config/region instead
  */
 export function isInSoldenBounds(lat: number, lon: number): boolean {
   return (
@@ -153,5 +138,5 @@ export function isInSoldenBounds(lat: number, lon: number): boolean {
     lat <= SOLDEN_BOUNDS.maxLat &&
     lon >= SOLDEN_BOUNDS.minLon &&
     lon <= SOLDEN_BOUNDS.maxLon
-  );
+  )
 }
