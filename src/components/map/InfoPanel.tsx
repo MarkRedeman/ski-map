@@ -12,10 +12,6 @@ import { usePlaces } from '@/hooks/usePlaces'
 import { useNavigationStore } from '@/stores/useNavigationStore'
 import { LIFT_TYPE_CONFIG } from './Lifts'
 import { PISTE_DIFFICULTY_CONFIG } from './Pistes'
-import type { Piste } from '@/lib/api/overpass'
-import type { Lift } from '@/lib/api/overpass'
-import type { Peak } from '@/lib/api/overpass'
-import type { Place } from '@/lib/api/overpass'
 
 // Common layout component for all info panels
 interface PanelLayoutProps {
@@ -51,15 +47,31 @@ function PanelLayout({ icon, title, subtitle, onClose, children }: PanelLayoutPr
   )
 }
 
-// Piste-specific info panel
-interface PisteInfoPanelProps {
-  piste: Piste
-  onClose: () => void
-  onNavigate: () => void
-}
+// Piste info panel — fetches its own data
+function PisteInfoPanel({ id }: { id: string }) {
+  const { data: pistes } = usePistes()
+  const clearSelection = useMapStore((s) => s.clearSelection)
+  const setDestination = useNavigationStore((s) => s.setDestination)
 
-function PisteInfoPanel({ piste, onClose, onNavigate }: PisteInfoPanelProps) {
+  const piste = pistes?.find(p => p.id === id)
+  if (!piste) return null
+
   const config = PISTE_DIFFICULTY_CONFIG[piste.difficulty]
+
+  const handleNavigate = () => {
+    if (piste.coordinates.length > 0) {
+      const lastCoord = piste.coordinates[piste.coordinates.length - 1]
+      if (lastCoord) {
+        setDestination({
+          id: piste.id,
+          name: piste.name,
+          coordinates: [lastCoord[0], lastCoord[1], lastCoord[2] ?? 0],
+          type: 'piste',
+        })
+      }
+    }
+    clearSelection()
+  }
 
   return (
     <PanelLayout
@@ -71,7 +83,7 @@ function PisteInfoPanel({ piste, onClose, onNavigate }: PisteInfoPanelProps) {
       }
       title={piste.name}
       subtitle={`${config.label} Piste${piste.ref ? ` #${piste.ref}` : ''}`}
-      onClose={onClose}
+      onClose={clearSelection}
     >
       {/* Stats */}
       <div className="grid grid-cols-2 gap-2 p-3">
@@ -94,7 +106,7 @@ function PisteInfoPanel({ piste, onClose, onNavigate }: PisteInfoPanelProps) {
       {/* Actions */}
       <div className="p-3 pt-0">
         <button
-          onClick={onNavigate}
+          onClick={handleNavigate}
           className="flex w-full items-center justify-center gap-2 rounded bg-white/20 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/30"
         >
           <Navigation className="h-3.5 w-3.5" />
@@ -105,22 +117,38 @@ function PisteInfoPanel({ piste, onClose, onNavigate }: PisteInfoPanelProps) {
   )
 }
 
-// Lift-specific info panel
-interface LiftInfoPanelProps {
-  lift: Lift
-  onClose: () => void
-  onNavigate: () => void
-}
+// Lift info panel — fetches its own data
+function LiftInfoPanel({ id }: { id: string }) {
+  const { data: lifts } = useLifts()
+  const clearSelection = useMapStore((s) => s.clearSelection)
+  const setDestination = useNavigationStore((s) => s.setDestination)
 
-function LiftInfoPanel({ lift, onClose, onNavigate }: LiftInfoPanelProps) {
+  const lift = lifts?.find(l => l.id === id)
+  if (!lift) return null
+
   const config = LIFT_TYPE_CONFIG[lift.type as keyof typeof LIFT_TYPE_CONFIG] ?? LIFT_TYPE_CONFIG['Lift']
+
+  const handleNavigate = () => {
+    if (lift.coordinates.length > 0) {
+      const lastCoord = lift.coordinates[lift.coordinates.length - 1]
+      if (lastCoord) {
+        setDestination({
+          id: lift.id,
+          name: lift.name,
+          coordinates: [lastCoord[0], lastCoord[1], lastCoord[2] ?? 0],
+          type: 'lift',
+        })
+      }
+    }
+    clearSelection()
+  }
 
   return (
     <PanelLayout
       icon={<span className="text-lg">{config.icon}</span>}
       title={lift.name}
       subtitle={lift.type}
-      onClose={onClose}
+      onClose={clearSelection}
     >
       {/* Stats */}
       <div className="grid grid-cols-2 gap-2 p-3">
@@ -146,7 +174,7 @@ function LiftInfoPanel({ lift, onClose, onNavigate }: LiftInfoPanelProps) {
       {/* Actions */}
       <div className="p-3 pt-0">
         <button
-          onClick={onNavigate}
+          onClick={handleNavigate}
           className="flex w-full items-center justify-center gap-2 rounded bg-white/20 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/30"
         >
           <Navigation className="h-3.5 w-3.5" />
@@ -157,19 +185,20 @@ function LiftInfoPanel({ lift, onClose, onNavigate }: LiftInfoPanelProps) {
   )
 }
 
-// Peak-specific info panel
-interface PeakInfoPanelProps {
-  peak: Peak
-  onClose: () => void
-}
+// Peak info panel — fetches its own data
+function PeakInfoPanel({ id }: { id: string }) {
+  const { data: peaks } = usePeaks()
+  const clearSelection = useMapStore((s) => s.clearSelection)
 
-function PeakInfoPanel({ peak, onClose }: PeakInfoPanelProps) {
+  const peak = peaks?.find(p => p.id === id)
+  if (!peak) return null
+
   return (
     <PanelLayout
       icon={<Mountain className="h-4 w-4 text-amber-400" />}
       title={peak.name}
       subtitle="Mountain Peak"
-      onClose={onClose}
+      onClose={clearSelection}
     >
       {/* Stats */}
       <div className="grid grid-cols-2 gap-2 p-3">
@@ -194,13 +223,14 @@ function PeakInfoPanel({ peak, onClose }: PeakInfoPanelProps) {
   )
 }
 
-// Place-specific info panel
-interface PlaceInfoPanelProps {
-  place: Place
-  onClose: () => void
-}
+// Place info panel — fetches its own data
+function PlaceInfoPanel({ id }: { id: string }) {
+  const { data: places } = usePlaces()
+  const clearSelection = useMapStore((s) => s.clearSelection)
 
-function PlaceInfoPanel({ place, onClose }: PlaceInfoPanelProps) {
+  const place = places?.find(p => p.id === id)
+  if (!place) return null
+
   const getPlaceIcon = () => {
     switch (place.type) {
       case 'town': return '🏘️'
@@ -224,7 +254,7 @@ function PlaceInfoPanel({ place, onClose }: PlaceInfoPanelProps) {
       icon={<span className="text-lg">{getPlaceIcon()}</span>}
       title={place.name}
       subtitle={getPlaceTypeLabel()}
-      onClose={onClose}
+      onClose={clearSelection}
     >
       {/* Stats */}
       <div className="p-3">
@@ -242,84 +272,7 @@ function PlaceInfoPanel({ place, onClose }: PlaceInfoPanelProps) {
   )
 }
 
-// Loader components — each calls its own hook at the top level (Rules of Hooks)
-// Then looks up the entity and renders the presentation component
-
-function PisteInfoPanelLoader({ id }: { id: string }) {
-  const { data: pistes } = usePistes()
-  const clearSelection = useMapStore((s) => s.clearSelection)
-  const setDestination = useNavigationStore((s) => s.setDestination)
-
-  const piste = pistes?.find(p => p.id === id)
-  if (!piste) return null
-
-  const handleNavigate = () => {
-    // Navigate to the end of the piste (last coordinate of last segment)
-    if (piste.coordinates.length > 0) {
-      const lastCoord = piste.coordinates[piste.coordinates.length - 1]
-      if (lastCoord) {
-        setDestination({
-          id: piste.id,
-          name: piste.name,
-          coordinates: [lastCoord[0], lastCoord[1], lastCoord[2] ?? 0],
-          type: 'piste',
-        })
-      }
-    }
-    clearSelection()
-  }
-
-  return <PisteInfoPanel piste={piste} onClose={clearSelection} onNavigate={handleNavigate} />
-}
-
-function LiftInfoPanelLoader({ id }: { id: string }) {
-  const { data: lifts } = useLifts()
-  const clearSelection = useMapStore((s) => s.clearSelection)
-  const setDestination = useNavigationStore((s) => s.setDestination)
-
-  const lift = lifts?.find(l => l.id === id)
-  if (!lift) return null
-
-  const handleNavigate = () => {
-    // Navigate to the end of the lift (top station)
-    if (lift.coordinates.length > 0) {
-      const lastCoord = lift.coordinates[lift.coordinates.length - 1]
-      if (lastCoord) {
-        setDestination({
-          id: lift.id,
-          name: lift.name,
-          coordinates: [lastCoord[0], lastCoord[1], lastCoord[2] ?? 0],
-          type: 'lift',
-        })
-      }
-    }
-    clearSelection()
-  }
-
-  return <LiftInfoPanel lift={lift} onClose={clearSelection} onNavigate={handleNavigate} />
-}
-
-function PeakInfoPanelLoader({ id }: { id: string }) {
-  const { data: peaks } = usePeaks()
-  const clearSelection = useMapStore((s) => s.clearSelection)
-
-  const peak = peaks?.find(p => p.id === id)
-  if (!peak) return null
-
-  return <PeakInfoPanel peak={peak} onClose={clearSelection} />
-}
-
-function PlaceInfoPanelLoader({ id }: { id: string }) {
-  const { data: places } = usePlaces()
-  const clearSelection = useMapStore((s) => s.clearSelection)
-
-  const place = places?.find(p => p.id === id)
-  if (!place) return null
-
-  return <PlaceInfoPanel place={place} onClose={clearSelection} />
-}
-
-// Main InfoPanel component - delegates to type-specific loaders
+// Main InfoPanel component — delegates to type-specific panels
 export function InfoPanel() {
   const selectedEntity = useMapStore((s) => s.selectedEntity)
 
@@ -327,13 +280,13 @@ export function InfoPanel() {
 
   switch (selectedEntity.type) {
     case 'piste':
-      return <PisteInfoPanelLoader id={selectedEntity.id} />
+      return <PisteInfoPanel id={selectedEntity.id} />
     case 'lift':
-      return <LiftInfoPanelLoader id={selectedEntity.id} />
+      return <LiftInfoPanel id={selectedEntity.id} />
     case 'peak':
-      return <PeakInfoPanelLoader id={selectedEntity.id} />
+      return <PeakInfoPanel id={selectedEntity.id} />
     case 'place':
-      return <PlaceInfoPanelLoader id={selectedEntity.id} />
+      return <PlaceInfoPanel id={selectedEntity.id} />
     default:
       return null
   }
