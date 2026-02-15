@@ -43,17 +43,17 @@ function geoDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
  * rotation and only changes on actual zoom in/out.
  */
 function getMaxRestaurants(zoomDistance: number): number {
-  if (zoomDistance < 400) return Infinity; // Close: show all nearby
-  if (zoomDistance < 1000) return 50; // Medium: generous limit
-  return 20; // Far: still show a good number
+  if (zoomDistance < 600) return Infinity; // Close: show all nearby
+  if (zoomDistance < 1500) return 50; // Medium: generous limit
+  return 30; // Far: still show a good number
 }
 
 /**
  * Quantize zoom distance to threshold levels to avoid constant re-renders
  */
 function getDistanceLevel(zoomDistance: number): number {
-  if (zoomDistance < 400) return 0;
-  if (zoomDistance < 1000) return 1;
+  if (zoomDistance < 600) return 0;
+  if (zoomDistance < 1500) return 1;
   return 2;
 }
 
@@ -164,22 +164,28 @@ export function RestaurantLabels() {
   }, [lifts, pistes]);
 
   // Filter and position restaurants based on proximity to lifts/pistes
+  // Always include the selected restaurant regardless of zoom/filters
   const visibleRestaurants = useMemo(() => {
     if (!restaurants || !showLabels || infrastructurePoints.length === 0) return [];
 
-    const maxCount = getMaxRestaurants(distanceLevel === 0 ? 0 : distanceLevel === 1 ? 700 : 1500);
+    const maxCount = getMaxRestaurants(distanceLevel === 0 ? 0 : distanceLevel === 1 ? 1000 : 2000);
 
     const filtered = restaurants
-      // Only show restaurants near lifts or pistes
-      .filter((restaurant) =>
-        infrastructurePoints.some(
-          (point) =>
-            geoDistance(restaurant.lat, restaurant.lon, point.lat, point.lon) <
-            RESTAURANT_PROXIMITY_RADIUS
-        )
+      // Only show restaurants near lifts or pistes (but always keep the selected one)
+      .filter(
+        (restaurant) =>
+          restaurant.id === selectedRestaurantId ||
+          infrastructurePoints.some(
+            (point) =>
+              geoDistance(restaurant.lat, restaurant.lon, point.lat, point.lon) <
+              RESTAURANT_PROXIMITY_RADIUS
+          )
       )
       // Prioritize: Alpine Huts first (on-mountain), then restaurants, cafes, bars
       .sort((a, b) => {
+        // Selected restaurant always comes first so it survives the slice
+        if (a.id === selectedRestaurantId) return -1;
+        if (b.id === selectedRestaurantId) return 1;
         const typeOrder: Record<string, number> = {
           'Alpine Hut': 0,
           Restaurant: 1,
@@ -207,7 +213,14 @@ export function RestaurantLabels() {
         position: [x, y, z] as [number, number, number],
       };
     });
-  }, [restaurants, infrastructurePoints, elevationGrid, showLabels, distanceLevel]);
+  }, [
+    restaurants,
+    infrastructurePoints,
+    elevationGrid,
+    showLabels,
+    distanceLevel,
+    selectedRestaurantId,
+  ]);
 
   // Handle selection and camera focus when clicking a pin
   // Uses terrain sampling for accurate centering on mountainous terrain

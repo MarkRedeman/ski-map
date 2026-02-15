@@ -105,6 +105,7 @@ export function PlaceLabels() {
   const { data: lifts } = useLifts();
   const elevationGrid = useMapStore((s) => s.elevationGrid);
   const showLabels = useMapStore((s) => s.showLabels);
+  const selectedPlaceId = useMapStore((s) => s.getSelectedId('place'));
 
   // Track zoom level for filtering
   const [distanceLevel, setDistanceLevel] = useState(1);
@@ -129,6 +130,7 @@ export function PlaceLabels() {
   }, [lifts]);
 
   // Filter and position places based on camera distance and lift proximity
+  // Always include the selected place regardless of zoom/filters
   const visiblePlaces = useMemo(() => {
     if (!places || !showLabels) return [];
 
@@ -138,9 +140,13 @@ export function PlaceLabels() {
 
     return (
       places
-        .filter((place) => visibleTypes.has(place.type as PlaceType))
-        // Towns are always visible; villages/hamlets only if near lifts
+        // Keep selected place, otherwise filter by type visibility
+        .filter(
+          (place) => place.id === selectedPlaceId || visibleTypes.has(place.type as PlaceType)
+        )
+        // Towns are always visible; villages/hamlets only if near lifts (or selected)
         .filter((place) => {
+          if (place.id === selectedPlaceId) return true;
           if (place.type === 'town') return true;
           if (liftPoints.length === 0) return true;
           return liftPoints.some(
@@ -166,7 +172,7 @@ export function PlaceLabels() {
           };
         })
     );
-  }, [places, liftPoints, elevationGrid, showLabels, distanceLevel]);
+  }, [places, liftPoints, elevationGrid, showLabels, distanceLevel, selectedPlaceId]);
 
   if (!showLabels || visiblePlaces.length === 0) return null;
 

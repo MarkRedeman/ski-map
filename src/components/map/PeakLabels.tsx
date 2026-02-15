@@ -79,6 +79,7 @@ export function PeakLabels() {
   const { data: lifts } = useLifts();
   const elevationGrid = useMapStore((s) => s.elevationGrid);
   const showLabels = useMapStore((s) => s.showLabels);
+  const selectedPeakId = useMapStore((s) => s.getSelectedId('peak'));
 
   // Track zoom level for filtering (quantized to avoid constant re-renders)
   const [distanceLevel, setDistanceLevel] = useState(2);
@@ -103,6 +104,7 @@ export function PeakLabels() {
   }, [lifts]);
 
   // Filter peaks to only those near lifts, then by elevation
+  // Always include the selected peak regardless of zoom/filters
   const visiblePeaks = useMemo(() => {
     if (!peaks || !showLabels || liftPoints.length === 0) return [];
 
@@ -110,41 +112,40 @@ export function PeakLabels() {
       distanceLevel === 0 ? 0 : distanceLevel === 1 ? 700 : 1500
     );
 
-    return (
-      peaks
-        // First filter by proximity to lifts
-        .filter((peak) =>
-          liftPoints.some(
-            (point) => geoDistance(peak.lat, peak.lon, point.lat, point.lon) < PEAK_PROXIMITY_RADIUS
-          )
-        )
-        // Then filter by elevation threshold
-        .filter(
-          (peak): peak is typeof peak & { elevation: number } =>
-            peak.elevation != null && peak.elevation >= minElevation
-        )
-        .map((peak) => {
-          // Convert geo coordinates to local 3D position
-          const [x, , z] = geoToLocal(peak.lat, peak.lon, 0);
-
-          // Get terrain height at this position, or use peak elevation
-          let y: number;
-          if (elevationGrid) {
-            const terrainY = sampleElevation(elevationGrid, x, z);
-            // Use the higher of terrain height or OSM elevation (in case terrain data is lower res)
-            const peakY = (peak.elevation - getRegionCenter().elevation) * SCALE;
-            y = Math.max(terrainY, peakY) + 15; // Offset above terrain
-          } else {
-            y = (peak.elevation - getRegionCenter().elevation) * SCALE + 15;
-          }
-
-          return {
-            ...peak,
-            position: [x, y, z] as [number, number, number],
-          };
-        })
+    // Peaks near lifts (proximity filter applies to all)
+    const nearbyPeaks = peaks.filter((peak) =>
+      liftPoints.some(
+        (point) => geoDistance(peak.lat, peak.lon, point.lat, point.lon) < PEAK_PROXIMITY_RADIUS
+      )
     );
-  }, [peaks, liftPoints, elevationGrid, showLabels, distanceLevel]);
+
+    // Apply elevation filter, but always keep the selected peak
+    const filtered = nearbyPeaks.filter(
+      (peak): peak is typeof peak & { elevation: number } =>
+        peak.id === selectedPeakId || (peak.elevation != null && peak.elevation >= minElevation)
+    );
+
+    return filtered.map((peak) => {
+      // Convert geo coordinates to local 3D position
+      const [x, , z] = geoToLocal(peak.lat, peak.lon, 0);
+
+      // Get terrain height at this position, or use peak elevation
+      let y: number;
+      if (elevationGrid) {
+        const terrainY = sampleElevation(elevationGrid, x, z);
+        // Use the higher of terrain height or OSM elevation (in case terrain data is lower res)
+        const peakY = (peak.elevation - getRegionCenter().elevation) * SCALE;
+        y = Math.max(terrainY, peakY) + 15; // Offset above terrain
+      } else {
+        y = (peak.elevation - getRegionCenter().elevation) * SCALE + 15;
+      }
+
+      return {
+        ...peak,
+        position: [x, y, z] as [number, number, number],
+      };
+    });
+  }, [peaks, liftPoints, elevationGrid, showLabels, distanceLevel, selectedPeakId]);
 
   if (!showLabels || visiblePeaks.length === 0) return null;
 
