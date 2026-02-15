@@ -73,9 +73,10 @@ interface PlaceLabelProps {
   name: string;
   type: PlaceType;
   position: [number, number, number];
+  isSelected: boolean;
 }
 
-function PlaceLabel({ name, type, position }: PlaceLabelProps) {
+function PlaceLabel({ name, type, position, isSelected }: PlaceLabelProps) {
   const isTown = type === 'town';
 
   return (
@@ -83,7 +84,7 @@ function PlaceLabel({ name, type, position }: PlaceLabelProps) {
       <div
         className={`
         pointer-events-none flex items-center gap-2 rounded-full backdrop-blur-sm shadow-lg
-        ${isTown ? 'bg-amber-900/80 px-4 py-2' : 'bg-black/70 px-3 py-1.5'}
+        ${isSelected ? (isTown ? 'bg-orange-900/90 ring-2 ring-orange-400/60 px-4 py-2' : 'bg-orange-900/90 ring-2 ring-orange-400/60 px-3 py-1.5') : isTown ? 'bg-amber-900/80 px-4 py-2' : 'bg-black/70 px-3 py-1.5'}
       `}
       >
         <span className={isTown ? 'text-lg' : 'text-base'}>{getPlaceIcon(type)}</span>
@@ -184,6 +185,7 @@ export function PlaceLabels() {
           name={place.name}
           type={place.type as PlaceType}
           position={place.position}
+          isSelected={selectedPlaceId === place.id}
         />
       ))}
     </group>

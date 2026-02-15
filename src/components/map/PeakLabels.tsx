@@ -58,12 +58,18 @@ interface PeakLabelProps {
   name: string;
   elevation: number;
   position: [number, number, number];
+  isSelected: boolean;
 }
 
-function PeakLabel({ name, elevation, position }: PeakLabelProps) {
+function PeakLabel({ name, elevation, position, isSelected }: PeakLabelProps) {
   return (
     <Html position={position} center distanceFactor={200} zIndexRange={[50, 0]}>
-      <div className="pointer-events-none flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 backdrop-blur-sm shadow-lg">
+      <div
+        className={`
+          pointer-events-none flex items-center gap-2 rounded-full backdrop-blur-sm shadow-lg px-3 py-1.5
+          ${isSelected ? 'bg-purple-900/90 ring-2 ring-purple-400/60' : 'bg-black/70'}
+        `}
+      >
         <span className="text-base">⛰️</span>
         <div className="flex flex-col leading-tight">
           <span className="text-sm font-semibold text-white whitespace-nowrap">{name}</span>
@@ -157,6 +163,7 @@ export function PeakLabels() {
           name={peak.name}
           elevation={peak.elevation}
           position={peak.position}
+          isSelected={selectedPeakId === peak.id}
         />
       ))}
     </group>

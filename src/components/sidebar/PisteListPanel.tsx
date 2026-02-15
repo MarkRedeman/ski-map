@@ -621,6 +621,7 @@ function PeakList({ searchQuery }: PeakListProps) {
   const hoveredPeakId = useMapStore((s) => s.getHoveredId('peak'));
   const selectedPeakId = useMapStore((s) => s.getSelectedId('peak'));
   const setHoveredEntity = useMapStore((s) => s.setHoveredEntity);
+  const setSelectedEntity = useMapStore((s) => s.setSelectedEntity);
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget);
 
   // Get current search params to preserve other params when selecting
@@ -653,13 +654,15 @@ function PeakList({ searchQuery }: PeakListProps) {
     [currentSearch]
   );
 
-  // Handle camera focus when clicking
+  // Handle camera focus and selection when clicking
+  // Set selection in store immediately (don't wait for URL sync debounce)
   const handleCameraFocus = useCallback(
     (peak: Peak) => {
+      setSelectedEntity('peak', peak.id);
       const position = geoToLocal(peak.lat, peak.lon, peak.elevation);
       setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.peak });
     },
-    [setCameraFocusTarget]
+    [setSelectedEntity, setCameraFocusTarget]
   );
 
   if (isLoading) {
@@ -746,6 +749,7 @@ function PlaceList({ searchQuery }: PlaceListProps) {
   const hoveredPlaceId = useMapStore((s) => s.getHoveredId('place'));
   const selectedPlaceId = useMapStore((s) => s.getSelectedId('place'));
   const setHoveredEntity = useMapStore((s) => s.setHoveredEntity);
+  const setSelectedEntity = useMapStore((s) => s.setSelectedEntity);
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget);
   const elevationGrid = useMapStore((s) => s.elevationGrid);
 
@@ -784,15 +788,17 @@ function PlaceList({ searchQuery }: PlaceListProps) {
     [currentSearch]
   );
 
-  // Handle camera focus when clicking - sample terrain height for accurate centering
+  // Handle camera focus and selection when clicking
+  // Set selection in store immediately (don't wait for URL sync debounce)
   const handleCameraFocus = useCallback(
     (place: Place) => {
+      setSelectedEntity('place', place.id);
       const [x, , z] = geoToLocal(place.lat, place.lon, 0);
       const y = elevationGrid ? sampleElevation(elevationGrid, x, z) : 0;
       const position: [number, number, number] = [x, y, z];
       setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.place });
     },
-    [setCameraFocusTarget, elevationGrid]
+    [setSelectedEntity, setCameraFocusTarget, elevationGrid]
   );
 
   if (isLoading) {
@@ -946,6 +952,7 @@ function RestaurantList({ searchQuery }: RestaurantListProps) {
   const hoveredRestaurantId = useMapStore((s) => s.getHoveredId('restaurant'));
   const selectedRestaurantId = useMapStore((s) => s.getSelectedId('restaurant'));
   const setHoveredEntity = useMapStore((s) => s.setHoveredEntity);
+  const setSelectedEntity = useMapStore((s) => s.setSelectedEntity);
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget);
   const elevationGrid = useMapStore((s) => s.elevationGrid);
 
@@ -1009,15 +1016,17 @@ function RestaurantList({ searchQuery }: RestaurantListProps) {
     [currentSearch]
   );
 
-  // Handle camera focus when clicking - sample terrain height for accurate centering
+  // Handle camera focus and selection when clicking
+  // Set selection in store immediately (don't wait for URL sync debounce)
   const handleCameraFocus = useCallback(
     (restaurant: Restaurant) => {
+      setSelectedEntity('restaurant', restaurant.id);
       const [x, , z] = geoToLocal(restaurant.lat, restaurant.lon, 0);
       const y = elevationGrid ? sampleElevation(elevationGrid, x, z) : 0;
       const position: [number, number, number] = [x, y, z];
       setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.restaurant });
     },
-    [setCameraFocusTarget, elevationGrid]
+    [setSelectedEntity, setCameraFocusTarget, elevationGrid]
   );
 
   if (isLoading) {
