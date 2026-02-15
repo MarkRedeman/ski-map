@@ -1,20 +1,19 @@
 /**
  * MapControls component - Unified control panel for the 3D map
  * 
- * Combines layer toggles, piste/lift filters, and resolution quality
- * into a single collapsible panel positioned at the bottom-left of the map.
+ * Collapsible panel positioned at the bottom-left of the map.
  * 
  * Sections (top to bottom when expanded):
- *   1. Layers — Pistes/Lifts/Labels toggles + locate-me button
- *   2. Piste Filters — Difficulty toggles with All/None
- *   3. Lift Filters — Lift type toggles with All/None
- *   4. Quality — Resolution selector (1x–16x) with loading spinner
+ *   1. Piste Filters — Difficulty toggles with All/None
+ *   2. Lift Filters — Lift type toggles with All/None
+ *   3. Quality — Resolution selector (1x–16x) with loading spinner
+ *   4. Labels — Toggle visibility of peak/place labels (eye icon)
  * 
  * On mobile, collapses to a compact button showing active filter count
  * and current resolution.
  */
 
-import { Navigation, ChevronUp, ChevronDown, Settings2 } from 'lucide-react'
+import { Navigation, ChevronUp, ChevronDown, Settings2, Eye, EyeOff } from 'lucide-react'
 import { useSettingsStore, type ResolutionLevel } from '@/stores/useSettingsStore'
 import { useMapStore, ALL_LIFT_TYPES, type LiftType } from '@/stores/useMapStore'
 import { useGeolocationStore } from '@/stores/useGeolocationStore'
@@ -31,10 +30,8 @@ export function MapControls() {
   const controlsExpanded = useUIStore((s) => s.controlsExpanded)
   const toggleControls = useUIStore((s) => s.toggleControls)
 
-  // Layer visibility
+  // Labels visibility
   const showLabels = useMapStore((s) => s.showLabels)
-  const showPistes = useMapStore((s) => s.showPistes)
-  const showLifts = useMapStore((s) => s.showLifts)
   const toggleLayer = useMapStore((s) => s.toggleLayer)
 
   // Resolution
@@ -108,82 +105,20 @@ export function MapControls() {
         <ChevronDown className="h-4 w-4" />
       </button>
 
-      {/* --- Layers section --- */}
-      <div className="h-px bg-white/20" />
-      <div className="flex items-center gap-3">
-        {/* Locate me button */}
-        {isTrackingLocation && userLocation && (
-          <>
-            <button
-              onClick={handleLocateMe}
-              className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors bg-amber-500 text-white hover:bg-amber-600"
-              title="Center map on my location"
-            >
-              <Navigation className="h-3.5 w-3.5" />
-              <span>Find Me</span>
-            </button>
-            <div className="h-4 w-px bg-white/20" />
-          </>
-        )}
-
-        {/* Pistes toggle */}
-        <button
-          onClick={() => toggleLayer('pistes')}
-          className={`
-            flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors
-            ${showPistes
-              ? 'bg-blue-500 text-white'
-              : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
-            }
-          `}
-          title={showPistes ? 'Hide pistes' : 'Show pistes'}
-        >
-          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M4 20L12 4l8 16" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span>Pistes</span>
-        </button>
-
-        {/* Lifts toggle */}
-        <button
-          onClick={() => toggleLayer('lifts')}
-          className={`
-            flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors
-            ${showLifts
-              ? 'bg-pink-500 text-white'
-              : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
-            }
-          `}
-          title={showLifts ? 'Hide lifts' : 'Show lifts'}
-        >
-          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="6" cy="6" r="2" />
-            <circle cx="18" cy="18" r="2" />
-            <path d="M6 8v8M18 8v8M6 6h12" strokeLinecap="round" />
-          </svg>
-          <span>Lifts</span>
-        </button>
-
-        {/* Labels toggle */}
-        <button
-          onClick={() => toggleLayer('labels')}
-          className={`
-            flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors
-            ${showLabels
-              ? 'bg-amber-500 text-white'
-              : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
-            }
-          `}
-          title={showLabels ? 'Hide labels' : 'Show labels'}
-        >
-          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5z" />
-            <path d="M2 17l10 5 10-5" />
-            <path d="M2 12l10 5 10-5" />
-          </svg>
-          <span>Labels</span>
-        </button>
-      </div>
+      {/* Locate me button */}
+      {isTrackingLocation && userLocation && (
+        <>
+          <div className="h-px bg-white/20" />
+          <button
+            onClick={handleLocateMe}
+            className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium transition-colors bg-amber-500 text-white hover:bg-amber-600"
+            title="Center map on my location"
+          >
+            <Navigation className="h-3.5 w-3.5" />
+            <span>Find Me</span>
+          </button>
+        </>
+      )}
 
       {/* --- Piste Filters section --- */}
       <div className="h-px bg-white/20" />
@@ -200,6 +135,27 @@ export function MapControls() {
         setResolution={setResolution}
         isLoading={isLoading}
       />
+
+      {/* --- Labels toggle --- */}
+      <div className="h-px bg-white/20" />
+      <button
+        onClick={() => toggleLayer('labels')}
+        className="flex items-center justify-between gap-3 rounded px-2 py-1 transition-colors hover:bg-white/10"
+        title={showLabels ? 'Hide labels' : 'Show labels'}
+      >
+        <div className="flex items-center gap-1.5">
+          <svg className="h-3.5 w-3.5 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
+          </svg>
+          <span className="text-xs font-medium text-white/80">Labels</span>
+        </div>
+        {showLabels
+          ? <Eye className="h-4 w-4 text-amber-400" />
+          : <EyeOff className="h-4 w-4 text-white/30" />
+        }
+      </button>
     </div>
   )
 }
