@@ -7,6 +7,8 @@
  */
 
 import { getRegionCenter, getRegionBounds } from '@/stores/useAppConfigStore';
+import { sampleElevation } from './elevationGrid';
+import type { ElevationGrid } from './elevationGrid';
 
 // Scale factor: meters per unit in 3D scene
 const SCALE = 0.1; // 1 unit = 10 meters
@@ -120,6 +122,17 @@ export function getLocalBounds() {
     width: Math.abs(actualMaxX - actualMinX),
     depth: Math.abs(actualMaxZ - actualMinZ),
   };
+}
+
+/**
+ * Get real-world elevation in meters for a lat/lon point using the terrain grid.
+ * Converts geo → local → samples terrain → converts back to meters.
+ * Returns null if elevationGrid is not available.
+ */
+export function getElevationMeters(lat: number, lon: number, elevationGrid: ElevationGrid): number {
+  const [x, , z] = geoToLocal(lat, lon, 0);
+  const y = sampleElevation(elevationGrid, x, z);
+  return localToGeo(x, y, z).elevation;
 }
 
 /**

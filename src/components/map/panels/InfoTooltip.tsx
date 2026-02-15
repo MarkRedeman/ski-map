@@ -11,11 +11,13 @@ import { usePistes } from '@/hooks/usePistes';
 import { useLifts } from '@/hooks/useLifts';
 import { usePeaks } from '@/hooks/usePeaks';
 import { useVillages } from '@/hooks/useVillages';
-import { coordsToLocal, geoToLocal } from '@/lib/geo/coordinates';
+import { useRestaurants } from '@/hooks/useRestaurants';
+import { coordsToLocal, geoToLocal, getElevationMeters } from '@/lib/geo/coordinates';
 import { sampleElevation } from '@/lib/geo/elevationGrid';
 import { LIFT_TYPE_CONFIG, PISTE_DIFFICULTY_CONFIG } from '@/config/theme';
 import { Panel } from './Panel';
 import type { ElevationGrid } from '@/lib/geo/elevationGrid';
+import type { RestaurantType } from '@/lib/api/overpass';
 
 // Shared tooltip wrapper — positions content in 3D space
 function TooltipShell({
@@ -85,6 +87,14 @@ function PisteTooltip({ id }: { id: string }) {
     return midpointPosition(flattenSegments(piste.coordinates), elevationGrid);
   }, [piste, elevationGrid]);
 
+  // Compute elevation drop from start/end points
+  const elevationDrop = useMemo(() => {
+    if (!piste?.startPoint || !piste?.endPoint || !elevationGrid) return null;
+    const startElev = getElevationMeters(piste.startPoint[0], piste.startPoint[1], elevationGrid);
+    const endElev = getElevationMeters(piste.endPoint[0], piste.endPoint[1], elevationGrid);
+    return Math.round(Math.abs(startElev - endElev));
+  }, [piste, elevationGrid]);
+
   if (!piste || !position) return null;
 
   const config = PISTE_DIFFICULTY_CONFIG[piste.difficulty];
@@ -105,6 +115,12 @@ function PisteTooltip({ id }: { id: string }) {
         </span>
         <span className="text-white/50">&bull;</span>
         <span className="text-white/70">{(piste.length / 1000).toFixed(1)} km</span>
+        {elevationDrop != null && elevationDrop > 0 && (
+          <>
+            <span className="text-white/50">&bull;</span>
+            <span className="text-white/70">&darr; {elevationDrop} m</span>
+          </>
+        )}
       </div>
     </TooltipShell>
   );
@@ -121,6 +137,32 @@ function LiftTooltip({ id }: { id: string }) {
   const position = useMemo(() => {
     if (!lift || !elevationGrid) return null;
     return midpointPosition(lift.coordinates, elevationGrid);
+  }, [lift, elevationGrid]);
+
+  // Compute elevation rise from stations or first/last coordinates
+  const elevationRise = useMemo(() => {
+    if (!lift || !elevationGrid) return null;
+    let bottomLat: number, bottomLon: number, topLat: number, topLon: number;
+    if (lift.stations && lift.stations.length >= 2) {
+      // stations[].coordinates is [lat, lon, elevation]
+      bottomLat = lift.stations[0]!.coordinates[0];
+      bottomLon = lift.stations[0]!.coordinates[1];
+      topLat = lift.stations[lift.stations.length - 1]!.coordinates[0];
+      topLon = lift.stations[lift.stations.length - 1]!.coordinates[1];
+    } else if (lift.coordinates.length >= 2) {
+      // coordinates is [lon, lat][]
+      const first = lift.coordinates[0]!;
+      const last = lift.coordinates[lift.coordinates.length - 1]!;
+      bottomLat = first[1];
+      bottomLon = first[0];
+      topLat = last[1];
+      topLon = last[0];
+    } else {
+      return null;
+    }
+    const elev1 = getElevationMeters(bottomLat, bottomLon, elevationGrid);
+    const elev2 = getElevationMeters(topLat, topLon, elevationGrid);
+    return Math.round(Math.abs(elev2 - elev1));
   }, [lift, elevationGrid]);
 
   if (!lift || !position) return null;
@@ -146,6 +188,12 @@ function LiftTooltip({ id }: { id: string }) {
           <>
             <span className="text-white/50">&bull;</span>
             <span className="text-white/70">{lift.capacity}/h</span>
+          </>
+        )}
+        {elevationRise != null && elevationRise > 0 && (
+          <>
+            <span className="text-white/50">&bull;</span>
+            <span className="text-white/70">&uarr; {elevationRise} m</span>
           </>
         )}
       </div>
@@ -215,6 +263,61 @@ function VillageTooltip({ id }: { id: string }) {
   );
 }
 
+// Restaurant icon map (matches InfoPanel)
+const RESTAURANT_ICON_MAP: Record<RestaurantType, string> = {
+  Restaurant: '🍽️',
+  Cafe: '☕',
+  Bar: '🍷',
+  'Alpine Hut': '🏔️',
+};
+
+// Restaurant tooltip
+function RestaurantTooltip({ id }: { id: string }) {
+  const { data: restaurants } = useRestaurants();
+  const elevationGrid = useMapStore((s) => s.elevationGrid);
+  const setSelectedEntity = useMapStore((s) => s.setSelectedEntity);
+
+  const restaurant = restaurants?.find((r) => r.id === id) ?? null;
+
+  const position = useMemo(() => {
+    if (!restaurant || !elevationGrid) return null;
+    return pointPosition(restaurant.lat, restaurant.lon, elevationGrid);
+  }, [restaurant, elevationGrid]);
+
+  // Elevation: prefer OSM value, fall back to terrain grid
+  const elevation = useMemo(() => {
+    if (!restaurant) return null;
+    if (restaurant.elevation != null) return restaurant.elevation;
+    if (!elevationGrid) return null;
+    return Math.round(getElevationMeters(restaurant.lat, restaurant.lon, elevationGrid));
+  }, [restaurant, elevationGrid]);
+
+  if (!restaurant || !position) return null;
+
+  const icon = RESTAURANT_ICON_MAP[restaurant.type] ?? '🍽️';
+
+  return (
+    <TooltipShell
+      position={position}
+      onClick={() => setSelectedEntity('restaurant', restaurant.id)}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-base">{icon}</span>
+        <h3 className="text-sm font-semibold text-white truncate">{restaurant.name}</h3>
+      </div>
+      <div className="flex items-center gap-3 text-xs">
+        <span className="text-white/70">{restaurant.type}</span>
+        {elevation != null && (
+          <>
+            <span className="text-white/50">&bull;</span>
+            <span className="text-white/70">{elevation.toLocaleString()} m</span>
+          </>
+        )}
+      </div>
+    </TooltipShell>
+  );
+}
+
 // Main InfoTooltip — delegates to type-specific tooltips
 export function InfoTooltip() {
   const hoveredEntity = useMapStore((s) => s.hoveredEntity);
@@ -230,6 +333,8 @@ export function InfoTooltip() {
       return <PeakTooltip id={hoveredEntity.id} />;
     case 'village':
       return <VillageTooltip id={hoveredEntity.id} />;
+    case 'restaurant':
+      return <RestaurantTooltip id={hoveredEntity.id} />;
     default:
       return null;
   }

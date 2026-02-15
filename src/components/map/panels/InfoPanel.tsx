@@ -12,6 +12,7 @@ import {
   ArrowDown,
   MapPin,
   UtensilsCrossed,
+  ExternalLink,
 } from 'lucide-react';
 import { useMapStore } from '@/stores/useMapStore';
 import { usePistes } from '@/hooks/usePistes';
@@ -20,6 +21,7 @@ import { usePeaks } from '@/hooks/usePeaks';
 import { useVillages } from '@/hooks/useVillages';
 import { useRestaurants } from '@/hooks/useRestaurants';
 import type { RestaurantType } from '@/lib/api/overpass';
+import { getElevationMeters } from '@/lib/geo/coordinates';
 import { LIFT_TYPE_CONFIG, PISTE_DIFFICULTY_CONFIG } from '@/config/theme';
 import { Panel } from './Panel';
 
@@ -57,15 +59,47 @@ function PanelLayout({ icon, title, subtitle, onClose, children }: PanelLayoutPr
   );
 }
 
+// Reusable Google Maps link shown at the bottom of each info panel
+function GoogleMapsLink({ lat, lon }: { lat: number; lon: number }) {
+  return (
+    <div className="px-3 pb-3">
+      <a
+        href={`https://www.google.com/maps?q=${lat},${lon}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2 rounded bg-white/10 p-2 text-xs text-white/70 hover:bg-white/20 transition-colors"
+      >
+        <ExternalLink className="h-3 w-3" />
+        Open on Google Maps
+      </a>
+    </div>
+  );
+}
+
 // Piste info panel — fetches its own data
 function PisteInfoPanel({ id }: { id: string }) {
   const { data: pistes } = usePistes();
   const clearSelection = useMapStore((s) => s.clearSelection);
+  const elevationGrid = useMapStore((s) => s.elevationGrid);
 
   const piste = pistes?.find((p) => p.id === id);
   if (!piste) return null;
 
   const config = PISTE_DIFFICULTY_CONFIG[piste.difficulty];
+
+  // Compute top/bottom elevations from start/end points via terrain grid
+  let topElevation: number | null = null;
+  let bottomElevation: number | null = null;
+  if (elevationGrid && piste.startPoint && piste.endPoint) {
+    const startElev = getElevationMeters(piste.startPoint[0], piste.startPoint[1], elevationGrid);
+    const endElev = getElevationMeters(piste.endPoint[0], piste.endPoint[1], elevationGrid);
+    topElevation = Math.round(Math.max(startElev, endElev));
+    bottomElevation = Math.round(Math.min(startElev, endElev));
+  }
+
+  // Midpoint for Google Maps link — use longest segment midpoint
+  const allCoords = piste.coordinates.flat();
+  const midCoord = allCoords[Math.floor(allCoords.length / 2)];
 
   return (
     <PanelLayout
@@ -95,7 +129,26 @@ function PisteInfoPanel({ id }: { id: string }) {
             <p className="text-xs font-medium text-white">{config.label}</p>
           </div>
         </div>
+        {topElevation != null && (
+          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+            <ArrowUp className="h-4 w-4 text-red-400" />
+            <div>
+              <p className="text-[10px] text-white/50">Top</p>
+              <p className="text-xs font-medium text-white">{topElevation.toLocaleString()} m</p>
+            </div>
+          </div>
+        )}
+        {bottomElevation != null && (
+          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+            <ArrowDown className="h-4 w-4 text-green-400" />
+            <div>
+              <p className="text-[10px] text-white/50">Bottom</p>
+              <p className="text-xs font-medium text-white">{bottomElevation.toLocaleString()} m</p>
+            </div>
+          </div>
+        )}
       </div>
+      {midCoord && <GoogleMapsLink lat={midCoord[1]} lon={midCoord[0]} />}
     </PanelLayout>
   );
 }
@@ -104,12 +157,30 @@ function PisteInfoPanel({ id }: { id: string }) {
 function LiftInfoPanel({ id }: { id: string }) {
   const { data: lifts } = useLifts();
   const clearSelection = useMapStore((s) => s.clearSelection);
+  const elevationGrid = useMapStore((s) => s.elevationGrid);
 
   const lift = lifts?.find((l) => l.id === id);
   if (!lift) return null;
 
   const config =
     LIFT_TYPE_CONFIG[lift.type as keyof typeof LIFT_TYPE_CONFIG] ?? LIFT_TYPE_CONFIG['Lift'];
+
+  // Compute station elevations from terrain grid
+  const stationElevations: (number | null)[] = [];
+  if (elevationGrid && lift.stations) {
+    for (const station of lift.stations) {
+      // station.coordinates is [lat, lon, elevation] with elevation hardcoded to 0
+      const elev = getElevationMeters(
+        station.coordinates[0],
+        station.coordinates[1],
+        elevationGrid
+      );
+      stationElevations.push(Math.round(elev));
+    }
+  }
+
+  // Midpoint for Google Maps link
+  const midCoord = lift.coordinates[Math.floor(lift.coordinates.length / 2)];
 
   return (
     <PanelLayout
@@ -149,7 +220,7 @@ function LiftInfoPanel({ id }: { id: string }) {
         )}
       </div>
 
-      {/* Stations */}
+      {/* Stations with elevation */}
       {lift.stations && lift.stations.length >= 2 && (
         <div className="px-3 pb-3">
           <div className="rounded bg-white/10 p-2">
@@ -160,6 +231,12 @@ function LiftInfoPanel({ id }: { id: string }) {
                 <span className="text-white/80 truncate max-w-[80px]">
                   {lift.stations[0]?.name || 'Bottom'}
                 </span>
+                {stationElevations[0] != null && (
+                  <span className="text-white/50">
+                    {' '}
+                    · {stationElevations[0].toLocaleString()} m
+                  </span>
+                )}
               </div>
               <div className="h-px flex-1 bg-white/20" />
               <div className="flex items-center gap-1">
@@ -167,11 +244,18 @@ function LiftInfoPanel({ id }: { id: string }) {
                 <span className="text-white/80 truncate max-w-[80px]">
                   {lift.stations[1]?.name || 'Top'}
                 </span>
+                {stationElevations[1] != null && (
+                  <span className="text-white/50">
+                    {' '}
+                    · {stationElevations[1].toLocaleString()} m
+                  </span>
+                )}
               </div>
             </div>
           </div>
         </div>
       )}
+      {midCoord && <GoogleMapsLink lat={midCoord[1]} lon={midCoord[0]} />}
     </PanelLayout>
   );
 }
@@ -210,6 +294,7 @@ function PeakInfoPanel({ id }: { id: string }) {
           </div>
         </div>
       </div>
+      <GoogleMapsLink lat={peak.lat} lon={peak.lon} />
     </PanelLayout>
   );
 }
@@ -267,6 +352,7 @@ function VillageInfoPanel({ id }: { id: string }) {
           </div>
         </div>
       </div>
+      <GoogleMapsLink lat={village.lat} lon={village.lon} />
     </PanelLayout>
   );
 }
@@ -282,11 +368,19 @@ const RESTAURANT_ICON_MAP: Record<RestaurantType, string> = {
 function RestaurantInfoPanel({ id }: { id: string }) {
   const { data: restaurants } = useRestaurants();
   const clearSelection = useMapStore((s) => s.clearSelection);
+  const elevationGrid = useMapStore((s) => s.elevationGrid);
 
   const restaurant = restaurants?.find((r) => r.id === id);
   if (!restaurant) return null;
 
   const icon = RESTAURANT_ICON_MAP[restaurant.type] ?? '🍽️';
+
+  // Always compute elevation — prefer OSM value, fall back to terrain grid
+  const elevation =
+    restaurant.elevation ??
+    (elevationGrid
+      ? Math.round(getElevationMeters(restaurant.lat, restaurant.lon, elevationGrid))
+      : null);
 
   return (
     <PanelLayout
@@ -304,25 +398,15 @@ function RestaurantInfoPanel({ id }: { id: string }) {
             <p className="text-xs font-medium text-white">{restaurant.type}</p>
           </div>
         </div>
-        {restaurant.elevation != null ? (
-          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
-            <Mountain className="h-4 w-4 text-white/50" />
-            <div>
-              <p className="text-[10px] text-white/50">Elevation</p>
-              <p className="text-xs font-medium text-white">
-                {restaurant.elevation.toLocaleString()} m
-              </p>
-            </div>
+        <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+          <Mountain className="h-4 w-4 text-white/50" />
+          <div>
+            <p className="text-[10px] text-white/50">Elevation</p>
+            <p className="text-xs font-medium text-white">
+              {elevation != null ? `${elevation.toLocaleString()} m` : '—'}
+            </p>
           </div>
-        ) : (
-          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
-            <MapPin className="h-4 w-4 text-white/50" />
-            <div>
-              <p className="text-[10px] text-white/50">Location</p>
-              <p className="text-xs font-medium text-white">{restaurant.lat.toFixed(4)}°</p>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Cuisine info */}
@@ -337,6 +421,7 @@ function RestaurantInfoPanel({ id }: { id: string }) {
           </div>
         </div>
       )}
+      <GoogleMapsLink lat={restaurant.lat} lon={restaurant.lon} />
     </PanelLayout>
   );
 }
