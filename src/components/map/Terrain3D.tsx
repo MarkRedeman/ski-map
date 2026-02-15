@@ -115,22 +115,52 @@ export function Terrain3D() {
     return geo;
   }, [data, segments]);
 
-  // Terrain brightness from settings (multiplied into material color)
+  // Terrain appearance settings
   const terrainBrightness = useSettingsStore((s) => s.terrainBrightness);
+  const terrainSaturation = useSettingsStore((s) => s.terrainSaturation);
 
-  // Create material with satellite texture
-  const material = useMemo(() => {
+  // Create a desaturated copy of the satellite texture when saturation changes
+  // Uses Canvas 2D filter API to avoid manual pixel manipulation
+  const processedTexture = useMemo(() => {
     if (!data) return null;
 
+    // Access the original canvas from the satellite texture
+    const sourceCanvas = data.satelliteTexture.source.data as HTMLCanvasElement;
+    if (!sourceCanvas) return data.satelliteTexture;
+
+    // Create an offscreen canvas matching the source dimensions
+    const canvas = document.createElement('canvas');
+    canvas.width = sourceCanvas.width;
+    canvas.height = sourceCanvas.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return data.satelliteTexture;
+
+    // Apply saturation filter: 0 = grayscale, 1 = original, >1 = oversaturated
+    // CSS filter saturate() takes a percentage where 100% = no change
+    ctx.filter = `saturate(${terrainSaturation * 100}%)`;
+    ctx.drawImage(sourceCanvas, 0, 0);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.colorSpace = THREE.SRGBColorSpace;
+
+    return texture;
+  }, [data, terrainSaturation]);
+
+  // Create material with processed satellite texture
+  const material = useMemo(() => {
+    if (!data || !processedTexture) return null;
+
     return new THREE.MeshStandardMaterial({
-      map: data.satelliteTexture,
+      map: processedTexture,
       // Darken terrain by multiplying texture with a gray color
       // brightness=1.0 means no change, 0.7 means 30% darker
       color: new THREE.Color(terrainBrightness, terrainBrightness, terrainBrightness),
       roughness: 0.9,
       metalness: 0.0,
     });
-  }, [data, terrainBrightness]);
+  }, [data, processedTexture, terrainBrightness]);
 
   if (isLoading) {
     return (
