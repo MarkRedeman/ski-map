@@ -5,7 +5,7 @@ import { useLifts } from '@/hooks/useLifts';
 import { useMapStore, type LiftType } from '@/stores/useMapStore';
 import { coordsToLocal } from '@/lib/geo/coordinates';
 import { sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid';
-import { LIFT_COLORS } from '@/config/theme';
+import { LIFT_COLORS, LINE_STYLE } from '@/config/theme';
 
 /** Re-export for consumers that import from Lifts.tsx */
 export const LIFT_TYPE_CONFIG = LIFT_COLORS;
@@ -14,23 +14,6 @@ export const LIFT_TYPE_CONFIG = LIFT_COLORS;
 const LIFT_CABLE_OFFSET = 10;
 /** Height offset above terrain for station buildings */
 const LIFT_STATION_OFFSET = 3;
-
-/** Base line width for lifts (in pixels) */
-const BASE_LINE_WIDTH = 7;
-/** Highlighted line width multiplier */
-const HIGHLIGHT_MULTIPLIER = 2;
-/** Default opacity for lines */
-const LINE_OPACITY = 1.0;
-/** Dimmed opacity when another entity is active */
-const DIMMED_OPACITY = 0.4;
-
-/** Shadow outline settings for contrast against terrain */
-const SHADOW_COLOR = '#000000';
-const SHADOW_OPACITY = 0.4;
-/** Shadow line width multiplier (relative to the main line width) */
-const SHADOW_WIDTH_MULTIPLIER = 1.8;
-/** Shadow Y offset below the main line (in scene units) */
-const SHADOW_Y_OFFSET = -0.3;
 
 /**
  * Hook to calculate zoom-based line width scaling
@@ -156,7 +139,7 @@ const LiftLine = memo(function LiftLine({
       // Cable points are high above terrain
       const cableY = terrainY + LIFT_CABLE_OFFSET;
       cable.push([x, cableY, z]);
-      cableShadow.push([x, cableY + SHADOW_Y_OFFSET, z]);
+      cableShadow.push([x, cableY + LINE_STYLE.shadowYOffset, z]);
 
       // Station points only at start and end
       if (index === 0 || index === coordinates.length - 1) {
@@ -171,22 +154,22 @@ const LiftLine = memo(function LiftLine({
 
   const isHighlighted = isHovered || isSelected;
   const color = isHighlighted ? config.colorHighlight : config.color;
-  const baseWidth = BASE_LINE_WIDTH * zoomScale;
-  const lineWidth = isHighlighted ? baseWidth * HIGHLIGHT_MULTIPLIER : baseWidth;
-  const opacity = isHighlighted ? 1 : dimmed ? DIMMED_OPACITY : LINE_OPACITY;
+  const baseWidth = LINE_STYLE.baseWidth * zoomScale;
+  const lineWidth = isHighlighted ? baseWidth * LINE_STYLE.highlightWidthMultiplier : baseWidth;
+  const opacity = isHighlighted ? 1 : dimmed ? LINE_STYLE.dimmedOpacity : LINE_STYLE.opacity;
 
   // Get station geometry based on lift type
   const stationGeometry = getStationGeometry(type);
-  const shadowWidth = lineWidth * SHADOW_WIDTH_MULTIPLIER;
+  const shadowWidth = lineWidth * LINE_STYLE.shadowWidthMultiplier;
 
   return (
     <group>
       {/* Shadow outline — wider dark line underneath for terrain contrast */}
       <Line
         points={cableShadowPoints}
-        color={SHADOW_COLOR}
+        color={LINE_STYLE.shadowColor}
         lineWidth={shadowWidth}
-        opacity={opacity > 0 ? Math.min(opacity, SHADOW_OPACITY) : 0}
+        opacity={opacity > 0 ? Math.min(opacity, LINE_STYLE.shadowOpacity) : 0}
         transparent
         depthWrite={false}
         dashed

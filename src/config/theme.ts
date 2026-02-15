@@ -109,3 +109,26 @@ export const LOADING = {
   /** Terrain3D loading ring */
   terrain: '#f59e0b',
 } as const;
+
+// ---------------------------------------------------------------------------
+// Line rendering style (shared by pistes and lifts)
+// ---------------------------------------------------------------------------
+
+export const LINE_STYLE = {
+  /** Base line width in pixels */
+  baseWidth: 7,
+  /** Width multiplier when hovered/selected */
+  highlightWidthMultiplier: 2,
+  /** Default line opacity */
+  opacity: 1.0,
+  /** Dimmed opacity when another entity is active */
+  dimmedOpacity: 0.4,
+  /** Shadow outline color */
+  shadowColor: '#000000',
+  /** Shadow outline opacity */
+  shadowOpacity: 0.4,
+  /** Shadow width multiplier relative to main line */
+  shadowWidthMultiplier: 1.8,
+  /** Shadow Y offset below the main line (scene units) */
+  shadowYOffset: -0.3,
+} as const;

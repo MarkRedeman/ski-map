@@ -7,27 +7,15 @@ import { type Difficulty } from '@/lib/api/overpass';
 import { useMapStore } from '@/stores/useMapStore';
 import { coordsToLocal } from '@/lib/geo/coordinates';
 import { sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid';
-import { PISTE_COLORS, DIFFICULTY_COLORS, DIFFICULTY_COLORS_HIGHLIGHT } from '@/config/theme';
+import {
+  PISTE_COLORS,
+  DIFFICULTY_COLORS,
+  DIFFICULTY_COLORS_HIGHLIGHT,
+  LINE_STYLE,
+} from '@/config/theme';
 
 /** Re-export for consumers that import from Pistes.tsx */
 export const PISTE_DIFFICULTY_CONFIG = PISTE_COLORS;
-
-/** Base line width (in pixels) */
-const BASE_LINE_WIDTH = 7;
-/** Highlighted line width multiplier */
-const HIGHLIGHT_MULTIPLIER = 2;
-/** Default opacity for lines */
-const LINE_OPACITY = 1.0;
-/** Dimmed opacity when another entity is active */
-const DIMMED_OPACITY = 0.4;
-
-/** Shadow outline settings for contrast against terrain */
-const SHADOW_COLOR = '#000000';
-const SHADOW_OPACITY = 0.4;
-/** Shadow line width multiplier (relative to the main line width) */
-const SHADOW_WIDTH_MULTIPLIER = 1.8;
-/** Shadow Y offset below the main line (in scene units) */
-const SHADOW_Y_OFFSET = -0.3;
 
 /**
  * Hook to calculate zoom-based line width scaling
@@ -221,18 +209,18 @@ const PisteLines = memo(function PisteLines({
   zoomScale,
 }: PisteLinesProps) {
   const isHighlighted = isHovered || isSelected;
-  const baseWidth = BASE_LINE_WIDTH * zoomScale;
-  const lineWidth = isHighlighted ? baseWidth * HIGHLIGHT_MULTIPLIER : baseWidth;
+  const baseWidth = LINE_STYLE.baseWidth * zoomScale;
+  const lineWidth = isHighlighted ? baseWidth * LINE_STYLE.highlightWidthMultiplier : baseWidth;
   const color = isHighlighted
     ? DIFFICULTY_COLORS_HIGHLIGHT[difficulty]
     : DIFFICULTY_COLORS[difficulty];
-  const opacity = isHighlighted ? 1 : dimmed ? DIMMED_OPACITY : LINE_OPACITY;
+  const opacity = isHighlighted ? 1 : dimmed ? LINE_STYLE.dimmedOpacity : LINE_STYLE.opacity;
 
   // Stitch connected segments into continuous polylines
   const { polylines } = useMemo(() => stitchSegments(segments), [segments]);
 
-  const shadowWidth = lineWidth * SHADOW_WIDTH_MULTIPLIER;
-  const shadowOpacity = opacity > 0 ? Math.min(opacity, SHADOW_OPACITY) : 0;
+  const shadowWidth = lineWidth * LINE_STYLE.shadowWidthMultiplier;
+  const shadowOpacity = opacity > 0 ? Math.min(opacity, LINE_STYLE.shadowOpacity) : 0;
 
   return (
     <>
@@ -291,7 +279,7 @@ const PisteSegment = memo(function PisteSegment({
       }
 
       main.push([x, y, z]);
-      shadow.push([x, y + SHADOW_Y_OFFSET, z]);
+      shadow.push([x, y + LINE_STYLE.shadowYOffset, z]);
     });
 
     return { points: main, shadowPoints: shadow };
@@ -304,7 +292,7 @@ const PisteSegment = memo(function PisteSegment({
       {/* Shadow outline — wider dark line underneath for terrain contrast */}
       <Line
         points={shadowPoints}
-        color={SHADOW_COLOR}
+        color={LINE_STYLE.shadowColor}
         lineWidth={shadowWidth}
         opacity={shadowOpacity}
         transparent
