@@ -13,6 +13,7 @@ import {
   type Lift,
   type Peak,
   type Place,
+  type Restaurant,
   type SkiArea,
   type SkiAreaPolygon,
 } from '@/lib/api/overpass';
@@ -28,6 +29,7 @@ export interface ProcessedSkiData {
   skiAreas: SkiAreaPolygon[]; // All ski areas with polygon boundaries
   peaks: Peak[];
   places: Place[];
+  restaurants: Restaurant[];
 }
 
 /**
@@ -42,12 +44,12 @@ export const skiDataQueryOptions = queryOptions({
   queryFn: async (): Promise<ProcessedSkiData> => {
     const data = await fetchAllSkiData();
 
-    // Assign ski areas to pistes and lifts using spatial containment
-    const { pistes: pistesWithAreas, lifts: liftsWithAreas } = assignSkiAreas(
-      data.pistes,
-      data.lifts,
-      data.skiAreaPolygons
-    );
+    // Assign ski areas to pistes, lifts, and restaurants using spatial containment
+    const {
+      pistes: pistesWithAreas,
+      lifts: liftsWithAreas,
+      restaurants: restaurantsWithAreas,
+    } = assignSkiAreas(data.pistes, data.lifts, data.restaurants, data.skiAreaPolygons);
 
     // Merge fragmented piste segments
     const mergedPistes = mergePisteSegments(pistesWithAreas);
@@ -58,6 +60,7 @@ export const skiDataQueryOptions = queryOptions({
       skiAreas: data.skiAreaPolygons, // Now includes all ski areas with polygon data
       peaks: data.peaks,
       places: data.places,
+      restaurants: restaurantsWithAreas,
     };
   },
   staleTime: 1000 * 60 * 60, // 1 hour
@@ -72,4 +75,4 @@ export function useSkiData() {
 }
 
 // Re-export types for convenience
-export type { Piste, Lift, Peak, Place, SkiArea, SkiAreaPolygon, SkiData };
+export type { Piste, Lift, Peak, Place, Restaurant, SkiArea, SkiAreaPolygon, SkiData };

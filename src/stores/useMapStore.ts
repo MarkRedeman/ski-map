@@ -26,7 +26,7 @@ export const ALL_LIFT_TYPES: LiftType[] = [
 ];
 
 /** Entity types that can be selected */
-export type EntityType = 'piste' | 'lift' | 'peak' | 'place';
+export type EntityType = 'piste' | 'lift' | 'peak' | 'place' | 'restaurant';
 
 /** Selection state for an entity */
 export interface EntitySelection {
@@ -89,8 +89,6 @@ interface MapState {
   isLoadingTerrain: boolean;
   setIsLoadingTerrain: (loading: boolean) => void;
 }
-
-
 
 export const useMapStore = create<MapState>((set, get) => ({
   // Terrain

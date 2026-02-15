@@ -288,6 +288,49 @@ function parsePlaces(elements: OSMElement[]): Place[] {
 }
 
 /**
+ * Parse restaurants, cafes, bars, and alpine huts from Overpass response
+ */
+function parseRestaurants(elements: OSMElement[]): Restaurant[] {
+  const restaurants: Restaurant[] = [];
+
+  for (const element of elements) {
+    if (element.type !== 'node') continue;
+    if (!element.tags) continue;
+
+    const name = element.tags.name;
+    if (!name) continue;
+
+    const type = normalizeRestaurantType(element.tags);
+    if (!type) continue;
+
+    const elevation = element.tags.ele ? parseFloat(element.tags.ele) : undefined;
+
+    restaurants.push({
+      id: `restaurant-${element.id}`,
+      name,
+      lat: element.lat,
+      lon: element.lon,
+      type,
+      elevation,
+      cuisine: element.tags.cuisine,
+    });
+  }
+
+  return restaurants;
+}
+
+/**
+ * Determine restaurant type from OSM tags
+ */
+function normalizeRestaurantType(tags: Record<string, string>): RestaurantType | null {
+  if (tags.tourism === 'alpine_hut') return 'Alpine Hut';
+  if (tags.amenity === 'restaurant') return 'Restaurant';
+  if (tags.amenity === 'cafe') return 'Cafe';
+  if (tags.amenity === 'bar') return 'Bar';
+  return null;
+}
+
+/**
  * Parse ski area polygons from Overpass response
  * Handles both way-based and relation-based ski areas
  */
@@ -474,12 +517,28 @@ export interface Place {
   type: string;
 }
 
+/** Restaurant sub-types */
+export type RestaurantType = 'Restaurant' | 'Cafe' | 'Bar' | 'Alpine Hut';
+
+/** Restaurant/dining data */
+export interface Restaurant {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  type: RestaurantType;
+  elevation?: number;
+  cuisine?: string;
+  skiArea?: SkiArea;
+}
+
 /** Complete raw ski data response (before merge processing) */
 export interface SkiData {
   pistes: RawPiste[];
   lifts: Lift[];
   peaks: Peak[];
   places: Place[];
+  restaurants: Restaurant[];
   skiAreaPolygons: SkiAreaPolygon[];
 }
 
@@ -505,6 +564,10 @@ function buildCombinedQuery(): string {
   // Peaks and places
   node["natural"="peak"](${south},${west},${north},${east});
   node["place"~"^(village|hamlet|locality|isolated_dwelling)$"](${south},${west},${north},${east});
+  
+  // Restaurants, cafes, bars, and alpine huts
+  node["amenity"~"^(restaurant|cafe|bar)$"](${south},${west},${north},${east});
+  node["tourism"="alpine_hut"](${south},${west},${north},${east});
 );
 out body;
 >;
@@ -534,10 +597,11 @@ export async function fetchAllSkiData(): Promise<SkiData> {
   const lifts = parseLifts(response.elements);
   const peaks = parsePeaks(response.elements);
   const places = parsePlaces(response.elements);
+  const restaurants = parseRestaurants(response.elements);
   const skiAreaPolygons = parseSkiAreaPolygons(response.elements, nodes);
 
   console.log(
-    `[Overpass] Loaded: ${pistes.length} pistes, ${lifts.length} lifts, ${peaks.length} peaks, ${places.length} places, ${skiAreaPolygons.length} ski areas`
+    `[Overpass] Loaded: ${pistes.length} pistes, ${lifts.length} lifts, ${peaks.length} peaks, ${places.length} places, ${restaurants.length} restaurants, ${skiAreaPolygons.length} ski areas`
   );
 
   return {
@@ -545,6 +609,7 @@ export async function fetchAllSkiData(): Promise<SkiData> {
     lifts,
     peaks,
     places,
+    restaurants,
     skiAreaPolygons,
   };
 }

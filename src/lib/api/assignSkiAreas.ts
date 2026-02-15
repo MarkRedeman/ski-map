@@ -10,11 +10,12 @@ import {
   distanceBetweenPoints,
   getFirstCoordinate,
 } from '@/lib/geo/pointInPolygon';
-import type { RawPiste, Lift, SkiArea, SkiAreaPolygon } from './overpass';
+import type { RawPiste, Lift, Restaurant, SkiArea, SkiAreaPolygon } from './overpass';
 
 export interface AssignmentResult {
   pistes: RawPiste[];
   lifts: Lift[];
+  restaurants: Restaurant[];
   stats: {
     pistesInPolygon: number;
     pistesNearestFallback: number;
@@ -22,6 +23,9 @@ export interface AssignmentResult {
     liftsInPolygon: number;
     liftsNearestFallback: number;
     liftsUnassigned: number;
+    restaurantsInPolygon: number;
+    restaurantsNearestFallback: number;
+    restaurantsUnassigned: number;
   };
 }
 
@@ -93,12 +97,14 @@ function toSkiArea(skiAreaPolygon: SkiAreaPolygon): SkiArea {
  *
  * @param pistes - Raw pistes (before segment merging)
  * @param lifts - Lift data
+ * @param restaurants - Restaurant data
  * @param skiAreaPolygons - Ski areas with polygon boundaries
- * @returns Pistes and lifts with ski area assignments
+ * @returns Pistes, lifts, and restaurants with ski area assignments
  */
 export function assignSkiAreas(
   pistes: RawPiste[],
   lifts: Lift[],
+  restaurants: Restaurant[],
   skiAreaPolygons: SkiAreaPolygon[]
 ): AssignmentResult {
   const stats = {
@@ -108,6 +114,9 @@ export function assignSkiAreas(
     liftsInPolygon: 0,
     liftsNearestFallback: 0,
     liftsUnassigned: 0,
+    restaurantsInPolygon: 0,
+    restaurantsNearestFallback: 0,
+    restaurantsUnassigned: 0,
   };
 
   // Assign ski areas to pistes
@@ -178,11 +187,41 @@ export function assignSkiAreas(
     return lift;
   });
 
+  // Assign ski areas to restaurants
+  const assignedRestaurants = restaurants.map((restaurant) => {
+    const point: [number, number] = [restaurant.lon, restaurant.lat];
+
+    // Try spatial containment first
+    let skiAreaPolygon = findContainingSkiArea(point, skiAreaPolygons);
+
+    if (skiAreaPolygon) {
+      stats.restaurantsInPolygon++;
+    } else {
+      // Fallback to nearest ski area
+      skiAreaPolygon = findNearestSkiArea(point, skiAreaPolygons);
+      if (skiAreaPolygon) {
+        stats.restaurantsNearestFallback++;
+      } else {
+        stats.restaurantsUnassigned++;
+      }
+    }
+
+    if (skiAreaPolygon) {
+      return {
+        ...restaurant,
+        skiArea: toSkiArea(skiAreaPolygon),
+      };
+    }
+
+    return restaurant;
+  });
+
   console.log('[SkiAreas] Assignment stats:', stats);
 
   return {
     pistes: assignedPistes,
     lifts: assignedLifts,
+    restaurants: assignedRestaurants,
     stats,
   };
 }

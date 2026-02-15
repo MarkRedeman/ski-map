@@ -17,6 +17,7 @@ import { KeyboardControls } from './KeyboardControls';
 import { CompassController, CompassUI } from './panels/Compass';
 import { PeakLabels } from './PeakLabels';
 import { PlaceLabels } from './PlaceLabels';
+import { RestaurantLabels } from './RestaurantLabels';
 import { MapControls } from './panels/Controls';
 import { CameraNavigator } from './CameraNavigator';
 import { SkiAreaBoundary } from './SkiAreaBoundary';
@@ -86,9 +87,10 @@ export function SkiMap3D() {
           {selectedRun && <PlayerMarker ride={selectedRun} />}
           {/* Hover tooltip */}
           <InfoTooltip />
-          {/* Peak and place labels */}
+          {/* Peak, place, and restaurant labels */}
           <PeakLabels />
           <PlaceLabels />
+          <RestaurantLabels />
           {/* Ski area boundary polygon (shown on hover) */}
           <SkiAreaBoundary />
           {/* Proximity-based selection handler */}

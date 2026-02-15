@@ -2,7 +2,7 @@
  * URL Search Parameter Schema
  *
  * Defines the Zod schema for shareable URL state including:
- * - Selection (piste, lift, peak, place)
+ * - Selection (piste, lift, peak, place, restaurant)
  * - Filters (difficulties, lift types, layers)
  * - Resolution
  * - Camera position (for advanced sharing)
@@ -22,7 +22,7 @@ import {
 } from '@/stores/useSettingsStore';
 
 // Selection types
-export type SelectionType = 'piste' | 'lift' | 'peak' | 'place';
+export type SelectionType = 'piste' | 'lift' | 'peak' | 'place' | 'restaurant';
 
 export interface Selection {
   type: SelectionType;
@@ -36,7 +36,7 @@ export const DEFAULT_LAYERS = ['labels'] as const;
 export const DEFAULT_RESOLUTION: ResolutionLevel = '2x';
 
 // Valid values for validation
-const VALID_SELECTION_TYPES = ['piste', 'lift', 'peak', 'place'] as const;
+const VALID_SELECTION_TYPES = ['piste', 'lift', 'peak', 'place', 'restaurant'] as const;
 const VALID_DIFFICULTIES = ['blue', 'red', 'black'] as const;
 const VALID_LIFT_TYPES = [
   'Gondola',

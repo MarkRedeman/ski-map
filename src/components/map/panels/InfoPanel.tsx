@@ -1,14 +1,25 @@
 /**
- * InfoPanel component - displays detailed info for selected piste/lift/peak/place
+ * InfoPanel component - displays detailed info for selected piste/lift/peak/place/restaurant
  * Shows when an item is clicked, styled to match the map legend
  */
 
-import { X, Mountain, Ruler, Users, ArrowUp, ArrowDown, MapPin } from 'lucide-react';
+import {
+  X,
+  Mountain,
+  Ruler,
+  Users,
+  ArrowUp,
+  ArrowDown,
+  MapPin,
+  UtensilsCrossed,
+} from 'lucide-react';
 import { useMapStore } from '@/stores/useMapStore';
 import { usePistes } from '@/hooks/usePistes';
 import { useLifts } from '@/hooks/useLifts';
 import { usePeaks } from '@/hooks/usePeaks';
 import { usePlaces } from '@/hooks/usePlaces';
+import { useRestaurants } from '@/hooks/useRestaurants';
+import type { RestaurantType } from '@/lib/api/overpass';
 import { LIFT_TYPE_CONFIG } from '../Lifts';
 import { PISTE_DIFFICULTY_CONFIG } from '../Pistes';
 import { Panel } from './Panel';
@@ -261,6 +272,76 @@ function PlaceInfoPanel({ id }: { id: string }) {
   );
 }
 
+// Restaurant info panel — fetches its own data
+const RESTAURANT_ICON_MAP: Record<RestaurantType, string> = {
+  Restaurant: '🍽️',
+  Cafe: '☕',
+  Bar: '🍷',
+  'Alpine Hut': '🏔️',
+};
+
+function RestaurantInfoPanel({ id }: { id: string }) {
+  const { data: restaurants } = useRestaurants();
+  const clearSelection = useMapStore((s) => s.clearSelection);
+
+  const restaurant = restaurants?.find((r) => r.id === id);
+  if (!restaurant) return null;
+
+  const icon = RESTAURANT_ICON_MAP[restaurant.type] ?? '🍽️';
+
+  return (
+    <PanelLayout
+      icon={<span className="text-lg">{icon}</span>}
+      title={restaurant.name}
+      subtitle={restaurant.type}
+      onClose={clearSelection}
+    >
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-2 p-3">
+        <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+          <UtensilsCrossed className="h-4 w-4 text-white/50" />
+          <div>
+            <p className="text-[10px] text-white/50">Type</p>
+            <p className="text-xs font-medium text-white">{restaurant.type}</p>
+          </div>
+        </div>
+        {restaurant.elevation != null ? (
+          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+            <Mountain className="h-4 w-4 text-white/50" />
+            <div>
+              <p className="text-[10px] text-white/50">Elevation</p>
+              <p className="text-xs font-medium text-white">
+                {restaurant.elevation.toLocaleString()} m
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+            <MapPin className="h-4 w-4 text-white/50" />
+            <div>
+              <p className="text-[10px] text-white/50">Location</p>
+              <p className="text-xs font-medium text-white">{restaurant.lat.toFixed(4)}°</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Cuisine info */}
+      {restaurant.cuisine && (
+        <div className="px-3 pb-3">
+          <div className="flex items-center gap-2 rounded bg-white/10 p-2">
+            <span className="text-sm">🍴</span>
+            <div>
+              <p className="text-[10px] text-white/50">Cuisine</p>
+              <p className="text-xs font-medium text-white">{restaurant.cuisine}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </PanelLayout>
+  );
+}
+
 // Main InfoPanel component — delegates to type-specific panels
 export function InfoPanel() {
   const selectedEntity = useMapStore((s) => s.selectedEntity);
@@ -276,6 +357,8 @@ export function InfoPanel() {
       return <PeakInfoPanel id={selectedEntity.id} />;
     case 'place':
       return <PlaceInfoPanel id={selectedEntity.id} />;
+    case 'restaurant':
+      return <RestaurantInfoPanel id={selectedEntity.id} />;
     default:
       return null;
   }
