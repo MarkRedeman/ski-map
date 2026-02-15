@@ -1,62 +1,62 @@
 /**
  * Sidebar - Collapsible navigation sidebar
- * 
+ *
  * Contains:
  * - Location tracking controls
  * - My Rides section
  * - Browse Slopes & Lifts
- * 
+ *
  * Slides in/out from the left. State managed by useUIStore.
  */
 
-import { useRef, useCallback } from 'react'
-import { Plus } from 'lucide-react'
-import { LocationButton } from '@/components/sidebar/LocationButton'
-import { PisteListPanel } from '@/components/sidebar/PisteListPanel'
-import { RideListPanel } from '@/components/rides/RideListPanel'
-import { useUIStore } from '@/stores/useUIStore'
-import { cn } from '@/lib/utils'
+import { useRef, useCallback } from "react";
+import { Plus } from "lucide-react";
+import { LocationButton } from "@/components/sidebar/LocationButton";
+import { PisteListPanel } from "@/components/sidebar/PisteListPanel";
+import { RideListPanel } from "@/components/rides/RideListPanel";
+import { useUIStore } from "@/stores/useUIStore";
+import { cn } from "@/lib/utils";
 
 export function Sidebar() {
-  const sidebarOpen = useUIStore((s) => s.sidebarOpen)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const sidebarOpen = useUIStore((s) => s.sidebarOpen);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddClick = useCallback(() => {
-    fileInputRef.current?.click()
-  }, [])
+    fileInputRef.current?.click();
+  }, []);
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files
-      if (!files || files.length === 0) return
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
 
-      const { parseGPXFile } = await import('@/lib/garmin/parser')
-      const { useRunsStore } = await import('@/stores/useRunsStore')
-      const addRun = useRunsStore.getState().addRun
+      const { parseGPXFile } = await import("@/lib/garmin/parser");
+      const { useRunsStore } = await import("@/stores/useRunsStore");
+      const addRun = useRunsStore.getState().addRun;
 
       for (const file of Array.from(files)) {
-        if (file.name.toLowerCase().endsWith('.gpx')) {
+        if (file.name.toLowerCase().endsWith(".gpx")) {
           try {
-            const run = await parseGPXFile(file)
-            await addRun(run)
+            const run = await parseGPXFile(file);
+            await addRun(run);
           } catch (err) {
-            console.error('Failed to parse file:', file.name, err)
+            console.error("Failed to parse file:", file.name, err);
           }
         }
       }
 
       if (fileInputRef.current) {
-        fileInputRef.current.value = ''
+        fileInputRef.current.value = "";
       }
     },
-    []
-  )
+    [],
+  );
 
   return (
     <aside
       className={cn(
-        'flex-shrink-0 flex flex-col bg-zinc-950/95 backdrop-blur-md shadow-2xl shadow-black/60 transition-all duration-300 ease-in-out overflow-hidden',
-        sidebarOpen ? 'w-80' : 'w-0'
+        "flex-shrink-0 flex flex-col bg-zinc-950/95 backdrop-blur-md shadow-2xl shadow-black/60 transition-all duration-300 ease-in-out overflow-hidden",
+        sidebarOpen ? "w-80" : "w-0",
       )}
     >
       {/* Inner container maintains layout even when collapsed */}
@@ -79,10 +79,11 @@ export function Sidebar() {
             </h2>
             <button
               onClick={handleAddClick}
-              className="flex h-5 w-5 items-center justify-center rounded text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
+              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
               title="Add ride (.gpx)"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-3 w-3" />
+              <span>Add</span>
             </button>
           </div>
           {/* Hidden file input for add button */}
@@ -108,5 +109,5 @@ export function Sidebar() {
         </section>
       </div>
     </aside>
-  )
+  );
 }
