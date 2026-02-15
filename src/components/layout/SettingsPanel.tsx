@@ -1,9 +1,12 @@
 /**
  * Settings Panel
  *
- * Dropdown panel for runtime configuration of Mapbox token and region bounds.
- * Anchored to the cog icon in the Header. Changes are saved to localStorage
- * via useAppConfigStore and require a page reload to take effect.
+ * Dropdown panel for runtime configuration of Mapbox token, region bounds,
+ * and terrain appearance. Anchored to the cog icon in the Header.
+ *
+ * Sub-components own their own local form state and write through to the
+ * Zustand store on every change. "Apply & Reload" simply reloads the page
+ * so all consumers pick up the new values.
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -12,10 +15,9 @@ import { useAppConfigStore } from '@/stores/useAppConfigStore';
 import { SOLDEN_REGION } from '@/config/region';
 import { TerrainSettings } from '@/components/map/panels/TerrainSettings';
 
-interface SettingsPanelProps {
-  open: boolean;
-  onClose: () => void;
-}
+// ---------------------------------------------------------------------------
+// SettingsToggle (exported — used by Header)
+// ---------------------------------------------------------------------------
 
 export function SettingsToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   return (
@@ -31,23 +33,17 @@ export function SettingsToggle({ open, onToggle }: { open: boolean; onToggle: ()
   );
 }
 
-export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
-  const store = useAppConfigStore();
-  const panelRef = useRef<HTMLDivElement>(null);
+// ---------------------------------------------------------------------------
+// SettingsPanel (exported — main container)
+// ---------------------------------------------------------------------------
 
-  // Local form state (initialized from store)
-  const [token, setToken] = useState(store.mapboxToken ?? '');
-  const [bounds, setBounds] = useState({
-    minLat: store.regionBounds?.minLat ?? '',
-    maxLat: store.regionBounds?.maxLat ?? '',
-    minLon: store.regionBounds?.minLon ?? '',
-    maxLon: store.regionBounds?.maxLon ?? '',
-  });
-  const [center, setCenter] = useState({
-    lat: store.regionCenter?.lat ?? '',
-    lon: store.regionCenter?.lon ?? '',
-    elevation: store.regionCenter?.elevation ?? '',
-  });
+interface SettingsPanelProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // Close on outside click
   useEffect(() => {
@@ -68,59 +64,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
     }
   }, [open, onClose]);
 
-  const handleApply = useCallback(() => {
-    // Save token
-    store.setMapboxToken(token.trim() || null);
-
-    // Save bounds (only if all four fields are filled)
-    const b = {
-      minLat: parseFloat(String(bounds.minLat)),
-      maxLat: parseFloat(String(bounds.maxLat)),
-      minLon: parseFloat(String(bounds.minLon)),
-      maxLon: parseFloat(String(bounds.maxLon)),
-    };
-    if (Object.values(b).every((v) => !isNaN(v))) {
-      store.setRegionBounds(b);
-    } else if (
-      bounds.minLat === '' &&
-      bounds.maxLat === '' &&
-      bounds.minLon === '' &&
-      bounds.maxLon === ''
-    ) {
-      store.setRegionBounds(null);
-    }
-
-    // Save center (only if all three fields are filled)
-    const c = {
-      lat: parseFloat(String(center.lat)),
-      lon: parseFloat(String(center.lon)),
-      elevation: parseFloat(String(center.elevation)),
-    };
-    if (Object.values(c).every((v) => !isNaN(v))) {
-      store.setRegionCenter(c);
-    } else if (center.lat === '' && center.lon === '' && center.elevation === '') {
-      store.setRegionCenter(null);
-    }
-
-    // Reload to apply changes
-    window.location.reload();
-  }, [store, token, bounds, center]);
-
-  const handleResetToken = useCallback(() => {
-    setToken('');
-    store.setMapboxToken(null);
-  }, [store]);
-
-  const handleResetRegion = useCallback(() => {
-    setBounds({ minLat: '', maxLat: '', minLon: '', maxLon: '' });
-    setCenter({ lat: '', lon: '', elevation: '' });
-    store.setRegionBounds(null);
-    store.setRegionCenter(null);
-  }, [store]);
-
   if (!open) return null;
-
-  const defaults = SOLDEN_REGION;
 
   return (
     <div
@@ -137,118 +81,17 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
 
         <hr className="mb-4 border-white/10" />
 
-        {/* Mapbox Token */}
-        <section className="mb-4">
-          <div className="mb-1.5 flex items-center justify-between">
-            <label className="text-xs font-semibold text-white">Mapbox Token</label>
-            <button
-              onClick={handleResetToken}
-              className="flex items-center gap-1 text-[10px] text-white/40 transition-colors hover:text-white/70"
-            >
-              <RotateCcw className="h-2.5 w-2.5" />
-              Reset
-            </button>
-          </div>
-          <p className="mb-1.5 text-[10px] leading-tight text-white/50">
-            Override the default token. Get one at{' '}
-            <a
-              href="https://account.mapbox.com/access-tokens/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-0.5 text-amber-500/70 hover:text-amber-400"
-            >
-              mapbox.com
-              <ExternalLink className="h-2 w-2" />
-            </a>
-          </p>
-          <input
-            type="text"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="pk.eyJ1Ijo..."
-            className="w-full rounded bg-white/10 px-2 py-1.5 font-mono text-[11px] text-white/90 placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
-          />
-        </section>
+        <MapboxSettings />
 
         <hr className="mb-4 border-white/10" />
 
-        {/* Region Bounds */}
-        <section className="mb-4">
-          <div className="mb-1.5 flex items-center justify-between">
-            <label className="text-xs font-semibold text-white">Region Bounds</label>
-            <button
-              onClick={handleResetRegion}
-              className="flex items-center gap-1 text-[10px] text-white/40 transition-colors hover:text-white/70"
-            >
-              <RotateCcw className="h-2.5 w-2.5" />
-              Reset to Sölden
-            </button>
-          </div>
-          <p className="mb-1.5 text-[10px] leading-tight text-white/50">
-            Geographic bounding box for terrain tiles and OSM data. Leave empty to use Sölden
-            defaults.
-          </p>
-          <div className="grid grid-cols-2 gap-1.5">
-            <NumberInput
-              label="North"
-              value={bounds.maxLat}
-              placeholder={String(defaults.bounds.maxLat)}
-              onChange={(v) => setBounds((prev) => ({ ...prev, maxLat: v }))}
-            />
-            <NumberInput
-              label="South"
-              value={bounds.minLat}
-              placeholder={String(defaults.bounds.minLat)}
-              onChange={(v) => setBounds((prev) => ({ ...prev, minLat: v }))}
-            />
-            <NumberInput
-              label="West"
-              value={bounds.minLon}
-              placeholder={String(defaults.bounds.minLon)}
-              onChange={(v) => setBounds((prev) => ({ ...prev, minLon: v }))}
-            />
-            <NumberInput
-              label="East"
-              value={bounds.maxLon}
-              placeholder={String(defaults.bounds.maxLon)}
-              onChange={(v) => setBounds((prev) => ({ ...prev, maxLon: v }))}
-            />
-          </div>
-        </section>
-
-        {/* Region Center */}
-        <section className="mb-4">
-          <label className="mb-1.5 block text-xs font-semibold text-white">Region Center</label>
-          <p className="mb-1.5 text-[10px] leading-tight text-white/50">
-            Origin point for the 3D coordinate system. Elevation is in meters above sea level.
-          </p>
-          <div className="grid grid-cols-3 gap-1.5">
-            <NumberInput
-              label="Lat"
-              value={center.lat}
-              placeholder={String(defaults.center.lat)}
-              onChange={(v) => setCenter((prev) => ({ ...prev, lat: v }))}
-            />
-            <NumberInput
-              label="Lon"
-              value={center.lon}
-              placeholder={String(defaults.center.lon)}
-              onChange={(v) => setCenter((prev) => ({ ...prev, lon: v }))}
-            />
-            <NumberInput
-              label="Elev"
-              value={center.elevation}
-              placeholder={String(defaults.center.elevation)}
-              onChange={(v) => setCenter((prev) => ({ ...prev, elevation: v }))}
-            />
-          </div>
-        </section>
+        <RegionSettings />
 
         <hr className="mb-4 border-white/10" />
 
         {/* Apply */}
         <button
-          onClick={handleApply}
+          onClick={() => window.location.reload()}
           className="w-full rounded bg-amber-500 py-1.5 text-xs font-semibold text-zinc-900 transition-colors hover:bg-amber-400"
         >
           Apply &amp; Reload
@@ -259,7 +102,258 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Internal components
+// MapboxSettings — token input + reset
+// ---------------------------------------------------------------------------
+
+function MapboxSettings() {
+  const store = useAppConfigStore();
+  const [token, setToken] = useState(store.mapboxToken ?? '');
+
+  const handleChange = useCallback(
+    (value: string) => {
+      setToken(value);
+      store.setMapboxToken(value.trim() || null);
+    },
+    [store],
+  );
+
+  const handleReset = useCallback(() => {
+    setToken('');
+    store.setMapboxToken(null);
+  }, [store]);
+
+  return (
+    <section className="mb-4">
+      <div className="mb-1.5 flex items-center justify-between">
+        <label className="text-xs font-semibold text-white">Mapbox Token</label>
+        <button
+          onClick={handleReset}
+          className="flex items-center gap-1 text-[10px] text-white/40 transition-colors hover:text-white/70"
+        >
+          <RotateCcw className="h-2.5 w-2.5" />
+          Reset
+        </button>
+      </div>
+      <p className="mb-1.5 text-[10px] leading-tight text-white/50">
+        Override the default token. Get one at{' '}
+        <a
+          href="https://account.mapbox.com/access-tokens/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-0.5 text-amber-500/70 hover:text-amber-400"
+        >
+          mapbox.com
+          <ExternalLink className="h-2 w-2" />
+        </a>
+      </p>
+      <input
+        type="text"
+        value={token}
+        onChange={(e) => handleChange(e.target.value)}
+        placeholder="pk.eyJ1Ijo..."
+        className="w-full rounded bg-white/10 px-2 py-1.5 font-mono text-[11px] text-white/90 placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+      />
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RegionSettings — container with reset, composed of bounds + center
+// ---------------------------------------------------------------------------
+
+function RegionSettings() {
+  const store = useAppConfigStore();
+
+  // Lift bounds + center state here so the reset button can clear both
+  const [bounds, setBounds] = useState({
+    minLat: store.regionBounds?.minLat ?? '',
+    maxLat: store.regionBounds?.maxLat ?? '',
+    minLon: store.regionBounds?.minLon ?? '',
+    maxLon: store.regionBounds?.maxLon ?? '',
+  });
+  const [center, setCenter] = useState({
+    lat: store.regionCenter?.lat ?? '',
+    lon: store.regionCenter?.lon ?? '',
+    elevation: store.regionCenter?.elevation ?? '',
+  });
+
+  // Write bounds to store whenever they change
+  const updateBounds = useCallback(
+    (next: typeof bounds) => {
+      setBounds(next);
+      const b = {
+        minLat: parseFloat(String(next.minLat)),
+        maxLat: parseFloat(String(next.maxLat)),
+        minLon: parseFloat(String(next.minLon)),
+        maxLon: parseFloat(String(next.maxLon)),
+      };
+      if (Object.values(b).every((v) => !isNaN(v))) {
+        store.setRegionBounds(b);
+      } else if (
+        next.minLat === '' &&
+        next.maxLat === '' &&
+        next.minLon === '' &&
+        next.maxLon === ''
+      ) {
+        store.setRegionBounds(null);
+      }
+    },
+    [store],
+  );
+
+  // Write center to store whenever it changes
+  const updateCenter = useCallback(
+    (next: typeof center) => {
+      setCenter(next);
+      const c = {
+        lat: parseFloat(String(next.lat)),
+        lon: parseFloat(String(next.lon)),
+        elevation: parseFloat(String(next.elevation)),
+      };
+      if (Object.values(c).every((v) => !isNaN(v))) {
+        store.setRegionCenter(c);
+      } else if (next.lat === '' && next.lon === '' && next.elevation === '') {
+        store.setRegionCenter(null);
+      }
+    },
+    [store],
+  );
+
+  const handleReset = useCallback(() => {
+    const emptyBounds = { minLat: '', maxLat: '', minLon: '', maxLon: '' };
+    const emptyCenter = { lat: '', lon: '', elevation: '' };
+    setBounds(emptyBounds);
+    setCenter(emptyCenter);
+    store.setRegionBounds(null);
+    store.setRegionCenter(null);
+  }, [store]);
+
+  return (
+    <>
+      <div className="mb-1.5 flex items-center justify-between">
+        <label className="text-xs font-semibold text-white">Region</label>
+        <button
+          onClick={handleReset}
+          className="flex items-center gap-1 text-[10px] text-white/40 transition-colors hover:text-white/70"
+        >
+          <RotateCcw className="h-2.5 w-2.5" />
+          Reset to Sölden
+        </button>
+      </div>
+
+      <RegionBoundsSettings bounds={bounds} onChange={updateBounds} />
+      <RegionCenterSettings center={center} onChange={updateCenter} />
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RegionBoundsSettings — N/S/W/E inputs
+// ---------------------------------------------------------------------------
+
+type BoundsState = {
+  minLat: string | number;
+  maxLat: string | number;
+  minLon: string | number;
+  maxLon: string | number;
+};
+
+function RegionBoundsSettings({
+  bounds,
+  onChange,
+}: {
+  bounds: BoundsState;
+  onChange: (next: BoundsState) => void;
+}) {
+  const defaults = SOLDEN_REGION;
+
+  return (
+    <section className="mb-4">
+      <label className="mb-1.5 block text-xs font-semibold text-white">Bounds</label>
+      <p className="mb-1.5 text-[10px] leading-tight text-white/50">
+        Geographic bounding box for terrain tiles and OSM data. Leave empty to use Sölden defaults.
+      </p>
+      <div className="grid grid-cols-2 gap-1.5">
+        <NumberInput
+          label="North"
+          value={bounds.maxLat}
+          placeholder={String(defaults.bounds.maxLat)}
+          onChange={(v) => onChange({ ...bounds, maxLat: v })}
+        />
+        <NumberInput
+          label="South"
+          value={bounds.minLat}
+          placeholder={String(defaults.bounds.minLat)}
+          onChange={(v) => onChange({ ...bounds, minLat: v })}
+        />
+        <NumberInput
+          label="West"
+          value={bounds.minLon}
+          placeholder={String(defaults.bounds.minLon)}
+          onChange={(v) => onChange({ ...bounds, minLon: v })}
+        />
+        <NumberInput
+          label="East"
+          value={bounds.maxLon}
+          placeholder={String(defaults.bounds.maxLon)}
+          onChange={(v) => onChange({ ...bounds, maxLon: v })}
+        />
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RegionCenterSettings — lat/lon/elev inputs
+// ---------------------------------------------------------------------------
+
+type CenterState = {
+  lat: string | number;
+  lon: string | number;
+  elevation: string | number;
+};
+
+function RegionCenterSettings({
+  center,
+  onChange,
+}: {
+  center: CenterState;
+  onChange: (next: CenterState) => void;
+}) {
+  const defaults = SOLDEN_REGION;
+
+  return (
+    <section className="mb-4">
+      <label className="mb-1.5 block text-xs font-semibold text-white">Center</label>
+      <p className="mb-1.5 text-[10px] leading-tight text-white/50">
+        Origin point for the 3D coordinate system. Elevation is in meters above sea level.
+      </p>
+      <div className="grid grid-cols-3 gap-1.5">
+        <NumberInput
+          label="Lat"
+          value={center.lat}
+          placeholder={String(defaults.center.lat)}
+          onChange={(v) => onChange({ ...center, lat: v })}
+        />
+        <NumberInput
+          label="Lon"
+          value={center.lon}
+          placeholder={String(defaults.center.lon)}
+          onChange={(v) => onChange({ ...center, lon: v })}
+        />
+        <NumberInput
+          label="Elev"
+          value={center.elevation}
+          placeholder={String(defaults.center.elevation)}
+          onChange={(v) => onChange({ ...center, elevation: v })}
+        />
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// NumberInput — shared utility
 // ---------------------------------------------------------------------------
 
 function NumberInput({
