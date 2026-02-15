@@ -37,20 +37,23 @@ function geoDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
 }
 
 /**
- * Get max number of restaurants to show based on camera distance level
+ * Get max number of restaurants to show based on camera height level
+ *
+ * Uses camera Y position (height above terrain plane) instead of distance
+ * from origin, so the limit is stable during camera rotation.
  */
-function getMaxRestaurants(cameraDistance: number): number {
-  if (cameraDistance < 400) return Infinity; // Close: show all nearby
-  if (cameraDistance < 800) return 30; // Medium: limited
-  return 10; // Far: only a few
+function getMaxRestaurants(cameraHeight: number): number {
+  if (cameraHeight < 200) return Infinity; // Close: show all nearby
+  if (cameraHeight < 500) return 50; // Medium: generous limit
+  return 20; // Far: still show a good number
 }
 
 /**
- * Quantize camera distance to threshold levels to avoid constant re-renders
+ * Quantize camera height to threshold levels to avoid constant re-renders
  */
-function getDistanceLevel(distance: number): number {
-  if (distance < 400) return 0;
-  if (distance < 800) return 1;
+function getDistanceLevel(cameraHeight: number): number {
+  if (cameraHeight < 200) return 0;
+  if (cameraHeight < 500) return 1;
   return 2;
 }
 
@@ -117,13 +120,13 @@ export function RestaurantLabels() {
   const setSelectedEntity = useMapStore((s) => s.setSelectedEntity);
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget);
 
-  // Track camera distance level for filtering
+  // Track camera height level for filtering
   const [distanceLevel, setDistanceLevel] = useState(1);
 
-  // Update distance level based on camera position
+  // Update distance level based on camera height (Y position)
   useFrame(({ camera }) => {
-    const distance = camera.position.length();
-    const newLevel = getDistanceLevel(distance);
+    const height = camera.position.y;
+    const newLevel = getDistanceLevel(height);
     if (newLevel !== distanceLevel) {
       setDistanceLevel(newLevel);
     }
@@ -160,7 +163,7 @@ export function RestaurantLabels() {
   const visibleRestaurants = useMemo(() => {
     if (!restaurants || !showLabels || infrastructurePoints.length === 0) return [];
 
-    const maxCount = getMaxRestaurants(distanceLevel === 0 ? 0 : distanceLevel === 1 ? 600 : 1500);
+    const maxCount = getMaxRestaurants(distanceLevel === 0 ? 0 : distanceLevel === 1 ? 350 : 600);
 
     const filtered = restaurants
       // Only show restaurants near lifts or pistes

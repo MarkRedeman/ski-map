@@ -31,24 +31,27 @@ function geoDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
 }
 
 /**
- * Get which place types to show based on camera distance
+ * Get which place types to show based on camera height
+ *
+ * Uses camera Y position (height above terrain plane) instead of distance
+ * from origin, so visibility is stable during camera rotation.
  */
-function getVisiblePlaceTypes(cameraDistance: number): Set<PlaceType> {
-  if (cameraDistance < 500) {
+function getVisiblePlaceTypes(cameraHeight: number): Set<PlaceType> {
+  if (cameraHeight < 250) {
     return new Set(['town', 'village', 'hamlet']); // Show all
   }
-  if (cameraDistance < 1500) {
+  if (cameraHeight < 600) {
     return new Set(['town', 'village']); // Towns and villages
   }
   return new Set(['town']); // Only towns when far away
 }
 
 /**
- * Quantize camera distance to threshold levels to avoid constant re-renders
+ * Quantize camera height to threshold levels to avoid constant re-renders
  */
-function getDistanceLevel(distance: number): number {
-  if (distance < 500) return 0;
-  if (distance < 1500) return 1;
+function getDistanceLevel(cameraHeight: number): number {
+  if (cameraHeight < 250) return 0;
+  if (cameraHeight < 600) return 1;
   return 2;
 }
 
@@ -103,13 +106,13 @@ export function PlaceLabels() {
   const elevationGrid = useMapStore((s) => s.elevationGrid);
   const showLabels = useMapStore((s) => s.showLabels);
 
-  // Track camera distance level for filtering
+  // Track camera height level for filtering
   const [distanceLevel, setDistanceLevel] = useState(1);
 
-  // Update distance level based on camera position
+  // Update distance level based on camera height (Y position)
   useFrame(({ camera }) => {
-    const distance = camera.position.length();
-    const newLevel = getDistanceLevel(distance);
+    const height = camera.position.y;
+    const newLevel = getDistanceLevel(height);
     if (newLevel !== distanceLevel) {
       setDistanceLevel(newLevel);
     }
@@ -126,7 +129,7 @@ export function PlaceLabels() {
     if (!places || !showLabels) return [];
 
     const visibleTypes = getVisiblePlaceTypes(
-      distanceLevel === 0 ? 0 : distanceLevel === 1 ? 1000 : 2000
+      distanceLevel === 0 ? 0 : distanceLevel === 1 ? 400 : 800
     );
 
     return (

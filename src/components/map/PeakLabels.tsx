@@ -33,21 +33,24 @@ function geoDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
 }
 
 /**
- * Get minimum elevation threshold based on camera distance
- * Closer camera = show more peaks, farther camera = show only highest peaks
+ * Get minimum elevation threshold based on camera height
+ * Lower camera = show more peaks, higher camera = show only highest peaks
+ *
+ * Uses camera Y position (height above terrain plane) instead of distance
+ * from origin, so the threshold is stable during camera rotation.
  */
-function getMinElevation(cameraDistance: number): number {
-  if (cameraDistance < 400) return 0; // Close: all nearby peaks
-  if (cameraDistance < 800) return 2600; // Medium: higher peaks
+function getMinElevation(cameraHeight: number): number {
+  if (cameraHeight < 200) return 0; // Close: all nearby peaks
+  if (cameraHeight < 500) return 2600; // Medium: higher peaks
   return 2900; // Far: only major peaks
 }
 
 /**
- * Quantize camera distance to threshold levels to avoid constant re-renders
+ * Quantize camera height to threshold levels to avoid constant re-renders
  */
-function getDistanceLevel(distance: number): number {
-  if (distance < 400) return 0;
-  if (distance < 800) return 1;
+function getDistanceLevel(cameraHeight: number): number {
+  if (cameraHeight < 200) return 0;
+  if (cameraHeight < 500) return 1;
   return 2;
 }
 
@@ -77,13 +80,13 @@ export function PeakLabels() {
   const elevationGrid = useMapStore((s) => s.elevationGrid);
   const showLabels = useMapStore((s) => s.showLabels);
 
-  // Track camera distance level for filtering (quantized to avoid constant re-renders)
+  // Track camera height level for filtering (quantized to avoid constant re-renders)
   const [distanceLevel, setDistanceLevel] = useState(2);
 
-  // Update distance level based on camera position
+  // Update distance level based on camera height (Y position)
   useFrame(({ camera }) => {
-    const distance = camera.position.length();
-    const newLevel = getDistanceLevel(distance);
+    const height = camera.position.y;
+    const newLevel = getDistanceLevel(height);
     if (newLevel !== distanceLevel) {
       setDistanceLevel(newLevel);
     }
@@ -99,9 +102,7 @@ export function PeakLabels() {
   const visiblePeaks = useMemo(() => {
     if (!peaks || !showLabels || liftPoints.length === 0) return [];
 
-    const minElevation = getMinElevation(
-      distanceLevel === 0 ? 0 : distanceLevel === 1 ? 600 : 1500
-    );
+    const minElevation = getMinElevation(distanceLevel === 0 ? 0 : distanceLevel === 1 ? 350 : 600);
 
     return (
       peaks
