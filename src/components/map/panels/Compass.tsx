@@ -9,6 +9,8 @@ import { useEffect, useRef } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
+import { cn } from '@/lib/utils';
+import { PANEL_CLASSES } from './Panel';
 
 /**
  * Inner component that runs inside the R3F Canvas context
@@ -106,7 +108,10 @@ export function CompassUI({ rotation, onClick }: { rotation: number; onClick: ()
   return (
     <button
       onClick={onClick}
-      className="absolute top-4 right-4 flex h-14 w-14 items-center justify-center rounded-full bg-black/80 shadow-lg shadow-black/30 backdrop-blur-md transition-transform hover:scale-105 hover:bg-black/90 active:scale-95"
+      className={cn(
+        PANEL_CLASSES,
+        'absolute top-4 right-4 flex h-14 w-14 items-center justify-center rounded-full transition-transform hover:scale-105 active:scale-95'
+      )}
       title="Click to reset view to north"
       aria-label="Compass - click to face north"
     >

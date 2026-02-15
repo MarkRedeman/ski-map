@@ -11,6 +11,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { usePlaybackStore, PLAYBACK_SPEEDS } from '@/stores/usePlaybackStore';
 import { useRideSegments } from '@/hooks/useRideSegments';
 import { getSegmentColor } from '@/lib/garmin/pisteMatch';
+import { Panel } from '@/components/map/panels/Panel';
 import type { SkiRun } from '@/lib/garmin/types';
 import type { RideSegment } from '@/lib/garmin/segments';
 
@@ -108,7 +109,7 @@ export function PlaybackControls({ ride }: PlaybackControlsProps) {
 
   return (
     <div className="absolute bottom-5 left-1/2 z-10 w-full max-w-[700px] -translate-x-1/2 px-4 md:px-0">
-      <div className="rounded-2xl border border-white/10 bg-black/80 p-4 shadow-2xl shadow-black/40 backdrop-blur-md">
+      <Panel className="rounded-2xl border border-white/10 p-4 shadow-2xl shadow-black/40">
         {/* Segment markers row */}
         {segments.length > 0 && (
           <div className="relative mb-2 h-6">
@@ -318,7 +319,7 @@ export function PlaybackControls({ ride }: PlaybackControlsProps) {
             <span className="hidden sm:inline">Follow</span>
           </button>
         </div>
-      </div>
+      </Panel>
     </div>
   );
 }

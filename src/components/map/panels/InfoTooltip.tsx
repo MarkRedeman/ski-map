@@ -15,6 +15,7 @@ import { coordsToLocal, geoToLocal } from '@/lib/geo/coordinates';
 import { sampleElevation } from '@/lib/geo/elevationGrid';
 import { PISTE_DIFFICULTY_CONFIG } from '../Pistes';
 import { LIFT_TYPE_CONFIG } from '../Lifts';
+import { Panel } from './Panel';
 import type { ElevationGrid } from '@/lib/geo/elevationGrid';
 
 // Shared tooltip wrapper — positions content in 3D space
@@ -29,13 +30,13 @@ function TooltipShell({
 }) {
   return (
     <Html position={position} center zIndexRange={[100, 0]}>
-      <div
+      <Panel
+        className="cursor-pointer flex min-w-[140px] flex-col gap-1.5 p-3 transition-colors"
         onClick={onClick}
-        className="cursor-pointer flex min-w-[140px] flex-col gap-1.5 rounded-lg bg-black/80 p-3 shadow-lg shadow-black/30 backdrop-blur-md transition-colors hover:bg-black/90"
       >
         {children}
         <div className="text-[10px] text-white/40">Click for details</div>
-      </div>
+      </Panel>
     </Html>
   );
 }

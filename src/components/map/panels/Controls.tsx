@@ -21,8 +21,10 @@ import { useUIStore } from '@/stores/useUIStore';
 import { ALL_DIFFICULTIES, type Difficulty } from '@/lib/api/overpass';
 import { useDifficultyFilter } from '@/hooks/useDifficultyFilter';
 import { geoToLocal } from '@/lib/geo/coordinates';
+import { cn } from '@/lib/utils';
 import { LIFT_TYPE_CONFIG } from '../Lifts';
 import { PISTE_DIFFICULTY_CONFIG } from '../Pistes';
+import { Panel, PANEL_CLASSES } from './Panel';
 
 const RESOLUTION_LEVELS: ResolutionLevel[] = ['1x', '2x', '4x', '8x', '16x'];
 
@@ -74,7 +76,7 @@ export function MapControls() {
 
         <button
           onClick={toggleControls}
-          className="flex items-center gap-2 rounded-lg bg-black/80 px-3 py-2 shadow-lg shadow-black/30 backdrop-blur-md transition-all hover:bg-black/90"
+          className={cn(PANEL_CLASSES, 'flex items-center gap-2 px-3 py-2 transition-all')}
           title="Expand controls"
         >
           <Settings2 className="h-4 w-4 text-white" />
@@ -92,7 +94,7 @@ export function MapControls() {
 
   // --- Expanded state ---
   return (
-    <div className="absolute bottom-4 left-4 flex flex-col gap-3 rounded-lg bg-black/80 p-3 shadow-lg shadow-black/30 backdrop-blur-md">
+    <Panel className="absolute bottom-4 left-4 flex flex-col gap-3 p-3">
       {/* Header with collapse button */}
       <button
         onClick={toggleControls}
@@ -150,7 +152,7 @@ export function MapControls() {
           <EyeOff className="h-4 w-4 text-white/30" />
         )}
       </button>
-    </div>
+    </Panel>
   );
 }
 

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { Suspense, lazy, useEffect, useRef } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { SidebarToggle } from '@/components/map/panels/SidebarToggle';
-import { PlaybackControls } from '@/components/playback/PlaybackControls';
+import { PlaybackControls } from '@/components/map/playback/PlaybackControls';
 import { useRunsStore } from '@/stores/useRunsStore';
 import { usePlaybackStore } from '@/stores/usePlaybackStore';
 import { useMapStore } from '@/stores/useMapStore';

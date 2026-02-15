@@ -11,6 +11,7 @@ import { usePeaks } from '@/hooks/usePeaks';
 import { usePlaces } from '@/hooks/usePlaces';
 import { LIFT_TYPE_CONFIG } from '../Lifts';
 import { PISTE_DIFFICULTY_CONFIG } from '../Pistes';
+import { Panel } from './Panel';
 
 // Common layout component for all info panels
 interface PanelLayoutProps {
@@ -23,7 +24,7 @@ interface PanelLayoutProps {
 
 function PanelLayout({ icon, title, subtitle, onClose, children }: PanelLayoutProps) {
   return (
-    <div className="absolute top-4 left-4 z-50 w-72 overflow-hidden rounded-lg bg-black/80 shadow-lg shadow-black/30 backdrop-blur-md">
+    <Panel className="absolute top-4 left-4 z-50 w-72 overflow-hidden">
       {/* Header */}
       <div className="flex items-start justify-between gap-2 p-3 border-b border-white/10">
         <div className="flex items-center gap-2">
@@ -42,7 +43,7 @@ function PanelLayout({ icon, title, subtitle, onClose, children }: PanelLayoutPr
         </button>
       </div>
       {children}
-    </div>
+    </Panel>
   );
 }
 
