@@ -8,7 +8,7 @@
 import { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { useTerrainData } from '@/hooks/useTerrainData';
-import { useTerrainSettings } from '@/stores/useSettingsStore';
+import { useTerrainSettings, useSettingsStore } from '@/stores/useSettingsStore';
 import { useMapStore } from '@/stores/useMapStore';
 import { LOADING } from '@/config/theme';
 
@@ -115,19 +115,22 @@ export function Terrain3D() {
     return geo;
   }, [data, segments]);
 
+  // Terrain brightness from settings (multiplied into material color)
+  const terrainBrightness = useSettingsStore((s) => s.terrainBrightness);
+
   // Create material with satellite texture
   const material = useMemo(() => {
     if (!data) return null;
 
     return new THREE.MeshStandardMaterial({
       map: data.satelliteTexture,
-      // Slightly reduce roughness for better lighting
+      // Darken terrain by multiplying texture with a gray color
+      // brightness=1.0 means no change, 0.7 means 30% darker
+      color: new THREE.Color(terrainBrightness, terrainBrightness, terrainBrightness),
       roughness: 0.9,
       metalness: 0.0,
-      // Flat shading can look good for terrain
-      // flatShading: true,
     });
-  }, [data]);
+  }, [data, terrainBrightness]);
 
   if (isLoading) {
     return (

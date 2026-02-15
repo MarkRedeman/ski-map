@@ -1,7 +1,8 @@
 /**
  * Settings store for app-wide configuration
  *
- * Manages resolution settings. URL persistence is handled by useURLSync hook.
+ * Manages resolution and terrain appearance settings.
+ * URL persistence is handled by useURLSync hook.
  */
 
 import { create } from 'zustand';
@@ -17,37 +18,109 @@ const RESOLUTION_PRESETS: Record<ResolutionLevel, { zoom: number; segments: numb
   '16x': { zoom: 15, segments: 512 },
 };
 
+/** Default terrain appearance values */
+export const DEFAULT_TERRAIN_BRIGHTNESS = 0.7;
+export const DEFAULT_TERRAIN_SATURATION = 0.5;
+
+/** Valid range for terrain brightness */
+export const TERRAIN_BRIGHTNESS_MIN = 0.3;
+export const TERRAIN_BRIGHTNESS_MAX = 1.0;
+export const TERRAIN_BRIGHTNESS_STEP = 0.05;
+
+/** Valid range for terrain saturation */
+export const TERRAIN_SATURATION_MIN = 0.0;
+export const TERRAIN_SATURATION_MAX = 1.0;
+export const TERRAIN_SATURATION_STEP = 0.05;
+
 interface SettingsState {
   /** Current resolution level */
   resolution: ResolutionLevel;
+  /** Terrain brightness multiplier (0.3 - 1.0, default 0.7) */
+  terrainBrightness: number;
+  /** Terrain saturation multiplier (0.0 - 1.0, default 0.5) */
+  terrainSaturation: number;
   /** Set resolution level */
   setResolution: (res: ResolutionLevel) => void;
+  /** Set terrain brightness (clamped to valid range) */
+  setTerrainBrightness: (value: number) => void;
+  /** Set terrain saturation (clamped to valid range) */
+  setTerrainSaturation: (value: number) => void;
   /** Get terrain zoom level for current resolution */
   getTerrainZoom: () => number;
   /** Get mesh segments for current resolution */
   getTerrainSegments: () => number;
 }
 
-/** Read initial resolution from URL query params (for initial load before useURLSync takes over) */
-function getInitialResolution(): ResolutionLevel {
-  if (typeof window === 'undefined') return '2x';
-
-  const params = new URLSearchParams(window.location.search);
-  const res = params.get('resolution');
-
-  if (res && res in RESOLUTION_PRESETS) {
-    return res as ResolutionLevel;
+/** Read initial settings from URL query params (for initial load before useURLSync takes over) */
+function getInitialSettings(): {
+  resolution: ResolutionLevel;
+  terrainBrightness: number;
+  terrainSaturation: number;
+} {
+  if (typeof window === 'undefined') {
+    return {
+      resolution: '2x',
+      terrainBrightness: DEFAULT_TERRAIN_BRIGHTNESS,
+      terrainSaturation: DEFAULT_TERRAIN_SATURATION,
+    };
   }
 
-  return '2x'; // Default
+  const params = new URLSearchParams(window.location.search);
+
+  // Resolution
+  const res = params.get('resolution');
+  const resolution = res && res in RESOLUTION_PRESETS ? (res as ResolutionLevel) : '2x';
+
+  // Terrain brightness
+  const brightnessStr = params.get('brightness');
+  let terrainBrightness = DEFAULT_TERRAIN_BRIGHTNESS;
+  if (brightnessStr) {
+    const parsed = parseFloat(brightnessStr);
+    if (!isNaN(parsed)) {
+      terrainBrightness = Math.max(
+        TERRAIN_BRIGHTNESS_MIN,
+        Math.min(TERRAIN_BRIGHTNESS_MAX, parsed)
+      );
+    }
+  }
+
+  // Terrain saturation
+  const saturationStr = params.get('saturation');
+  let terrainSaturation = DEFAULT_TERRAIN_SATURATION;
+  if (saturationStr) {
+    const parsed = parseFloat(saturationStr);
+    if (!isNaN(parsed)) {
+      terrainSaturation = Math.max(
+        TERRAIN_SATURATION_MIN,
+        Math.min(TERRAIN_SATURATION_MAX, parsed)
+      );
+    }
+  }
+
+  return { resolution, terrainBrightness, terrainSaturation };
 }
 
+const initialSettings = getInitialSettings();
+
 export const useSettingsStore = create<SettingsState>((set, get) => ({
-  resolution: getInitialResolution(),
+  resolution: initialSettings.resolution,
+  terrainBrightness: initialSettings.terrainBrightness,
+  terrainSaturation: initialSettings.terrainSaturation,
 
   setResolution: (resolution) => {
     set({ resolution });
     // URL update is now handled by useURLSync hook
+  },
+
+  setTerrainBrightness: (value) => {
+    const clamped = Math.max(TERRAIN_BRIGHTNESS_MIN, Math.min(TERRAIN_BRIGHTNESS_MAX, value));
+    // Round to avoid floating point drift from slider
+    set({ terrainBrightness: Math.round(clamped * 100) / 100 });
+  },
+
+  setTerrainSaturation: (value) => {
+    const clamped = Math.max(TERRAIN_SATURATION_MIN, Math.min(TERRAIN_SATURATION_MAX, value));
+    set({ terrainSaturation: Math.round(clamped * 100) / 100 });
   },
 
   getTerrainZoom: () => {

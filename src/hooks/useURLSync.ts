@@ -53,6 +53,8 @@ export function useURLSync() {
   const showLifts = useMapStore((s) => s.showLifts);
   const showLabels = useMapStore((s) => s.showLabels);
   const resolution = useSettingsStore((s) => s.resolution);
+  const terrainBrightness = useSettingsStore((s) => s.terrainBrightness);
+  const terrainSaturation = useSettingsStore((s) => s.terrainSaturation);
 
   // Get store setters
   const setSelectedEntity = useMapStore((s) => s.setSelectedEntity);
@@ -112,6 +114,16 @@ export function useURLSync() {
         useSettingsStore.setState({ resolution: parsed.resolution });
       }
 
+      // Apply terrain brightness
+      if (parsed.terrainBrightness !== undefined) {
+        useSettingsStore.setState({ terrainBrightness: parsed.terrainBrightness });
+      }
+
+      // Apply terrain saturation
+      if (parsed.terrainSaturation !== undefined) {
+        useSettingsStore.setState({ terrainSaturation: parsed.terrainSaturation });
+      }
+
       // Apply camera position
       if (parsed.camera) {
         const mapStore = useMapStore.getState();
@@ -148,6 +160,8 @@ export function useURLSync() {
         labels: showLabels,
       },
       resolution,
+      terrainBrightness,
+      terrainSaturation,
     });
 
     // Remove diff from params — it's managed by useDifficultyFilter
@@ -168,6 +182,8 @@ export function useURLSync() {
     showLifts,
     showLabels,
     resolution,
+    terrainBrightness,
+    terrainSaturation,
   ]);
 
   // Apply URL params on mount (once)
@@ -177,7 +193,13 @@ export function useURLSync() {
 
     // Check if URL has any meaningful params (diff excluded — handled by useDifficultyFilter)
     const hasParams =
-      search.select || search.lifts || search.show || search.resolution || search.cam;
+      search.select ||
+      search.lifts ||
+      search.show ||
+      search.resolution ||
+      search.brightness ||
+      search.saturation ||
+      search.cam;
 
     if (hasParams) {
       applyURLToStores(search);
@@ -214,6 +236,8 @@ export function useURLSync() {
     showLifts,
     showLabels,
     resolution,
+    terrainBrightness,
+    terrainSaturation,
   ]);
 }
 
@@ -234,6 +258,8 @@ export function useShareableURL(): () => string {
   const cameraPosition = useMapStore((s) => s.cameraPosition);
   const cameraTarget = useMapStore((s) => s.cameraTarget);
   const resolution = useSettingsStore((s) => s.resolution);
+  const terrainBrightness = useSettingsStore((s) => s.terrainBrightness);
+  const terrainSaturation = useSettingsStore((s) => s.terrainSaturation);
 
   return useCallback(() => {
     // Parse current difficulty from URL
@@ -252,6 +278,8 @@ export function useShareableURL(): () => string {
         labels: showLabels,
       },
       resolution,
+      terrainBrightness,
+      terrainSaturation,
       camera: {
         position: cameraPosition,
         target: cameraTarget,
@@ -264,7 +292,7 @@ export function useShareableURL(): () => string {
 
     for (const [key, value] of Object.entries(params)) {
       if (value !== undefined) {
-        url.searchParams.set(key, value);
+        url.searchParams.set(key, String(value));
       }
     }
 
@@ -280,5 +308,7 @@ export function useShareableURL(): () => string {
     cameraPosition,
     cameraTarget,
     resolution,
+    terrainBrightness,
+    terrainSaturation,
   ]);
 }

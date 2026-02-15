@@ -12,6 +12,14 @@ import { z } from 'zod';
 import type { LiftType } from '@/stores/useMapStore';
 import type { Difficulty } from '@/lib/api/overpass';
 import type { ResolutionLevel } from '@/stores/useSettingsStore';
+import {
+  DEFAULT_TERRAIN_BRIGHTNESS,
+  DEFAULT_TERRAIN_SATURATION,
+  TERRAIN_BRIGHTNESS_MIN,
+  TERRAIN_BRIGHTNESS_MAX,
+  TERRAIN_SATURATION_MIN,
+  TERRAIN_SATURATION_MAX,
+} from '@/stores/useSettingsStore';
 
 // Selection types
 export type SelectionType = 'piste' | 'lift' | 'peak' | 'place';
@@ -191,6 +199,12 @@ export const searchSchema = z.object({
   // Resolution: "1x", "2x", "4x", "8x", "16x"
   resolution: z.enum(VALID_RESOLUTIONS).optional(),
 
+  // Terrain brightness: 0.3 - 1.0
+  brightness: z.coerce.number().min(TERRAIN_BRIGHTNESS_MIN).max(TERRAIN_BRIGHTNESS_MAX).optional(),
+
+  // Terrain saturation: 0.0 - 1.0
+  saturation: z.coerce.number().min(TERRAIN_SATURATION_MIN).max(TERRAIN_SATURATION_MAX).optional(),
+
   // Camera: "x,y,z,tx,ty,tz"
   cam: z.string().optional(),
 });
@@ -206,6 +220,8 @@ export function parseSearchParams(params: SearchParams): {
   liftTypes: LiftType[] | undefined;
   layers: (typeof VALID_LAYERS)[number][] | undefined;
   resolution: ResolutionLevel | undefined;
+  terrainBrightness: number | undefined;
+  terrainSaturation: number | undefined;
   camera: { position: [number, number, number]; target: [number, number, number] } | undefined;
 } {
   return {
@@ -214,6 +230,8 @@ export function parseSearchParams(params: SearchParams): {
     liftTypes: parseList(params.lifts, VALID_LIFT_TYPES),
     layers: parseList(params.show, VALID_LAYERS),
     resolution: params.resolution,
+    terrainBrightness: params.brightness,
+    terrainSaturation: params.saturation,
     camera: parseCamera(params.cam),
   };
 }
@@ -228,6 +246,8 @@ export function buildSearchParams(state: {
   liftTypes: LiftType[];
   layers: { terrain: boolean; pistes: boolean; lifts: boolean; labels: boolean };
   resolution: ResolutionLevel;
+  terrainBrightness: number;
+  terrainSaturation: number;
   camera?: { position: [number, number, number]; target: [number, number, number] };
 }): SearchParams {
   const params: SearchParams = {};
@@ -254,6 +274,16 @@ export function buildSearchParams(state: {
   // Resolution (only if not default)
   if (state.resolution !== DEFAULT_RESOLUTION) {
     params.resolution = state.resolution;
+  }
+
+  // Terrain brightness (only if not default)
+  if (state.terrainBrightness !== DEFAULT_TERRAIN_BRIGHTNESS) {
+    params.brightness = state.terrainBrightness;
+  }
+
+  // Terrain saturation (only if not default)
+  if (state.terrainSaturation !== DEFAULT_TERRAIN_SATURATION) {
+    params.saturation = state.terrainSaturation;
   }
 
   // Camera (only if explicitly provided)

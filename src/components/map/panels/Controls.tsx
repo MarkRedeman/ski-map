@@ -23,6 +23,7 @@ import { useDifficultyFilter } from '@/hooks/useDifficultyFilter';
 import { geoToLocal } from '@/lib/geo/coordinates';
 import { LIFT_TYPE_CONFIG } from '../Lifts';
 import { PISTE_DIFFICULTY_CONFIG } from '../Pistes';
+import { TerrainSettings } from './TerrainSettings';
 
 const RESOLUTION_LEVELS: ResolutionLevel[] = ['1x', '2x', '4x', '8x', '16x'];
 
@@ -135,6 +136,10 @@ export function MapControls() {
         setResolution={setResolution}
         isLoading={isLoading}
       />
+
+      {/* --- Terrain appearance section --- */}
+      <div className="h-px bg-white/20" />
+      <TerrainSettings />
 
       {/* --- Labels toggle --- */}
       <div className="h-px bg-white/20" />
