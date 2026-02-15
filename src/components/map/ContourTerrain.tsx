@@ -12,7 +12,7 @@ import { useContourLines } from '@/hooks/useContourLines';
 import { useMapStore } from '@/stores/useMapStore';
 import { sampleElevation } from '@/lib/geo/elevationGrid';
 import { useTerrainSettings } from '@/stores/useSettingsStore';
-import { SOLDEN_BOUNDS } from '@/config/region';
+import { getRegionBounds } from '@/stores/useAppConfigStore';
 import { LOADING } from '@/config/theme';
 
 interface ContourTerrainProps {
@@ -38,7 +38,7 @@ export const ContourTerrain = memo(function ContourTerrain({
     isLoading,
     error,
   } = useContourLines({
-    ...SOLDEN_BOUNDS,
+    ...getRegionBounds(),
     zoom,
     interval,
   });

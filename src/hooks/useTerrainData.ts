@@ -13,8 +13,8 @@ import {
   buildElevationGridFromTiles,
   buildSatelliteImageFromTiles,
 } from '@/lib/geo/mapboxTiles';
-import { geoToLocal, SOLDEN_CENTER } from '@/lib/geo/coordinates';
-import { SOLDEN_BOUNDS } from '@/config/region';
+import { geoToLocal } from '@/lib/geo/coordinates';
+import { getMapboxToken, getRegionCenter, getRegionBounds } from '@/stores/useAppConfigStore';
 import type { ElevationGrid } from '@/lib/geo/elevationGrid';
 import { useMapStore } from '@/stores/useMapStore';
 
@@ -58,7 +58,7 @@ export function useTerrainData({
   // meshSegments reserved for future LOD support
   enabled = true,
 }: UseTerrainDataOptions = {}) {
-  const accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
+  const accessToken = getMapboxToken();
   const setElevationGrid = useMapStore((s) => s.setElevationGrid);
   const setIsLoading = useMapStore((s) => s.setIsLoadingTerrain);
 
@@ -66,17 +66,19 @@ export function useTerrainData({
     queryKey: ['terrain-data', zoom],
     queryFn: async (): Promise<TerrainData> => {
       if (!accessToken) {
-        throw new Error('VITE_MAPBOX_TOKEN not set');
+        throw new Error('Mapbox token not configured');
       }
 
       console.log('[TerrainData] Starting terrain data fetch...');
 
+      const bounds = getRegionBounds();
+
       // 1. Calculate tiles needed
       const tiles = getTilesForBounds(
-        SOLDEN_BOUNDS.minLat,
-        SOLDEN_BOUNDS.maxLat,
-        SOLDEN_BOUNDS.minLon,
-        SOLDEN_BOUNDS.maxLon,
+        bounds.minLat,
+        bounds.maxLat,
+        bounds.minLon,
+        bounds.maxLon,
         zoom
       );
       console.log(`[TerrainData] Fetching ${tiles.length} tiles at zoom ${zoom}`);
@@ -131,7 +133,8 @@ export function useTerrainData({
       const scaledElevations = new Float32Array(elevationResult.elevations.length);
       for (let i = 0; i < elevationResult.elevations.length; i++) {
         // Convert meters to scene units, relative to center elevation
-        scaledElevations[i] = (elevationResult.elevations[i]! - SOLDEN_CENTER.elevation) * SCALE;
+        scaledElevations[i] =
+          (elevationResult.elevations[i]! - getRegionCenter().elevation) * SCALE;
       }
 
       const elevationGrid: ElevationGrid = {

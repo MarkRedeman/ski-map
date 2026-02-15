@@ -8,7 +8,8 @@ import { useMemo, useRef } from 'react';
 import { Sphere, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import type { SkiRun, RunPoint } from '@/lib/garmin/types';
-import { geoToLocal, SOLDEN_CENTER } from '@/lib/geo/coordinates';
+import { geoToLocal } from '@/lib/geo/coordinates';
+import { getRegionCenter } from '@/stores/useAppConfigStore';
 import { formatSpeed } from '@/lib/garmin/parser';
 import { useMapStore } from '@/stores/useMapStore';
 import { usePlaybackStore } from '@/stores/usePlaybackStore';
@@ -167,7 +168,7 @@ export function PlayerMarker({ ride }: PlayerMarkerProps) {
       y = terrainY + TERRAIN_OFFSET;
     } else {
       // Fallback: use GPS elevation relative to Sölden center, scaled (SCALE = 0.1)
-      y = (position.elevation - SOLDEN_CENTER.elevation) * 0.1 + TERRAIN_OFFSET;
+      y = (position.elevation - getRegionCenter().elevation) * 0.1 + TERRAIN_OFFSET;
     }
 
     // Get speed color

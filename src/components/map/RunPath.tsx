@@ -7,7 +7,8 @@ import { useMemo } from 'react';
 import { Line, Sphere, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import type { SkiRun } from '@/lib/garmin/types';
-import { geoToLocal, SOLDEN_CENTER } from '@/lib/geo/coordinates';
+import { geoToLocal } from '@/lib/geo/coordinates';
+import { getRegionCenter } from '@/stores/useAppConfigStore';
 import { useMapStore } from '@/stores/useMapStore';
 import { sampleElevation } from '@/lib/geo/elevationGrid';
 import { useRideSegments } from '@/hooks/useRideSegments';
@@ -49,7 +50,7 @@ export function RunPath({ run, showMarkers = true }: RunPathProps) {
       // Sample terrain elevation, fall back to GPS elevation if grid not loaded
       const terrainY = elevationGrid
         ? sampleElevation(elevationGrid, x, z)
-        : (coord.elevation - SOLDEN_CENTER.elevation) * 0.015;
+        : (coord.elevation - getRegionCenter().elevation) * 0.015;
       // Add height offset so path renders above pistes
       points.push(new THREE.Vector3(x, terrainY + PATH_HEIGHT_OFFSET, z));
     }

@@ -14,7 +14,8 @@ import { useFrame } from '@react-three/fiber';
 import { usePeaks } from '@/hooks/usePeaks';
 import { useLifts } from '@/hooks/useLifts';
 import { useMapStore } from '@/stores/useMapStore';
-import { geoToLocal, SOLDEN_CENTER } from '@/lib/geo/coordinates';
+import { geoToLocal } from '@/lib/geo/coordinates';
+import { getRegionCenter } from '@/stores/useAppConfigStore';
 import { sampleElevation } from '@/lib/geo/elevationGrid';
 
 const SCALE = 0.1; // Same scale factor as coordinates.ts
@@ -124,10 +125,10 @@ export function PeakLabels() {
           if (elevationGrid) {
             const terrainY = sampleElevation(elevationGrid, x, z);
             // Use the higher of terrain height or OSM elevation (in case terrain data is lower res)
-            const peakY = (peak.elevation - SOLDEN_CENTER.elevation) * SCALE;
+            const peakY = (peak.elevation - getRegionCenter().elevation) * SCALE;
             y = Math.max(terrainY, peakY) + 15; // Offset above terrain
           } else {
-            y = (peak.elevation - SOLDEN_CENTER.elevation) * SCALE + 15;
+            y = (peak.elevation - getRegionCenter().elevation) * SCALE + 15;
           }
 
           return {

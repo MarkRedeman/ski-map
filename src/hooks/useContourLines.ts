@@ -10,7 +10,7 @@ import {
   simplifyContour,
   type ContourData3D,
 } from '@/lib/geo/contourGenerator';
-import { SOLDEN_CENTER } from '@/lib/geo/coordinates';
+import { getMapboxToken, getRegionCenter } from '@/stores/useAppConfigStore';
 
 // Scale factor matching coordinates.ts
 const SCALE = 0.1;
@@ -39,7 +39,7 @@ export function useContourLines({
   simplifyTolerance = 1,
   enabled = true,
 }: UseContourLinesOptions) {
-  const accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
+  const accessToken = getMapboxToken();
 
   return useQuery({
     queryKey: ['contours', minLat, maxLat, minLon, maxLon, zoom, interval],
@@ -85,7 +85,7 @@ export function useContourLines({
         height,
         1, // yOffset above terrain
         true, // useElevationForY
-        SOLDEN_CENTER.elevation, // centerElevation
+        getRegionCenter().elevation, // centerElevation
         SCALE // scale
       );
 

@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import type * as THREE from 'three';
 import type { ElevationGrid } from '@/lib/geo/elevationGrid';
-import { SOLDEN_CENTER } from '@/config/region';
 
 /** Lift types that can be filtered */
 export type LiftType =
@@ -189,6 +188,3 @@ export const useMapStore = create<MapState>((set, get) => ({
   isLoadingTerrain: true,
   setIsLoadingTerrain: (loading) => set({ isLoadingTerrain: loading }),
 }));
-
-// Re-export for convenience
-export { SOLDEN_CENTER };

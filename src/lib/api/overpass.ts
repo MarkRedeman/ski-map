@@ -4,7 +4,7 @@
  * Fetches pistes, lifts, and POIs for the Sölden ski area
  */
 
-import { SOLDEN_BBOX } from '@/config/region';
+import { getRegionBbox } from '@/stores/useAppConfigStore';
 
 const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
 
@@ -487,7 +487,7 @@ export interface SkiData {
  * Build a single combined Overpass query for all ski data
  */
 function buildCombinedQuery(): string {
-  const { south, west, north, east } = SOLDEN_BBOX;
+  const { south, west, north, east } = getRegionBbox();
   return `
 [out:json][timeout:120];
 (

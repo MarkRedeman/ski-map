@@ -1,12 +1,12 @@
 /**
  * Geographic coordinate utilities for converting between
  * lat/lon coordinates and local 3D scene coordinates
+ *
+ * Uses getRegionCenter/getRegionBounds from the app config store,
+ * which fall back to Sölden defaults when no override is set.
  */
 
-import { SOLDEN_CENTER, SOLDEN_BOUNDS } from '@/config/region';
-
-// Re-export for backward compatibility
-export { SOLDEN_CENTER, SOLDEN_BOUNDS };
+import { getRegionCenter, getRegionBounds } from '@/stores/useAppConfigStore';
 
 // Scale factor: meters per unit in 3D scene
 const SCALE = 0.1; // 1 unit = 10 meters
@@ -15,21 +15,23 @@ const SCALE = 0.1; // 1 unit = 10 meters
 const EARTH_RADIUS = 6371000;
 
 /**
- * Convert latitude/longitude to local X/Z coordinates centered on Sölden
+ * Convert latitude/longitude to local X/Z coordinates centered on the active region
  * Y is reserved for elevation
  */
 export function geoToLocal(lat: number, lon: number, elevation = 0): [number, number, number] {
+  const center = getRegionCenter();
+
   // Calculate distance from center
-  const dLat = (lat - SOLDEN_CENTER.lat) * (Math.PI / 180);
-  const dLon = (lon - SOLDEN_CENTER.lon) * (Math.PI / 180);
+  const dLat = (lat - center.lat) * (Math.PI / 180);
+  const dLon = (lon - center.lon) * (Math.PI / 180);
 
   // Approximate meters from center
   const latMeters = dLat * EARTH_RADIUS;
-  const lonMeters = dLon * EARTH_RADIUS * Math.cos((SOLDEN_CENTER.lat * Math.PI) / 180);
+  const lonMeters = dLon * EARTH_RADIUS * Math.cos((center.lat * Math.PI) / 180);
 
   // Convert to scene coordinates (Z = north, X = east, Y = up)
   const x = lonMeters * SCALE;
-  const y = (elevation - SOLDEN_CENTER.elevation) * SCALE;
+  const y = (elevation - center.elevation) * SCALE;
   const z = -latMeters * SCALE; // Negative because north is -Z in Three.js convention
 
   return [x, y, z];
@@ -53,16 +55,18 @@ export function localToGeo(
   y: number,
   z: number
 ): { lat: number; lon: number; elevation: number } {
+  const center = getRegionCenter();
+
   const lonMeters = x / SCALE;
   const latMeters = -z / SCALE;
-  const elevation = y / SCALE + SOLDEN_CENTER.elevation;
+  const elevation = y / SCALE + center.elevation;
 
   const dLat = latMeters / EARTH_RADIUS;
-  const dLon = lonMeters / (EARTH_RADIUS * Math.cos((SOLDEN_CENTER.lat * Math.PI) / 180));
+  const dLon = lonMeters / (EARTH_RADIUS * Math.cos((center.lat * Math.PI) / 180));
 
   return {
-    lat: SOLDEN_CENTER.lat + dLat * (180 / Math.PI),
-    lon: SOLDEN_CENTER.lon + dLon * (180 / Math.PI),
+    lat: center.lat + dLat * (180 / Math.PI),
+    lon: center.lon + dLon * (180 / Math.PI),
     elevation,
   };
 }
@@ -87,11 +91,12 @@ export function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: n
 }
 
 /**
- * Get bounds of the Sölden ski area in local coordinates
+ * Get bounds of the active region in local coordinates
  * Includes padding to ensure all pistes are covered by terrain
  */
-export function getSoldenBounds() {
-  const { minLat, maxLat, minLon, maxLon } = SOLDEN_BOUNDS;
+export function getLocalBounds() {
+  const bounds = getRegionBounds();
+  const { minLat, maxLat, minLon, maxLon } = bounds;
 
   const [minX, , minZ] = geoToLocal(minLat, minLon);
   const [maxX, , maxZ] = geoToLocal(maxLat, maxLon);
@@ -117,15 +122,18 @@ export function getSoldenBounds() {
   };
 }
 
+/** @deprecated Use getLocalBounds() instead */
+export const getSoldenBounds = getLocalBounds;
+
 /**
- * Check if a geographic coordinate is within the Sölden ski area bounds
- * @deprecated Use isInRegionBounds from @/config/region instead
+ * Check if a geographic coordinate is within the active region bounds
  */
-export function isInSoldenBounds(lat: number, lon: number): boolean {
+export function isInRegionBounds(lat: number, lon: number): boolean {
+  const bounds = getRegionBounds();
   return (
-    lat >= SOLDEN_BOUNDS.minLat &&
-    lat <= SOLDEN_BOUNDS.maxLat &&
-    lon >= SOLDEN_BOUNDS.minLon &&
-    lon <= SOLDEN_BOUNDS.maxLon
+    lat >= bounds.minLat && lat <= bounds.maxLat && lon >= bounds.minLon && lon <= bounds.maxLon
   );
 }
+
+/** @deprecated Use isInRegionBounds() instead */
+export const isInSoldenBounds = isInRegionBounds;
