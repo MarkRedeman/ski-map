@@ -15,7 +15,7 @@ import { useRef, useState, useCallback } from 'react';
 import { Plus, Mountain, Settings, ChevronDown } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import { LocationButton } from '@/components/sidebar/LocationButton';
-import { PisteListPanel } from '@/components/sidebar/PisteListPanel';
+import { PlacesPanel } from '@/components/sidebar/places/PlacesPanel';
 import { RideListPanel } from '@/components/sidebar/rides/RideListPanel';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { SettingsContent } from '@/components/layout/SettingsPanel';
@@ -116,7 +116,7 @@ export function Sidebar() {
             Browse Slopes & Lifts
           </h2>
           <div className="flex-1 overflow-y-auto">
-            <PisteListPanel />
+            <PlacesPanel />
           </div>
         </section>
 
