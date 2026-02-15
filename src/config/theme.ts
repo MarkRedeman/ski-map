@@ -121,8 +121,6 @@ export const LINE_STYLE = {
   highlightWidthMultiplier: 1.1,
   /** Default line opacity */
   opacity: 1.0,
-  /** Dimmed opacity when another entity is active */
-  dimmedOpacity: 0.7,
   /** Shadow outline color */
   shadowColor: '#000000',
   /** Shadow outline opacity */

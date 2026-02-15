@@ -155,7 +155,7 @@ const LiftLine = memo(function LiftLine({
   const color = isHighlighted ? config.colorHighlight : config.color;
   const baseWidth = LINE_STYLE.baseWidth * zoomScale;
   const lineWidth = isHighlighted ? baseWidth * LINE_STYLE.highlightWidthMultiplier : baseWidth;
-  const opacity = isHighlighted ? 1 : dimmed ? LINE_STYLE.dimmedOpacity : LINE_STYLE.opacity;
+  const opacity = isHighlighted ? 1 : LINE_STYLE.opacity;
 
   // Get station geometry based on lift type
   const stationGeometry = getStationGeometry(type);

@@ -213,7 +213,7 @@ const PisteLines = memo(function PisteLines({
   const color = isHighlighted
     ? DIFFICULTY_COLORS_HIGHLIGHT[difficulty]
     : DIFFICULTY_COLORS[difficulty];
-  const opacity = isHighlighted ? 1 : dimmed ? LINE_STYLE.dimmedOpacity : LINE_STYLE.opacity;
+  const opacity = isHighlighted ? 1 : LINE_STYLE.opacity;
 
   // Stitch connected segments into continuous polylines
   const { polylines } = useMemo(() => stitchSegments(segments), [segments]);
