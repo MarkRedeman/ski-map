@@ -17,9 +17,17 @@ const BASE_LINE_WIDTH = 7;
 /** Highlighted line width multiplier */
 const HIGHLIGHT_MULTIPLIER = 2;
 /** Default opacity for lines */
-const LINE_OPACITY = 0.9;
+const LINE_OPACITY = 1.0;
 /** Dimmed opacity when another entity is active */
 const DIMMED_OPACITY = 0.4;
+
+/** Shadow outline settings for contrast against terrain */
+const SHADOW_COLOR = '#000000';
+const SHADOW_OPACITY = 0.4;
+/** Shadow line width multiplier (relative to the main line width) */
+const SHADOW_WIDTH_MULTIPLIER = 1.8;
+/** Shadow Y offset below the main line (in scene units) */
+const SHADOW_Y_OFFSET = -0.3;
 
 /**
  * Hook to calculate zoom-based line width scaling
@@ -161,7 +169,7 @@ interface PisteSegmentProps {
 }
 
 /**
- * Renders a single segment of a piste as a 3D line
+ * Renders a single segment of a piste as a 3D line with a shadow outline
  */
 const PisteSegment = memo(function PisteSegment({
   coordinates,
@@ -171,8 +179,11 @@ const PisteSegment = memo(function PisteSegment({
   elevationGrid,
 }: PisteSegmentProps) {
   // Convert geo coordinates to local 3D coordinates with terrain elevation
-  const points = useMemo(() => {
-    return coordinates.map(([lon, lat]) => {
+  const { points, shadowPoints } = useMemo(() => {
+    const main: [number, number, number][] = [];
+    const shadow: [number, number, number][] = [];
+
+    coordinates.forEach(([lon, lat]) => {
       const result = coordsToLocal([[lon, lat]], 0);
       const [x, , z] = result[0] ?? [0, 0, 0];
 
@@ -183,21 +194,37 @@ const PisteSegment = memo(function PisteSegment({
         y = terrainY + PISTE_OFFSET;
       }
 
-      return [x, y, z] as [number, number, number];
+      main.push([x, y, z]);
+      shadow.push([x, y + SHADOW_Y_OFFSET, z]);
     });
+
+    return { points: main, shadowPoints: shadow };
   }, [coordinates, elevationGrid]);
 
   if (points.length < 2) return null;
 
+  const shadowWidth = lineWidth * SHADOW_WIDTH_MULTIPLIER;
+
   return (
-    <Line
-      points={points}
-      color={color}
-      lineWidth={lineWidth}
-      opacity={opacity}
-      transparent
-      // Pointer events now handled by ProximitySelector for better UX
-      raycast={() => null}
-    />
+    <>
+      {/* Shadow outline — wider dark line underneath for terrain contrast */}
+      <Line
+        points={shadowPoints}
+        color={SHADOW_COLOR}
+        lineWidth={shadowWidth}
+        opacity={opacity > 0 ? Math.min(opacity, SHADOW_OPACITY) : 0}
+        transparent
+        raycast={() => null}
+      />
+      {/* Main colored line */}
+      <Line
+        points={points}
+        color={color}
+        lineWidth={lineWidth}
+        opacity={opacity}
+        transparent
+        raycast={() => null}
+      />
+    </>
   );
 });

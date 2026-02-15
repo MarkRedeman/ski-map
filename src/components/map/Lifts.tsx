@@ -20,9 +20,17 @@ const BASE_LINE_WIDTH = 7;
 /** Highlighted line width multiplier */
 const HIGHLIGHT_MULTIPLIER = 2;
 /** Default opacity for lines */
-const LINE_OPACITY = 0.9;
+const LINE_OPACITY = 1.0;
 /** Dimmed opacity when another entity is active */
 const DIMMED_OPACITY = 0.4;
+
+/** Shadow outline settings for contrast against terrain */
+const SHADOW_COLOR = '#000000';
+const SHADOW_OPACITY = 0.4;
+/** Shadow line width multiplier (relative to the main line width) */
+const SHADOW_WIDTH_MULTIPLIER = 1.8;
+/** Shadow Y offset below the main line (in scene units) */
+const SHADOW_Y_OFFSET = -0.3;
 
 /**
  * Hook to calculate zoom-based line width scaling
@@ -130,8 +138,9 @@ const LiftLine = memo(function LiftLine({
 
   // Convert geo coordinates to local 3D coordinates with terrain elevation
   // Lifts are elevated above terrain to simulate cable height
-  const { cablePoints, stationPoints } = useMemo(() => {
+  const { cablePoints, cableShadowPoints, stationPoints } = useMemo(() => {
     const cable: [number, number, number][] = [];
+    const cableShadow: [number, number, number][] = [];
     const stations: [number, number, number][] = [];
 
     coordinates.forEach(([lon, lat], index) => {
@@ -145,7 +154,9 @@ const LiftLine = memo(function LiftLine({
       }
 
       // Cable points are high above terrain
-      cable.push([x, terrainY + LIFT_CABLE_OFFSET, z]);
+      const cableY = terrainY + LIFT_CABLE_OFFSET;
+      cable.push([x, cableY, z]);
+      cableShadow.push([x, cableY + SHADOW_Y_OFFSET, z]);
 
       // Station points only at start and end
       if (index === 0 || index === coordinates.length - 1) {
@@ -153,7 +164,7 @@ const LiftLine = memo(function LiftLine({
       }
     });
 
-    return { cablePoints: cable, stationPoints: stations };
+    return { cablePoints: cable, cableShadowPoints: cableShadow, stationPoints: stations };
   }, [coordinates, elevationGrid]);
 
   if (cablePoints.length < 2) return null;
@@ -166,9 +177,22 @@ const LiftLine = memo(function LiftLine({
 
   // Get station geometry based on lift type
   const stationGeometry = getStationGeometry(type);
+  const shadowWidth = lineWidth * SHADOW_WIDTH_MULTIPLIER;
 
   return (
     <group>
+      {/* Shadow outline — wider dark line underneath for terrain contrast */}
+      <Line
+        points={cableShadowPoints}
+        color={SHADOW_COLOR}
+        lineWidth={shadowWidth}
+        opacity={opacity > 0 ? Math.min(opacity, SHADOW_OPACITY) : 0}
+        transparent
+        dashed
+        dashSize={2}
+        gapSize={1}
+        raycast={() => null}
+      />
       {/* Lift cable line */}
       <Line
         points={cablePoints}
