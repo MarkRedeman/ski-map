@@ -68,7 +68,7 @@ export function Sidebar() {
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
           <Link to="/" className="flex items-center gap-2">
             <Mountain className="h-5 w-5 text-amber-500" />
-            <span className="text-base font-bold text-amber-500">Sölden Navigator</span>
+            <span className="text-base font-bold text-amber-500">Ski Map</span>
           </Link>
           <OfflineIndicator />
         </div>

@@ -3,12 +3,12 @@
  *
  * Runtime-configurable settings persisted to localStorage.
  * Stores Mapbox token override and region bounds/center overrides.
- * Falls back to env vars and Sölden defaults when overrides are null.
+ * Falls back to env vars and DEFAULT_REGION when overrides are null.
  */
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { SOLDEN_REGION, type RegionConfig } from '@/config/region';
+import { DEFAULT_REGION, type RegionConfig } from '@/config/region';
 
 interface RegionBoundsOverride {
   minLat: number;
@@ -26,9 +26,9 @@ interface RegionCenterOverride {
 interface AppConfigState {
   /** Mapbox token override (null = use VITE_MAPBOX_TOKEN from env) */
   mapboxToken: string | null;
-  /** Region bounds override (null = use Sölden defaults) */
+  /** Region bounds override (null = use defaults) */
   regionBounds: RegionBoundsOverride | null;
-  /** Region center override (null = use Sölden defaults) */
+  /** Region center override (null = use defaults) */
   regionCenter: RegionCenterOverride | null;
 
   /** Set Mapbox token override */
@@ -83,17 +83,17 @@ export function getMapboxToken(): string {
 }
 
 /**
- * Get the effective region center (store override → Sölden default)
+ * Get the effective region center (store override → default)
  */
 export function getRegionCenter(): RegionConfig['center'] {
-  return useAppConfigStore.getState().regionCenter ?? SOLDEN_REGION.center;
+  return useAppConfigStore.getState().regionCenter ?? DEFAULT_REGION.center;
 }
 
 /**
- * Get the effective region bounds (store override → Sölden default)
+ * Get the effective region bounds (store override → default)
  */
 export function getRegionBounds(): RegionConfig['bounds'] {
-  return useAppConfigStore.getState().regionBounds ?? SOLDEN_REGION.bounds;
+  return useAppConfigStore.getState().regionBounds ?? DEFAULT_REGION.bounds;
 }
 
 /**

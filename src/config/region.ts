@@ -1,7 +1,7 @@
 /**
  * Region configuration
  *
- * Default geographic configuration for the Sölden ski area.
+ * Default geographic configuration for the ski area.
  * Runtime overrides are managed by useAppConfigStore.
  */
 
@@ -24,10 +24,9 @@ export interface RegionConfig {
 }
 
 /**
- * Sölden ski area configuration (default region)
- * Includes Rettenbach & Tiefenbach glaciers
+ * Default region: Sölden ski area (includes Rettenbach & Tiefenbach glaciers)
  */
-export const SOLDEN_REGION: RegionConfig = {
+export const DEFAULT_REGION: RegionConfig = {
   name: 'Sölden',
   center: {
     lat: 46.9147,

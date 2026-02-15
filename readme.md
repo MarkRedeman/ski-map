@@ -1,29 +1,15 @@
-# 🎿 Sölden Ski Navigator
+# Ski Map
 
-A 3D ski navigation app for the Sölden ski area in Austria. Find your way through the slopes, filter by difficulty, and never get separated from your friends again!
+A 3D ski map app with real terrain visualization, piste/lift filtering, GPS tracking, and ride playback. Default region is Sölden, Austria — configurable at runtime via the Settings panel.
 
 ## Features
 
-### Phase 1: Navigation MVP ✅
-- **3D Terrain Visualization** - React Three Fiber powered 3D map of Sölden
-- **Piste Display** - All pistes color-coded by difficulty (blue/red/black)
-- **Lift Display** - Ski lifts with station markers
-- **Difficulty Filter** - Toggle pistes by difficulty level
-- **Route Planning** - Dijkstra-based pathfinding between locations
-- **GPS Tracking** - Real-time location with accuracy indicator
-- **PWA Support** - Works offline on the slopes!
-
-### Phase 2: Run Tracking ✅
-- Upload Garmin/GPX data
-- Visualize past runs on 3D terrain
-- Run statistics and comparisons
-- Speed-colored path visualization
-
-### Phase 3: Video Generation ✅
-- Remotion-powered video creation
-- Animated run replays with stats overlay
-- Client-side video export (WebCodecs)
-- Shareable highlight videos
+- **3D Terrain** — React Three Fiber powered map with Mapbox elevation tiles and contour lines
+- **Pistes & Lifts** — Color-coded by difficulty, filterable by type
+- **GPS Tracking** — Real-time location with accuracy indicator
+- **Ride Playback** — Upload GPX files, replay rides on the 3D terrain with speed-colored paths
+- **Runtime Settings** — Override region bounds, center, and Mapbox token without redeploying
+- **PWA** — Works offline on the slopes
 
 ## Getting Started
 
@@ -47,7 +33,7 @@ Create a `.env` file in the project root:
 VITE_MAPBOX_TOKEN=your_mapbox_token_here
 ```
 
-> **Note:** Get your Mapbox token at https://account.mapbox.com/access-tokens/
+> **Note:** Get your Mapbox token at https://account.mapbox.com/access-tokens/. Can also be set at runtime in Settings.
 
 ## Tech Stack
 
@@ -65,17 +51,22 @@ VITE_MAPBOX_TOKEN=your_mapbox_token_here
 
 ```
 src/
-├── routes/           # TanStack Router file-based routes
+├── routes/              # TanStack Router file-based routes
 ├── components/
-│   ├── map/          # 3D visualization (R3F)
-│   ├── navigation/   # Search, filters, route cards
-│   └── layout/       # Header, sidebar
+│   ├── map/             # 3D visualization (R3F)
+│   │   ├── panels/      # Map overlay panels (Controls, Info, Compass, etc.)
+│   │   └── playback/    # Ride playback (camera follow, player marker)
+│   ├── sidebar/         # Sidebar sections (piste list, rides, location)
+│   │   └── rides/       # Ride list, upload dropzone
+│   └── layout/          # Sidebar shell, settings panel
 ├── lib/
-│   ├── api/          # Overpass API client
-│   ├── routing/      # Graph + pathfinding
-│   └── geo/          # Coordinate utilities
-├── stores/           # Zustand state
-└── hooks/            # TanStack Query hooks
+│   ├── api/             # Overpass API client, piste merging
+│   ├── geo/             # Coordinate transforms, elevation grid
+│   ├── garmin/          # GPX parsing
+│   └── storage/         # IndexedDB query persister
+├── stores/              # Zustand state (UI, map, config, playback)
+├── hooks/               # TanStack Query hooks
+└── config/              # Region config, theme colors
 ```
 
 ---

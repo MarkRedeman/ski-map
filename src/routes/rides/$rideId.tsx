@@ -161,7 +161,7 @@ function RidePage() {
               <div className="text-center">
                 <div className="mb-4 text-4xl">🎿</div>
                 <div className="text-lg font-medium text-amber-700">Loading 3D terrain...</div>
-                <div className="text-sm text-slate-500">Preparing Sölden ski area</div>
+                <div className="text-sm text-slate-500">Preparing ski area</div>
               </div>
             </div>
           }

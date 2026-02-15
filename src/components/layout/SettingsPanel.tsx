@@ -13,7 +13,7 @@
 import { useState, useCallback } from 'react';
 import { RotateCcw, ExternalLink } from 'lucide-react';
 import { useAppConfigStore } from '@/stores/useAppConfigStore';
-import { SOLDEN_REGION } from '@/config/region';
+import { DEFAULT_REGION } from '@/config/region';
 import { TerrainSettings } from '@/components/map/panels/TerrainSettings';
 
 // ---------------------------------------------------------------------------
@@ -183,7 +183,7 @@ function RegionSettings() {
           className="flex items-center gap-1 text-[10px] text-white/40 transition-colors hover:text-white/70"
         >
           <RotateCcw className="h-2.5 w-2.5" />
-          Reset to Sölden
+          Reset to default
         </button>
       </div>
 
@@ -211,13 +211,13 @@ function RegionBoundsSettings({
   bounds: BoundsState;
   onChange: (next: BoundsState) => void;
 }) {
-  const defaults = SOLDEN_REGION;
+  const defaults = DEFAULT_REGION;
 
   return (
     <section className="mb-4">
       <label className="mb-1.5 block text-xs font-semibold text-white">Bounds</label>
       <p className="mb-1.5 text-[10px] leading-tight text-white/50">
-        Geographic bounding box for terrain tiles and OSM data. Leave empty to use Sölden defaults.
+        Geographic bounding box for terrain tiles and OSM data. Leave empty to use defaults.
       </p>
       <div className="grid grid-cols-2 gap-1.5">
         <NumberInput
@@ -266,7 +266,7 @@ function RegionCenterSettings({
   center: CenterState;
   onChange: (next: CenterState) => void;
 }) {
-  const defaults = SOLDEN_REGION;
+  const defaults = DEFAULT_REGION;
 
   return (
     <section className="mb-4">

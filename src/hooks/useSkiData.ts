@@ -38,7 +38,7 @@ export interface ProcessedSkiData {
  * - Caches for 1 hour (ski data is relatively static)
  */
 export const skiDataQueryOptions = queryOptions({
-  queryKey: ['skiData', 'solden'],
+  queryKey: ['skiData', 'region'],
   queryFn: async (): Promise<ProcessedSkiData> => {
     const data = await fetchAllSkiData();
 

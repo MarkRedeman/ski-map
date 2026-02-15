@@ -1,6 +1,6 @@
 # 🚀 Future Feature Ideas
 
-*Ideas for improving the Sölden Ski Navigator app*
+*Ideas for improving the Ski Map app*
 
 ---
 
@@ -22,7 +22,7 @@
 
 ### Lift Status Indicators
 - Show which lifts are currently open/closed
-- Integrate with Sölden's official lift status API (if available)
+- Integrate with the resort's official lift status API (if available)
 - Color-code lifts: green=open, red=closed, yellow=on hold
 - **Priority**: High
 - **Complexity**: Low (if API exists)
@@ -117,7 +117,7 @@
 ## 🎮 Gamification
 
 ### Achievements & Badges
-- "Conqueror" - Ski all black runs in Sölden
+- "Conqueror" - Ski all black runs in the resort
 - "Marathon" - 10km in a single day
 - "Early Bird" - First lift of the day
 - "Explorer" - Visit every piste at least once
@@ -177,7 +177,7 @@
 - **Complexity**: Medium
 
 ### Multi-Resort Support
-- Expand beyond Sölden
+- Expand to support multiple resorts
 - Support for other Austrian resorts (Ischgl, St. Anton, etc.)
 - Eventually: Alps-wide coverage
 - Resort selector in app

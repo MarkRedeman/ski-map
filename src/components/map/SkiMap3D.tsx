@@ -38,7 +38,7 @@ export function SkiMap3D() {
   }, []);
 
   // Camera and controls are centered on Giggijoch (0, 0, 0)
-  // since all geo coordinates are converted relative to SOLDEN_CENTER
+  // since all geo coordinates are converted relative to the region center
 
   return (
     <div className="relative h-full w-full">

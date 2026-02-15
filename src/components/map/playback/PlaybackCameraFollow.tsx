@@ -19,6 +19,7 @@ import { usePlaybackStore } from '@/stores/usePlaybackStore';
 import { useMapStore } from '@/stores/useMapStore';
 import { geoToLocal } from '@/lib/geo/coordinates';
 import { sampleElevation } from '@/lib/geo/elevationGrid';
+import { getRegionCenter } from '@/stores/useAppConfigStore';
 import type { SkiRun, RunPoint } from '@/lib/garmin/types';
 
 interface PlaybackCameraFollowProps {
@@ -198,8 +199,8 @@ export function PlaybackCameraFollow({ ride }: PlaybackCameraFollowProps) {
     if (elevationGrid) {
       terrainY = sampleElevation(elevationGrid, x, z);
     } else {
-      const SOLDEN_ELEVATION = 2284;
-      terrainY = (pos.elevation - SOLDEN_ELEVATION) * 0.1;
+      const centerElevation = getRegionCenter().elevation;
+      terrainY = (pos.elevation - centerElevation) * 0.1;
     }
 
     const playerPosition = new THREE.Vector3(x, terrainY, z);

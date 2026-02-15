@@ -2,7 +2,7 @@ import { Locate, LocateOff, AlertCircle, Navigation, MapPinOff } from 'lucide-re
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useGeolocationStore } from '@/stores/useGeolocationStore';
 import { useMapStore } from '@/stores/useMapStore';
-import { geoToLocal, isInSoldenBounds } from '@/lib/geo/coordinates';
+import { geoToLocal, isInRegionBounds } from '@/lib/geo/coordinates';
 import { cn } from '@/lib/utils';
 
 /**
@@ -15,8 +15,8 @@ export function LocationButton() {
   const userLocation = useGeolocationStore((s) => s.userLocation);
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget);
 
-  // Check if user is within Sölden ski area bounds
-  const isInBounds = userLocation ? isInSoldenBounds(userLocation[0], userLocation[1]) : true; // Default to true when no location
+  // Check if user is within the active region bounds
+  const isInBounds = userLocation ? isInRegionBounds(userLocation[0], userLocation[1]) : true; // Default to true when no location
 
   const handleClick = () => {
     if (isTracking) {
@@ -131,7 +131,7 @@ export function LocationButton() {
       {isTracking && !error && !isInBounds && (
         <div className="flex items-center gap-2 rounded bg-amber-500/20 p-2 text-xs text-amber-300">
           <MapPinOff className="h-4 w-4 flex-shrink-0" />
-          <span>You are outside the Sölden ski area</span>
+          <span>You are outside the ski area</span>
         </div>
       )}
 

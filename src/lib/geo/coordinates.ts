@@ -3,7 +3,7 @@
  * lat/lon coordinates and local 3D scene coordinates
  *
  * Uses getRegionCenter/getRegionBounds from the app config store,
- * which fall back to Sölden defaults when no override is set.
+ * which fall back to DEFAULT_REGION when no override is set.
  */
 
 import { getRegionCenter, getRegionBounds } from '@/stores/useAppConfigStore';
@@ -122,9 +122,6 @@ export function getLocalBounds() {
   };
 }
 
-/** @deprecated Use getLocalBounds() instead */
-export const getSoldenBounds = getLocalBounds;
-
 /**
  * Check if a geographic coordinate is within the active region bounds
  */
@@ -134,6 +131,3 @@ export function isInRegionBounds(lat: number, lon: number): boolean {
     lat >= bounds.minLat && lat <= bounds.maxLat && lon >= bounds.minLon && lon <= bounds.maxLon
   );
 }
-
-/** @deprecated Use isInRegionBounds() instead */
-export const isInSoldenBounds = isInRegionBounds;

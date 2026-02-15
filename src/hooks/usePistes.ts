@@ -6,6 +6,7 @@
 
 import { useSkiData, type Piste, type SkiArea } from './useSkiData';
 import type { Difficulty } from '@/lib/api/overpass';
+import { DEFAULT_REGION } from '@/config/region';
 
 /**
  * Hook to get pistes from the combined ski data query
@@ -31,7 +32,7 @@ export function filterPistesByDifficulty(
 
 /**
  * Group pistes by ski area
- * Returns an array of { skiArea, pistes } sorted with Sölden first
+ * Returns an array of { skiArea, pistes } sorted with the default region first
  */
 export function groupPistesBySkiArea(pistes: Piste[]): {
   skiArea: SkiArea | null;
@@ -53,13 +54,13 @@ export function groupPistesBySkiArea(pistes: Piste[]): {
     }
   }
 
-  // Convert to array and sort (Sölden first, then alphabetically, unknown last)
+  // Convert to array and sort (default region first, then alphabetically, unknown last)
   return Array.from(groups.values()).sort((a, b) => {
     const nameA = a.skiArea?.name ?? 'zzz';
     const nameB = b.skiArea?.name ?? 'zzz';
 
-    if (nameA === 'Sölden') return -1;
-    if (nameB === 'Sölden') return 1;
+    if (nameA === DEFAULT_REGION.name) return -1;
+    if (nameB === DEFAULT_REGION.name) return 1;
 
     return nameA.localeCompare(nameB);
   });

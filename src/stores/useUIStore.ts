@@ -42,7 +42,7 @@ export const useUIStore = create<UIState>()(
       setControlsExpanded: (expanded) => set({ controlsExpanded: expanded }),
     }),
     {
-      name: 'solden-ui-state',
+      name: 'ski-map-ui-state',
       // Only persist the open/expanded states, not the functions
       partialize: (state) => ({
         sidebarOpen: state.sidebarOpen,

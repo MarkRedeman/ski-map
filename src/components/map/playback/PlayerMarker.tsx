@@ -167,7 +167,7 @@ export function PlayerMarker({ ride }: PlayerMarkerProps) {
       const terrainY = sampleElevation(elevationGrid, x, z);
       y = terrainY + TERRAIN_OFFSET;
     } else {
-      // Fallback: use GPS elevation relative to Sölden center, scaled (SCALE = 0.1)
+      // Fallback: use GPS elevation relative to region center, scaled (SCALE = 0.1)
       y = (position.elevation - getRegionCenter().elevation) * 0.1 + TERRAIN_OFFSET;
     }
 

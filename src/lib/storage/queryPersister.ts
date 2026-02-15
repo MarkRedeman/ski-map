@@ -8,7 +8,7 @@
 import { get, set, del } from 'idb-keyval';
 import type { PersistedClient, Persister } from '@tanstack/react-query-persist-client';
 
-const STORAGE_KEY = 'solden-query-cache';
+const STORAGE_KEY = 'ski-map-query-cache';
 
 /**
  * Creates an async persister that stores TanStack Query cache in IndexedDB

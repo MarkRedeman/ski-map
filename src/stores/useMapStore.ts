@@ -111,7 +111,7 @@ export const useMapStore = create<MapState>((set, get) => ({
   elevationGrid: null,
   setElevationGrid: (grid) => set({ elevationGrid: grid }),
 
-  // Default camera looking at Sölden from above
+  // Default camera looking at the ski area from above
   cameraPosition: [0, 500, 300],
   cameraTarget: [0, 0, 0],
   setCameraPosition: (position) => set({ cameraPosition: position }),

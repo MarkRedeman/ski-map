@@ -95,7 +95,7 @@ export function PWAInstallPrompt() {
 
         {/* Text content */}
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-white text-sm">Install Sölden Ski Nav</p>
+          <p className="font-semibold text-white text-sm">Install Ski Map</p>
           <p className="text-xs text-white/60">Works offline on the slopes</p>
         </div>
 

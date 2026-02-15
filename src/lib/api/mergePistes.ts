@@ -8,6 +8,7 @@
 
 import type { Piste, RawPiste } from './overpass';
 import type { Difficulty } from './overpass';
+import { DEFAULT_REGION } from '@/config/region';
 
 /**
  * Calculate distance between two coordinates in meters (Haversine formula)
@@ -139,9 +140,9 @@ export function mergePisteSegments(rawPistes: RawPiste[]): Piste[] {
     const areaB = b.skiArea?.name ?? 'zzz';
 
     if (areaA !== areaB) {
-      // Sölden first
-      if (areaA === 'Sölden') return -1;
-      if (areaB === 'Sölden') return 1;
+      // Default region first
+      if (areaA === DEFAULT_REGION.name) return -1;
+      if (areaB === DEFAULT_REGION.name) return 1;
       return areaA.localeCompare(areaB);
     }
 

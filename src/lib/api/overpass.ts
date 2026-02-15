@@ -1,7 +1,7 @@
 /**
  * OpenStreetMap Overpass API client for fetching ski infrastructure data
  *
- * Fetches pistes, lifts, and POIs for the Sölden ski area
+ * Fetches pistes, lifts, and POIs for the active region
  */
 
 import { getRegionBbox } from '@/stores/useAppConfigStore';

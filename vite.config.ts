@@ -15,9 +15,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['ski-icon.svg', 'pwa-192x192.svg', 'pwa-512x512.svg'],
       manifest: {
-        name: 'Sölden Navigator',
-        short_name: 'Ski Nav',
-        description: 'Navigate the slopes of Sölden with 3D terrain visualization',
+        name: 'Ski Map',
+        short_name: 'Ski Map',
+        description: '3D ski map with terrain visualization and ride playback',
         theme_color: '#f59e0b',
         background_color: '#ffffff',
         display: 'standalone',

@@ -1,7 +1,7 @@
 {
-  "name": "solden-navigation",
+  "name": "ski-map",
   "version": "1.0.0",
-  "description": "Ski navigation app for Sölden with 3D terrain visualization",
+  "description": "3D ski map with terrain visualization, piste filtering, and ride playback",
   "type": "module",
   "scripts": {
     "dev": "vite",

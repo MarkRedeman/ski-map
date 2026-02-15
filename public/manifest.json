@@ -1,7 +1,7 @@
 {
-  "name": "Sölden Navigator",
-  "short_name": "Ski Nav",
-  "description": "Navigate the slopes of Sölden with 3D terrain visualization. Works offline on the mountain!",
+  "name": "Ski Map",
+  "short_name": "Ski Map",
+  "description": "3D ski map with terrain visualization and ride playback. Works offline on the mountain!",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
