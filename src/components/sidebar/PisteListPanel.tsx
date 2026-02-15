@@ -24,6 +24,7 @@ import { type Difficulty } from '@/lib/api/overpass';
 import { LIFT_TYPE_CONFIG } from '@/components/map/Lifts';
 import { DIFFICULTY_COLORS } from '@/config/theme';
 import { geoToLocal } from '@/lib/geo/coordinates';
+import { sampleElevation } from '@/lib/geo/elevationGrid';
 import type {
   Piste,
   Lift,
@@ -286,6 +287,7 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
   const setHoveredEntity = useMapStore((s) => s.setHoveredEntity);
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget);
   const setHoveredSkiArea = useMapStore((s) => s.setHoveredSkiArea);
+  const elevationGrid = useMapStore((s) => s.elevationGrid);
 
   // Get current search params to preserve other params when selecting
   const currentSearch = useSearch({ strict: false }) as SearchParams;
@@ -341,10 +343,12 @@ function PisteList({ searchQuery, enabledDifficulties }: PisteListProps) {
   // Handle camera focus when clicking (Link handles selection)
   const handleCameraFocus = useCallback(
     (piste: Piste) => {
-      const position = getPisteCenter(piste);
+      const [x, , z] = getPisteCenter(piste);
+      const y = elevationGrid ? sampleElevation(elevationGrid, x, z) : 0;
+      const position: [number, number, number] = [x, y, z];
       setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.piste });
     },
-    [setCameraFocusTarget]
+    [setCameraFocusTarget, elevationGrid]
   );
 
   if (isLoading) {
@@ -475,6 +479,7 @@ function LiftList({ searchQuery, visibleLiftTypes }: LiftListProps) {
   const selectedLiftId = useMapStore((s) => s.getSelectedId('lift'));
   const setHoveredEntity = useMapStore((s) => s.setHoveredEntity);
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget);
+  const elevationGrid = useMapStore((s) => s.elevationGrid);
 
   // Get current search params to preserve other params when selecting
   const currentSearch = useSearch({ strict: false }) as SearchParams;
@@ -504,13 +509,15 @@ function LiftList({ searchQuery, visibleLiftTypes }: LiftListProps) {
     [currentSearch]
   );
 
-  // Handle camera focus when clicking
+  // Handle camera focus when clicking - sample terrain height for accurate centering
   const handleCameraFocus = useCallback(
     (lift: Lift) => {
-      const position = getLiftCenter(lift);
+      const [x, , z] = getLiftCenter(lift);
+      const y = elevationGrid ? sampleElevation(elevationGrid, x, z) : 0;
+      const position: [number, number, number] = [x, y, z];
       setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.lift });
     },
-    [setCameraFocusTarget]
+    [setCameraFocusTarget, elevationGrid]
   );
 
   if (isLoading) {
@@ -740,6 +747,7 @@ function PlaceList({ searchQuery }: PlaceListProps) {
   const selectedPlaceId = useMapStore((s) => s.getSelectedId('place'));
   const setHoveredEntity = useMapStore((s) => s.setHoveredEntity);
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget);
+  const elevationGrid = useMapStore((s) => s.elevationGrid);
 
   // Get current search params to preserve other params when selecting
   const currentSearch = useSearch({ strict: false }) as SearchParams;
@@ -776,13 +784,15 @@ function PlaceList({ searchQuery }: PlaceListProps) {
     [currentSearch]
   );
 
-  // Handle camera focus when clicking
+  // Handle camera focus when clicking - sample terrain height for accurate centering
   const handleCameraFocus = useCallback(
     (place: Place) => {
-      const position = geoToLocal(place.lat, place.lon, 0);
+      const [x, , z] = geoToLocal(place.lat, place.lon, 0);
+      const y = elevationGrid ? sampleElevation(elevationGrid, x, z) : 0;
+      const position: [number, number, number] = [x, y, z];
       setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.place });
     },
-    [setCameraFocusTarget]
+    [setCameraFocusTarget, elevationGrid]
   );
 
   if (isLoading) {
@@ -937,6 +947,7 @@ function RestaurantList({ searchQuery }: RestaurantListProps) {
   const selectedRestaurantId = useMapStore((s) => s.getSelectedId('restaurant'));
   const setHoveredEntity = useMapStore((s) => s.setHoveredEntity);
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget);
+  const elevationGrid = useMapStore((s) => s.elevationGrid);
 
   // Get current search params to preserve other params when selecting
   const currentSearch = useSearch({ strict: false }) as SearchParams;
@@ -998,13 +1009,15 @@ function RestaurantList({ searchQuery }: RestaurantListProps) {
     [currentSearch]
   );
 
-  // Handle camera focus when clicking
+  // Handle camera focus when clicking - sample terrain height for accurate centering
   const handleCameraFocus = useCallback(
     (restaurant: Restaurant) => {
-      const position = geoToLocal(restaurant.lat, restaurant.lon, 0);
+      const [x, , z] = geoToLocal(restaurant.lat, restaurant.lon, 0);
+      const y = elevationGrid ? sampleElevation(elevationGrid, x, z) : 0;
+      const position: [number, number, number] = [x, y, z];
       setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.restaurant });
     },
-    [setCameraFocusTarget]
+    [setCameraFocusTarget, elevationGrid]
   );
 
   if (isLoading) {

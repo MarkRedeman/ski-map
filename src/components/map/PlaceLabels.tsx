@@ -31,27 +31,27 @@ function geoDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
 }
 
 /**
- * Get which place types to show based on camera height
+ * Get which place types to show based on zoom distance
  *
- * Uses camera Y position (height above terrain plane) instead of distance
- * from origin, so visibility is stable during camera rotation.
+ * Uses distance from camera to orbit target, which is stable during
+ * rotation and only changes on actual zoom in/out.
  */
-function getVisiblePlaceTypes(cameraHeight: number): Set<PlaceType> {
-  if (cameraHeight < 250) {
+function getVisiblePlaceTypes(zoomDistance: number): Set<PlaceType> {
+  if (zoomDistance < 500) {
     return new Set(['town', 'village', 'hamlet']); // Show all
   }
-  if (cameraHeight < 600) {
+  if (zoomDistance < 1500) {
     return new Set(['town', 'village']); // Towns and villages
   }
   return new Set(['town']); // Only towns when far away
 }
 
 /**
- * Quantize camera height to threshold levels to avoid constant re-renders
+ * Quantize zoom distance to threshold levels to avoid constant re-renders
  */
-function getDistanceLevel(cameraHeight: number): number {
-  if (cameraHeight < 250) return 0;
-  if (cameraHeight < 600) return 1;
+function getDistanceLevel(zoomDistance: number): number {
+  if (zoomDistance < 500) return 0;
+  if (zoomDistance < 1500) return 1;
   return 2;
 }
 
@@ -106,13 +106,17 @@ export function PlaceLabels() {
   const elevationGrid = useMapStore((s) => s.elevationGrid);
   const showLabels = useMapStore((s) => s.showLabels);
 
-  // Track camera height level for filtering
+  // Track zoom level for filtering
   const [distanceLevel, setDistanceLevel] = useState(1);
 
-  // Update distance level based on camera height (Y position)
-  useFrame(({ camera }) => {
-    const height = camera.position.y;
-    const newLevel = getDistanceLevel(height);
+  // Update distance level based on zoom distance (camera-to-orbit-target distance)
+  // This is stable during rotation and only changes on actual zoom in/out
+  useFrame(({ camera, controls }) => {
+    const orbitControls = controls as { target?: { distanceTo: (v: any) => number } } | null;
+    const zoomDistance = orbitControls?.target
+      ? camera.position.distanceTo(orbitControls.target as any)
+      : camera.position.length();
+    const newLevel = getDistanceLevel(zoomDistance);
     if (newLevel !== distanceLevel) {
       setDistanceLevel(newLevel);
     }
@@ -129,7 +133,7 @@ export function PlaceLabels() {
     if (!places || !showLabels) return [];
 
     const visibleTypes = getVisiblePlaceTypes(
-      distanceLevel === 0 ? 0 : distanceLevel === 1 ? 400 : 800
+      distanceLevel === 0 ? 0 : distanceLevel === 1 ? 1000 : 2000
     );
 
     return (

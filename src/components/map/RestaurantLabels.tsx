@@ -37,23 +37,23 @@ function geoDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
 }
 
 /**
- * Get max number of restaurants to show based on camera height level
+ * Get max number of restaurants to show based on zoom distance level
  *
- * Uses camera Y position (height above terrain plane) instead of distance
- * from origin, so the limit is stable during camera rotation.
+ * Uses distance from camera to orbit target, which is stable during
+ * rotation and only changes on actual zoom in/out.
  */
-function getMaxRestaurants(cameraHeight: number): number {
-  if (cameraHeight < 200) return Infinity; // Close: show all nearby
-  if (cameraHeight < 500) return 50; // Medium: generous limit
+function getMaxRestaurants(zoomDistance: number): number {
+  if (zoomDistance < 400) return Infinity; // Close: show all nearby
+  if (zoomDistance < 1000) return 50; // Medium: generous limit
   return 20; // Far: still show a good number
 }
 
 /**
- * Quantize camera height to threshold levels to avoid constant re-renders
+ * Quantize zoom distance to threshold levels to avoid constant re-renders
  */
-function getDistanceLevel(cameraHeight: number): number {
-  if (cameraHeight < 200) return 0;
-  if (cameraHeight < 500) return 1;
+function getDistanceLevel(zoomDistance: number): number {
+  if (zoomDistance < 400) return 0;
+  if (zoomDistance < 1000) return 1;
   return 2;
 }
 
@@ -120,13 +120,17 @@ export function RestaurantLabels() {
   const setSelectedEntity = useMapStore((s) => s.setSelectedEntity);
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget);
 
-  // Track camera height level for filtering
+  // Track zoom level for filtering
   const [distanceLevel, setDistanceLevel] = useState(1);
 
-  // Update distance level based on camera height (Y position)
-  useFrame(({ camera }) => {
-    const height = camera.position.y;
-    const newLevel = getDistanceLevel(height);
+  // Update distance level based on zoom distance (camera-to-orbit-target distance)
+  // This is stable during rotation and only changes on actual zoom in/out
+  useFrame(({ camera, controls }) => {
+    const orbitControls = controls as { target?: { distanceTo: (v: any) => number } } | null;
+    const zoomDistance = orbitControls?.target
+      ? camera.position.distanceTo(orbitControls.target as any)
+      : camera.position.length();
+    const newLevel = getDistanceLevel(zoomDistance);
     if (newLevel !== distanceLevel) {
       setDistanceLevel(newLevel);
     }
@@ -163,7 +167,7 @@ export function RestaurantLabels() {
   const visibleRestaurants = useMemo(() => {
     if (!restaurants || !showLabels || infrastructurePoints.length === 0) return [];
 
-    const maxCount = getMaxRestaurants(distanceLevel === 0 ? 0 : distanceLevel === 1 ? 350 : 600);
+    const maxCount = getMaxRestaurants(distanceLevel === 0 ? 0 : distanceLevel === 1 ? 700 : 1500);
 
     const filtered = restaurants
       // Only show restaurants near lifts or pistes
@@ -206,13 +210,16 @@ export function RestaurantLabels() {
   }, [restaurants, infrastructurePoints, elevationGrid, showLabels, distanceLevel]);
 
   // Handle selection and camera focus when clicking a pin
+  // Uses terrain sampling for accurate centering on mountainous terrain
   const handleSelect = useCallback(
     (restaurant: Restaurant) => {
       setSelectedEntity('restaurant', restaurant.id);
-      const position = geoToLocal(restaurant.lat, restaurant.lon, 0);
+      const [x, , z] = geoToLocal(restaurant.lat, restaurant.lon, 0);
+      const y = elevationGrid ? sampleElevation(elevationGrid, x, z) : 0;
+      const position: [number, number, number] = [x, y, z];
       setCameraFocusTarget({ position, distance: RESTAURANT_FOCUS_DISTANCE });
     },
-    [setSelectedEntity, setCameraFocusTarget]
+    [setSelectedEntity, setCameraFocusTarget, elevationGrid]
   );
 
   if (!showLabels || visibleRestaurants.length === 0) return null;

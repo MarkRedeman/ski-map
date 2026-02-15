@@ -33,24 +33,24 @@ function geoDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
 }
 
 /**
- * Get minimum elevation threshold based on camera height
- * Lower camera = show more peaks, higher camera = show only highest peaks
+ * Get minimum elevation threshold based on zoom distance
+ * Closer zoom = show more peaks, farther zoom = show only highest peaks
  *
- * Uses camera Y position (height above terrain plane) instead of distance
- * from origin, so the threshold is stable during camera rotation.
+ * Uses distance from camera to orbit target, which is stable during
+ * rotation and only changes on actual zoom in/out.
  */
-function getMinElevation(cameraHeight: number): number {
-  if (cameraHeight < 200) return 0; // Close: all nearby peaks
-  if (cameraHeight < 500) return 2600; // Medium: higher peaks
+function getMinElevation(zoomDistance: number): number {
+  if (zoomDistance < 400) return 0; // Close: all nearby peaks
+  if (zoomDistance < 1000) return 2600; // Medium: higher peaks
   return 2900; // Far: only major peaks
 }
 
 /**
- * Quantize camera height to threshold levels to avoid constant re-renders
+ * Quantize zoom distance to threshold levels to avoid constant re-renders
  */
-function getDistanceLevel(cameraHeight: number): number {
-  if (cameraHeight < 200) return 0;
-  if (cameraHeight < 500) return 1;
+function getDistanceLevel(zoomDistance: number): number {
+  if (zoomDistance < 400) return 0;
+  if (zoomDistance < 1000) return 1;
   return 2;
 }
 
@@ -80,13 +80,17 @@ export function PeakLabels() {
   const elevationGrid = useMapStore((s) => s.elevationGrid);
   const showLabels = useMapStore((s) => s.showLabels);
 
-  // Track camera height level for filtering (quantized to avoid constant re-renders)
+  // Track zoom level for filtering (quantized to avoid constant re-renders)
   const [distanceLevel, setDistanceLevel] = useState(2);
 
-  // Update distance level based on camera height (Y position)
-  useFrame(({ camera }) => {
-    const height = camera.position.y;
-    const newLevel = getDistanceLevel(height);
+  // Update distance level based on zoom distance (camera-to-orbit-target distance)
+  // This is stable during rotation and only changes on actual zoom in/out
+  useFrame(({ camera, controls }) => {
+    const orbitControls = controls as { target?: { distanceTo: (v: any) => number } } | null;
+    const zoomDistance = orbitControls?.target
+      ? camera.position.distanceTo(orbitControls.target as any)
+      : camera.position.length();
+    const newLevel = getDistanceLevel(zoomDistance);
     if (newLevel !== distanceLevel) {
       setDistanceLevel(newLevel);
     }
@@ -102,7 +106,9 @@ export function PeakLabels() {
   const visiblePeaks = useMemo(() => {
     if (!peaks || !showLabels || liftPoints.length === 0) return [];
 
-    const minElevation = getMinElevation(distanceLevel === 0 ? 0 : distanceLevel === 1 ? 350 : 600);
+    const minElevation = getMinElevation(
+      distanceLevel === 0 ? 0 : distanceLevel === 1 ? 700 : 1500
+    );
 
     return (
       peaks
