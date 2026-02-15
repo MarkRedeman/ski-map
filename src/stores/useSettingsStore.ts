@@ -19,8 +19,8 @@ const RESOLUTION_PRESETS: Record<ResolutionLevel, { zoom: number; segments: numb
 };
 
 /** Default terrain appearance values */
-export const DEFAULT_TERRAIN_BRIGHTNESS = 0.7;
-export const DEFAULT_TERRAIN_SATURATION = 0.5;
+export const DEFAULT_TERRAIN_BRIGHTNESS = 0.6;
+export const DEFAULT_TERRAIN_SATURATION = 0.75;
 
 /** Valid range for terrain brightness */
 export const TERRAIN_BRIGHTNESS_MIN = 0.3;

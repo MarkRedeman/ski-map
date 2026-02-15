@@ -10,6 +10,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Settings, RotateCcw, ExternalLink } from 'lucide-react';
 import { useAppConfigStore } from '@/stores/useAppConfigStore';
 import { SOLDEN_REGION } from '@/config/region';
+import { TerrainSettings } from '@/components/map/panels/TerrainSettings';
 
 interface SettingsPanelProps {
   open: boolean;
@@ -129,6 +130,13 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
       <div className="p-4">
         <h2 className="mb-3 text-sm font-semibold text-amber-500">Settings</h2>
 
+        {/* Terrain Appearance */}
+        <section className="mb-4">
+          <TerrainSettings />
+        </section>
+
+        <hr className="mb-4 border-white/10" />
+
         {/* Mapbox Token */}
         <section className="mb-4">
           <div className="mb-1.5 flex items-center justify-between">
@@ -141,7 +149,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               Reset
             </button>
           </div>
-          <p className="mb-1.5 text-[10px] leading-tight text-white/40">
+          <p className="mb-1.5 text-[10px] leading-tight text-white/50">
             Override the default token. Get one at{' '}
             <a
               href="https://account.mapbox.com/access-tokens/"
@@ -158,9 +166,11 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             value={token}
             onChange={(e) => setToken(e.target.value)}
             placeholder="pk.eyJ1Ijo..."
-            className="w-full rounded bg-black/50 px-2 py-1.5 font-mono text-[11px] text-white/80 placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+            className="w-full rounded bg-white/10 px-2 py-1.5 font-mono text-[11px] text-white/90 placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
           />
         </section>
+
+        <hr className="mb-4 border-white/10" />
 
         {/* Region Bounds */}
         <section className="mb-4">
@@ -174,6 +184,10 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               Reset to Sölden
             </button>
           </div>
+          <p className="mb-1.5 text-[10px] leading-tight text-white/50">
+            Geographic bounding box for terrain tiles and OSM data. Leave empty to use Sölden
+            defaults.
+          </p>
           <div className="grid grid-cols-2 gap-1.5">
             <NumberInput
               label="North"
@@ -205,6 +219,9 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
         {/* Region Center */}
         <section className="mb-4">
           <label className="mb-1.5 block text-xs font-semibold text-white">Region Center</label>
+          <p className="mb-1.5 text-[10px] leading-tight text-white/50">
+            Origin point for the 3D coordinate system. Elevation is in meters above sea level.
+          </p>
           <div className="grid grid-cols-3 gap-1.5">
             <NumberInput
               label="Lat"
@@ -226,6 +243,8 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             />
           </div>
         </section>
+
+        <hr className="mb-4 border-white/10" />
 
         {/* Apply */}
         <button
@@ -256,7 +275,7 @@ function NumberInput({
 }) {
   return (
     <div>
-      <span className="mb-0.5 block text-[10px] text-white/40">{label}</span>
+      <span className="mb-0.5 block text-[10px] text-white/60">{label}</span>
       <input
         type="text"
         inputMode="decimal"
@@ -269,7 +288,7 @@ function NumberInput({
           }
         }}
         placeholder={placeholder}
-        className="w-full rounded bg-black/50 px-1.5 py-1 text-[11px] text-white/80 placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+        className="w-full rounded bg-white/10 px-1.5 py-1 text-[11px] text-white/90 placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
       />
     </div>
   );

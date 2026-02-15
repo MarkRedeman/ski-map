@@ -122,7 +122,7 @@ export const LINE_STYLE = {
   /** Default line opacity */
   opacity: 1.0,
   /** Dimmed opacity when another entity is active */
-  dimmedOpacity: 0.4,
+  dimmedOpacity: 0.7,
   /** Shadow outline color */
   shadowColor: '#000000',
   /** Shadow outline opacity */
