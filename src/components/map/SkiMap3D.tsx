@@ -3,8 +3,8 @@ import { OrbitControls, Environment, GizmoHelper, GizmoViewport } from '@react-t
 import { Suspense, useState, useCallback } from 'react';
 import { Terrain3D } from './Terrain3D';
 import { ContourTerrain } from './ContourTerrain';
-import { Pistes } from './Pistes';
-import { Lifts } from './Lifts';
+import { Pistes } from './places/Pistes';
+import { Lifts } from './places/Lifts';
 import { UserMarker } from './UserMarker';
 import { RunPath } from './RunPath';
 import { PlayerMarker } from './playback/PlayerMarker';
@@ -15,12 +15,12 @@ import { InfoPanel } from './panels/InfoPanel';
 import { ProximitySelector } from './ProximitySelector';
 import { KeyboardControls } from './KeyboardControls';
 import { CompassController, CompassUI } from './panels/Compass';
-import { PeakLabels } from './PeakLabels';
-import { VillageLabels } from './VillageLabels';
-import { RestaurantLabels } from './RestaurantLabels';
+import { PeakLabels } from './places/PeakLabels';
+import { VillageLabels } from './places/VillageLabels';
+import { RestaurantLabels } from './places/RestaurantLabels';
 import { MapControls } from './panels/Controls';
 import { CameraNavigator } from './CameraNavigator';
-import { SkiAreaBoundary } from './SkiAreaBoundary';
+import { SkiAreaBoundary } from './places/SkiAreaBoundary';
 import { useSelectedRun } from '@/hooks/useRuns';
 import { useDifficultyFilter } from '@/hooks/useDifficultyFilter';
 

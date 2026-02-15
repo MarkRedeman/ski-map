@@ -7,9 +7,6 @@ import { coordsToLocal } from '@/lib/geo/coordinates';
 import { sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid';
 import { LIFT_COLORS, LINE_STYLE } from '@/config/theme';
 
-/** Re-export for consumers that import from Lifts.tsx */
-export const LIFT_TYPE_CONFIG = LIFT_COLORS;
-
 /** Height offset above terrain for lift cables (in scene units, ~100m real) */
 const LIFT_CABLE_OFFSET = 10;
 /** Height offset above terrain for station buildings */
@@ -44,7 +41,7 @@ function useZoomScale(): number {
  * Get the config for a lift type, with fallback to default
  */
 function getLiftConfig(type: string): { color: string; colorHighlight: string; icon: string } {
-  return LIFT_TYPE_CONFIG[type as LiftType] ?? LIFT_TYPE_CONFIG['Lift'];
+  return LIFT_COLORS[type as LiftType] ?? LIFT_COLORS['Lift'];
 }
 
 /**

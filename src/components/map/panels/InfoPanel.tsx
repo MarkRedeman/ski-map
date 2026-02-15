@@ -20,8 +20,7 @@ import { usePeaks } from '@/hooks/usePeaks';
 import { useVillages } from '@/hooks/useVillages';
 import { useRestaurants } from '@/hooks/useRestaurants';
 import type { RestaurantType } from '@/lib/api/overpass';
-import { LIFT_TYPE_CONFIG } from '../Lifts';
-import { PISTE_DIFFICULTY_CONFIG } from '../Pistes';
+import { LIFT_TYPE_CONFIG, PISTE_DIFFICULTY_CONFIG } from '@/config/theme';
 import { Panel } from './Panel';
 
 // Common layout component for all info panels

@@ -6,7 +6,7 @@ import { useMemo, useCallback } from 'react';
 import { Link, useSearch } from '@tanstack/react-router';
 import { useLifts } from '@/hooks/useLifts';
 import { useMapStore, type LiftType } from '@/stores/useMapStore';
-import { LIFT_TYPE_CONFIG } from '@/components/map/Lifts';
+import { LIFT_TYPE_CONFIG } from '@/config/theme';
 import { geoToLocal } from '@/lib/geo/coordinates';
 import { sampleElevation } from '@/lib/geo/elevationGrid';
 import type { Lift } from '@/lib/api/overpass';

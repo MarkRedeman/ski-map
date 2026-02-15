@@ -29,8 +29,7 @@ import { ALL_DIFFICULTIES, type Difficulty, type RestaurantType } from '@/lib/ap
 import { useDifficultyFilter } from '@/hooks/useDifficultyFilter';
 import { geoToLocal } from '@/lib/geo/coordinates';
 import { cn } from '@/lib/utils';
-import { LIFT_TYPE_CONFIG } from '../Lifts';
-import { PISTE_DIFFICULTY_CONFIG } from '../Pistes';
+import { LIFT_TYPE_CONFIG, PISTE_DIFFICULTY_CONFIG } from '@/config/theme';
 import { Panel, PANEL_CLASSES } from './Panel';
 
 const RESOLUTION_LEVELS: ResolutionLevel[] = ['1x', '2x', '4x', '8x', '16x'];

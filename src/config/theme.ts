@@ -111,6 +111,16 @@ export const LOADING = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Config aliases (convenience re-exports for sidebar / panel consumers)
+// ---------------------------------------------------------------------------
+
+/** Lift type config: icon, color, highlight color — keyed by LiftType */
+export const LIFT_TYPE_CONFIG = LIFT_COLORS;
+
+/** Piste difficulty config: icon, label, color, highlight color — keyed by Difficulty */
+export const PISTE_DIFFICULTY_CONFIG = PISTE_COLORS;
+
+// ---------------------------------------------------------------------------
 // Line rendering style (shared by pistes and lifts)
 // ---------------------------------------------------------------------------
 

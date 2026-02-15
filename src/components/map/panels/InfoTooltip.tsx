@@ -13,8 +13,7 @@ import { usePeaks } from '@/hooks/usePeaks';
 import { useVillages } from '@/hooks/useVillages';
 import { coordsToLocal, geoToLocal } from '@/lib/geo/coordinates';
 import { sampleElevation } from '@/lib/geo/elevationGrid';
-import { PISTE_DIFFICULTY_CONFIG } from '../Pistes';
-import { LIFT_TYPE_CONFIG } from '../Lifts';
+import { LIFT_TYPE_CONFIG, PISTE_DIFFICULTY_CONFIG } from '@/config/theme';
 import { Panel } from './Panel';
 import type { ElevationGrid } from '@/lib/geo/elevationGrid';
 

@@ -4,7 +4,7 @@
 
 import { ALL_LIFT_TYPES, type LiftType } from '@/stores/useMapStore';
 import { type Difficulty } from '@/lib/api/overpass';
-import { LIFT_TYPE_CONFIG } from '@/components/map/Lifts';
+import { LIFT_TYPE_CONFIG } from '@/config/theme';
 import { DIFFICULTY_COLORS } from '@/config/theme';
 
 export type Tab = 'pistes' | 'lifts' | 'peaks' | 'villages' | 'restaurants';

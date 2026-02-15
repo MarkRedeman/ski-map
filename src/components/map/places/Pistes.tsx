@@ -8,14 +8,10 @@ import { useMapStore } from '@/stores/useMapStore';
 import { coordsToLocal } from '@/lib/geo/coordinates';
 import { sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid';
 import {
-  PISTE_COLORS,
   DIFFICULTY_COLORS,
   DIFFICULTY_COLORS_HIGHLIGHT,
   LINE_STYLE,
 } from '@/config/theme';
-
-/** Re-export for consumers that import from Pistes.tsx */
-export const PISTE_DIFFICULTY_CONFIG = PISTE_COLORS;
 
 /**
  * Hook to calculate zoom-based line width scaling
