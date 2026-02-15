@@ -16,7 +16,7 @@ import { Link, useSearch } from '@tanstack/react-router';
 import { usePistes, groupPistesBySkiArea } from '@/hooks/usePistes';
 import { useLifts } from '@/hooks/useLifts';
 import { usePeaks } from '@/hooks/usePeaks';
-import { usePlaces } from '@/hooks/usePlaces';
+import { useVillages } from '@/hooks/useVillages';
 import { useRestaurants } from '@/hooks/useRestaurants';
 import { useMapStore, ALL_LIFT_TYPES, type LiftType } from '@/stores/useMapStore';
 import { useDifficultyFilter } from '@/hooks/useDifficultyFilter';
@@ -29,7 +29,7 @@ import type {
   Piste,
   Lift,
   Peak,
-  Place,
+  Village,
   Restaurant,
   RestaurantType,
   SkiArea,
@@ -268,7 +268,7 @@ export function PisteListPanel() {
           <LiftList searchQuery={searchQuery} visibleLiftTypes={visibleLiftTypes} />
         )}
         {activeTab === 'peaks' && <PeakList searchQuery={searchQuery} />}
-        {activeTab === 'villages' && <PlaceList searchQuery={searchQuery} />}
+        {activeTab === 'villages' && <VillageList searchQuery={searchQuery} />}
         {activeTab === 'restaurants' && <RestaurantList searchQuery={searchQuery} />}
       </div>
     </div>
@@ -740,14 +740,14 @@ function PeakListItem({
   );
 }
 
-interface PlaceListProps {
+interface VillageListProps {
   searchQuery: string;
 }
 
-function PlaceList({ searchQuery }: PlaceListProps) {
-  const { data: places, isLoading } = usePlaces();
-  const hoveredPlaceId = useMapStore((s) => s.getHoveredId('place'));
-  const selectedPlaceId = useMapStore((s) => s.getSelectedId('place'));
+function VillageList({ searchQuery }: VillageListProps) {
+  const { data: villages, isLoading } = useVillages();
+  const hoveredVillageId = useMapStore((s) => s.getHoveredId('village'));
+  const selectedVillageId = useMapStore((s) => s.getSelectedId('village'));
   const setHoveredEntity = useMapStore((s) => s.setHoveredEntity);
   const setSelectedEntity = useMapStore((s) => s.setSelectedEntity);
   const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget);
@@ -756,15 +756,15 @@ function PlaceList({ searchQuery }: PlaceListProps) {
   // Get current search params to preserve other params when selecting
   const currentSearch = useSearch({ strict: false }) as SearchParams;
 
-  const filteredPlaces = useMemo(() => {
-    if (!places) return [];
+  const filteredVillages = useMemo(() => {
+    if (!villages) return [];
 
     return (
-      places
-        .filter((place) => {
+      villages
+        .filter((village) => {
           if (!searchQuery) return true;
           const query = searchQuery.toLowerCase();
-          return place.name.toLowerCase().includes(query);
+          return village.name.toLowerCase().includes(query);
         })
         // Sort: towns first, then villages, then hamlets
         .sort((a, b) => {
@@ -774,15 +774,15 @@ function PlaceList({ searchQuery }: PlaceListProps) {
           return a.name.localeCompare(b.name);
         })
     );
-  }, [places, searchQuery]);
+  }, [villages, searchQuery]);
 
-  // Generate Link search params for a place
+  // Generate Link search params for a village
   const getSelectSearch = useCallback(
-    (place: Place) => {
-      const placeOsmId = place.id.replace('place-', '');
+    (village: Village) => {
+      const villageOsmId = village.id.replace('village-', '');
       return {
         ...currentSearch,
-        select: `place:${placeOsmId}`,
+        select: `village:${villageOsmId}`,
       };
     },
     [currentSearch]
@@ -791,9 +791,9 @@ function PlaceList({ searchQuery }: PlaceListProps) {
   // Handle camera focus and selection when clicking
   // Set selection in store immediately (don't wait for URL sync debounce)
   const handleCameraFocus = useCallback(
-    (place: Place) => {
-      setSelectedEntity('place', place.id);
-      const [x, , z] = geoToLocal(place.lat, place.lon, 0);
+    (village: Village) => {
+      setSelectedEntity('village', village.id);
+      const [x, , z] = geoToLocal(village.lat, village.lon, 0);
       const y = elevationGrid ? sampleElevation(elevationGrid, x, z) : 0;
       const position: [number, number, number] = [x, y, z];
       setCameraFocusTarget({ position, distance: CAMERA_DISTANCES.place });
@@ -810,29 +810,29 @@ function PlaceList({ searchQuery }: PlaceListProps) {
     );
   }
 
-  if (filteredPlaces.length === 0) {
+  if (filteredVillages.length === 0) {
     return <div className="p-8 text-center text-sm text-white/40">No villages found</div>;
   }
 
   return (
     <>
-      {filteredPlaces.map((place) => (
-        <PlaceListItem
-          key={place.id}
-          place={place}
-          isHovered={hoveredPlaceId === place.id}
-          isSelected={selectedPlaceId === place.id}
-          onHover={(id) => setHoveredEntity('place', id)}
-          searchParams={getSelectSearch(place)}
-          onCameraFocus={() => handleCameraFocus(place)}
+      {filteredVillages.map((village) => (
+        <VillageListItem
+          key={village.id}
+          village={village}
+          isHovered={hoveredVillageId === village.id}
+          isSelected={selectedVillageId === village.id}
+          onHover={(id) => setHoveredEntity('village', id)}
+          searchParams={getSelectSearch(village)}
+          onCameraFocus={() => handleCameraFocus(village)}
         />
       ))}
     </>
   );
 }
 
-interface PlaceListItemProps {
-  place: Place;
+interface VillageListItemProps {
+  village: Village;
   isHovered: boolean;
   isSelected: boolean;
   onHover: (id: string | null) => void;
@@ -840,16 +840,16 @@ interface PlaceListItemProps {
   onCameraFocus: () => void;
 }
 
-function PlaceListItem({
-  place,
+function VillageListItem({
+  village,
   isHovered,
   isSelected,
   onHover,
   searchParams,
   onCameraFocus,
-}: PlaceListItemProps) {
+}: VillageListItemProps) {
   const getIcon = () => {
-    switch (place.type) {
+    switch (village.type) {
       case 'town':
         return '🏘️';
       case 'village':
@@ -860,7 +860,7 @@ function PlaceListItem({
   };
 
   const getTypeLabel = () => {
-    switch (place.type) {
+    switch (village.type) {
       case 'town':
         return 'Town';
       case 'village':
@@ -875,20 +875,20 @@ function PlaceListItem({
       to="/"
       search={searchParams}
       onClick={onCameraFocus}
-      onMouseEnter={() => onHover(place.id)}
+      onMouseEnter={() => onHover(village.id)}
       onMouseLeave={() => onHover(null)}
       className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-white/5 transition-colors ${
         isSelected ? 'bg-white/20' : isHovered ? 'bg-white/10' : 'hover:bg-white/10'
       }`}
     >
-      {/* Place icon */}
+      {/* Village icon */}
       <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0 bg-orange-500/20">
         <span className="text-sm">{getIcon()}</span>
       </div>
 
       {/* Name and details */}
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-white truncate">{place.name}</div>
+        <div className="text-sm font-medium text-white truncate">{village.name}</div>
         <div className="text-xs text-white/40">{getTypeLabel()}</div>
       </div>
 

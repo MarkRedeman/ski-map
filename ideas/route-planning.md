@@ -14,7 +14,7 @@
 
 | Decision                 | Choice                                        | Rationale                                                                                                                                     |
 | ------------------------ | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Step types               | Lift, Piste, or Break (peak/place/restaurant) | Breaks mark rest points. Restaurant entities are now available as break-stop sources.                                                         |
+| Step types               | Lift, Piste, or Break (peak/village/restaurant) | Breaks mark rest points. Restaurant entities are now available as break-stop sources.                                                         |
 | Adding steps             | Dedicated planning mode                       | Guided: sidebar shows nearby entities filtered by proximity to last step's endpoint. Both sidebar list and 3D map highlighting.               |
 | Connectivity validation  | Warn but allow                                | Warning icon on steps >500m from previous step's endpoint, but user isn't blocked.                                                            |
 | Multiple plans           | One plan at a time                            | Simple. Can clear and start over.                                                                                                             |
@@ -39,7 +39,7 @@ type PlanStepType = 'lift' | 'piste' | 'break';
 
 interface PlanStep {
   type: PlanStepType;
-  id: string; // Entity ID (e.g. "lift-12345", "piste-67890", "peak-111", "place-222", "restaurant-333")
+  id: string; // Entity ID (e.g. "lift-12345", "piste-67890", "peak-111", "village-222", "restaurant-333")
 }
 ```
 
@@ -69,7 +69,7 @@ function getStepEndpoint(step: PlanStep, skiData: ProcessedSkiData): [number, nu
 | --------- | ----------------------------------------------------- |
 | `lift`    | Last station coordinates (top of lift)                |
 | `piste`   | Last coordinate of the last segment (bottom of piste) |
-| `break`   | The peak/place `[lat, lon]` coordinates               |
+| `break`   | The peak/village `[lat, lon]` coordinates               |
 
 For the **first step** (empty plan), no proximity filtering — user sees all entities.
 
@@ -81,14 +81,14 @@ For the **first step** (empty plan), no proximity filtering — user sees all en
 
 **Lift connection points:** All station coordinates in `stations[]`.
 
-**Peak/Place connection points:** Their `[lat, lon]` position.
+**Peak/Village connection points:** Their `[lat, lon]` position.
 
 ```ts
 function getNearbyEntities(
   endpoint: [number, number],
   skiData: ProcessedSkiData,
   radiusMeters: number = 500
-): { pistes: Piste[]; lifts: Lift[]; peaks: Peak[]; places: Place[] };
+): { pistes: Piste[]; lifts: Lift[]; peaks: Peak[]; villages: Village[] };
 ```
 
 ### Disconnection Warning
@@ -110,7 +110,7 @@ For each step (except the first), compute distance from previous step's endpoint
 | Lift          | `L`    | OSM way ID (numeric part)  | `L:123456`                      |
 | Piste         | `P`    | Piste merged ID string     | `P:blue-Rettenbachjoch-r1-4567` |
 | Break (peak)  | `K`    | OSM node ID (numeric part) | `K:345678`                      |
-| Break (place) | `V`    | OSM node ID (numeric part) | `V:901234`                      |
+| Break (village) | `V`    | OSM node ID (numeric part) | `V:901234`                      |
 
 Steps are comma-separated. Order preserved.
 
@@ -195,7 +195,7 @@ NEARBY                    <- 500m ->
 +---------------------------------+
 ```
 
-- Tabs filter by entity type (lifts, pistes, breaks = peaks + places)
+- Tabs filter by entity type (lifts, pistes, breaks = peaks + villages)
 - Sorted by distance (closest first)
 - `[+]` appends to plan
 - If plan empty, show all entities

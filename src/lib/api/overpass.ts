@@ -263,10 +263,10 @@ function parsePeaks(elements: OSMElement[]): Peak[] {
 }
 
 /**
- * Parse places (villages, hamlets, etc) from Overpass response
+ * Parse villages (villages, hamlets, etc) from Overpass response
  */
-function parsePlaces(elements: OSMElement[]): Place[] {
-  const places: Place[] = [];
+function parseVillages(elements: OSMElement[]): Village[] {
+  const villages: Village[] = [];
 
   for (const element of elements) {
     if (element.type !== 'node') continue;
@@ -275,8 +275,8 @@ function parsePlaces(elements: OSMElement[]): Place[] {
     const name = element.tags.name;
     if (!name) continue;
 
-    places.push({
-      id: `place-${element.id}`,
+    villages.push({
+      id: `village-${element.id}`,
       name,
       lat: element.lat,
       lon: element.lon,
@@ -284,7 +284,7 @@ function parsePlaces(elements: OSMElement[]): Place[] {
     });
   }
 
-  return places;
+  return villages;
 }
 
 /**
@@ -532,8 +532,8 @@ export interface Peak {
   elevation?: number;
 }
 
-/** Place/POI data */
-export interface Place {
+/** Village/hamlet/town data */
+export interface Village {
   id: string;
   name: string;
   lat: number;
@@ -561,7 +561,7 @@ export interface SkiData {
   pistes: RawPiste[];
   lifts: Lift[];
   peaks: Peak[];
-  places: Place[];
+  villages: Village[];
   restaurants: Restaurant[];
   skiAreaPolygons: SkiAreaPolygon[];
 }
@@ -585,7 +585,7 @@ function buildCombinedQuery(): string {
   relation["landuse"="winter_sports"](${south},${west},${north},${east});
   relation["site"="piste"](${south},${west},${north},${east});
   
-  // Peaks and places
+  // Peaks and villages
   node["natural"="peak"](${south},${west},${north},${east});
   node["place"~"^(village|hamlet|locality|isolated_dwelling)$"](${south},${west},${north},${east});
   
@@ -622,19 +622,19 @@ export async function fetchAllSkiData(): Promise<SkiData> {
   const pistes = parsePistes(response.elements);
   const lifts = parseLifts(response.elements);
   const peaks = parsePeaks(response.elements);
-  const places = parsePlaces(response.elements);
+  const villages = parseVillages(response.elements);
   const restaurants = parseRestaurants(response.elements, nodes);
   const skiAreaPolygons = parseSkiAreaPolygons(response.elements, nodes);
 
   console.log(
-    `[Overpass] Loaded: ${pistes.length} pistes, ${lifts.length} lifts, ${peaks.length} peaks, ${places.length} places, ${restaurants.length} restaurants, ${skiAreaPolygons.length} ski areas`
+    `[Overpass] Loaded: ${pistes.length} pistes, ${lifts.length} lifts, ${peaks.length} peaks, ${villages.length} villages, ${restaurants.length} restaurants, ${skiAreaPolygons.length} ski areas`
   );
 
   return {
     pistes,
     lifts,
     peaks,
-    places,
+    villages,
     restaurants,
     skiAreaPolygons,
   };

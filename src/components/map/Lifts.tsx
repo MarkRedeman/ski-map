@@ -112,7 +112,7 @@ const LiftLine = memo(function LiftLine({
   coordinates,
   isHovered,
   isSelected,
-  dimmed,
+  dimmed: _dimmed,
   elevationGrid,
   zoomScale,
 }: LiftLineProps) {

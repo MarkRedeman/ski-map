@@ -10,7 +10,7 @@ import { useMapStore } from '@/stores/useMapStore';
 import { usePistes } from '@/hooks/usePistes';
 import { useLifts } from '@/hooks/useLifts';
 import { usePeaks } from '@/hooks/usePeaks';
-import { usePlaces } from '@/hooks/usePlaces';
+import { useVillages } from '@/hooks/useVillages';
 import { coordsToLocal, geoToLocal } from '@/lib/geo/coordinates';
 import { sampleElevation } from '@/lib/geo/elevationGrid';
 import { PISTE_DIFFICULTY_CONFIG } from '../Pistes';
@@ -188,28 +188,28 @@ function PeakTooltip({ id }: { id: string }) {
   );
 }
 
-// Place tooltip
-function PlaceTooltip({ id }: { id: string }) {
-  const { data: places } = usePlaces();
+// Village tooltip
+function VillageTooltip({ id }: { id: string }) {
+  const { data: villages } = useVillages();
   const elevationGrid = useMapStore((s) => s.elevationGrid);
   const setSelectedEntity = useMapStore((s) => s.setSelectedEntity);
 
-  const place = places?.find((p) => p.id === id) ?? null;
+  const village = villages?.find((v) => v.id === id) ?? null;
 
   const position = useMemo(() => {
-    if (!place || !elevationGrid) return null;
-    return pointPosition(place.lat, place.lon, elevationGrid);
-  }, [place, elevationGrid]);
+    if (!village || !elevationGrid) return null;
+    return pointPosition(village.lat, village.lon, elevationGrid);
+  }, [village, elevationGrid]);
 
-  if (!place || !position) return null;
+  if (!village || !position) return null;
 
-  const typeLabel = place.type.charAt(0).toUpperCase() + place.type.slice(1);
+  const typeLabel = village.type.charAt(0).toUpperCase() + village.type.slice(1);
 
   return (
-    <TooltipShell position={position} onClick={() => setSelectedEntity('place', place.id)}>
+    <TooltipShell position={position} onClick={() => setSelectedEntity('village', village.id)}>
       <div className="flex items-center gap-2">
         <span className="text-base">&#128205;</span>
-        <h3 className="text-sm font-semibold text-white truncate">{place.name}</h3>
+        <h3 className="text-sm font-semibold text-white truncate">{village.name}</h3>
       </div>
       <div className="text-xs text-white/70">{typeLabel}</div>
     </TooltipShell>
@@ -229,8 +229,8 @@ export function InfoTooltip() {
       return <LiftTooltip id={hoveredEntity.id} />;
     case 'peak':
       return <PeakTooltip id={hoveredEntity.id} />;
-    case 'place':
-      return <PlaceTooltip id={hoveredEntity.id} />;
+    case 'village':
+      return <VillageTooltip id={hoveredEntity.id} />;
     default:
       return null;
   }

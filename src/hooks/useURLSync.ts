@@ -49,7 +49,7 @@ export function useURLSync() {
   const selectedEntity = useMapStore((s) => s.selectedEntity);
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes);
   const showPeaks = useMapStore((s) => s.showPeaks);
-  const showPlaces = useMapStore((s) => s.showPlaces);
+  const showVillages = useMapStore((s) => s.showVillages);
   const visibleRestaurantTypes = useMapStore((s) => s.visibleRestaurantTypes);
   const resolution = useSettingsStore((s) => s.resolution);
   const terrainBrightness = useSettingsStore((s) => s.terrainBrightness);
@@ -92,14 +92,14 @@ export function useURLSync() {
       if (parsed.layers) {
         const mapStore = useMapStore.getState();
         const showPeaks = parsed.layers.includes('peaks');
-        const showPlaces = parsed.layers.includes('places');
+        const showVillages = parsed.layers.includes('villages');
         const showDining = parsed.layers.includes('dining');
 
         if (mapStore.showPeaks !== showPeaks) {
           mapStore.togglePeaks();
         }
-        if (mapStore.showPlaces !== showPlaces) {
-          mapStore.togglePlaces();
+        if (mapStore.showVillages !== showVillages) {
+          mapStore.toggleVillages();
         }
         mapStore.setAllRestaurantTypesVisible(showDining);
       }
@@ -150,7 +150,7 @@ export function useURLSync() {
       difficulties: DEFAULT_DIFFICULTIES as Difficulty[],
       liftTypes: Array.from(visibleLiftTypes) as LiftType[],
       showPeaks,
-      showPlaces,
+      showVillages,
       visibleRestaurantTypes: Array.from(visibleRestaurantTypes) as RestaurantType[],
       resolution,
       terrainBrightness,
@@ -171,7 +171,7 @@ export function useURLSync() {
     selectedEntity,
     visibleLiftTypes,
     showPeaks,
-    showPlaces,
+    showVillages,
     visibleRestaurantTypes,
     resolution,
     terrainBrightness,
@@ -224,7 +224,7 @@ export function useURLSync() {
     selectedEntity,
     visibleLiftTypes,
     showPeaks,
-    showPlaces,
+    showVillages,
     visibleRestaurantTypes,
     resolution,
     terrainBrightness,
@@ -243,7 +243,7 @@ export function useShareableURL(): () => string {
   const selectedEntity = useMapStore((s) => s.selectedEntity);
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes);
   const showPeaks = useMapStore((s) => s.showPeaks);
-  const showPlaces = useMapStore((s) => s.showPlaces);
+  const showVillages = useMapStore((s) => s.showVillages);
   const visibleRestaurantTypes = useMapStore((s) => s.visibleRestaurantTypes);
   const cameraPosition = useMapStore((s) => s.cameraPosition);
   const cameraTarget = useMapStore((s) => s.cameraTarget);
@@ -262,7 +262,7 @@ export function useShareableURL(): () => string {
       difficulties: currentDifficulties,
       liftTypes: Array.from(visibleLiftTypes) as LiftType[],
       showPeaks,
-      showPlaces,
+      showVillages,
       visibleRestaurantTypes: Array.from(visibleRestaurantTypes) as RestaurantType[],
       resolution,
       terrainBrightness,
@@ -289,7 +289,7 @@ export function useShareableURL(): () => string {
     selectedEntity,
     visibleLiftTypes,
     showPeaks,
-    showPlaces,
+    showVillages,
     visibleRestaurantTypes,
     cameraPosition,
     cameraTarget,

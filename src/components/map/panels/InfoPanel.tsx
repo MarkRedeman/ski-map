@@ -1,5 +1,5 @@
 /**
- * InfoPanel component - displays detailed info for selected piste/lift/peak/place/restaurant
+ * InfoPanel component - displays detailed info for selected piste/lift/peak/village/restaurant
  * Shows when an item is clicked, styled to match the map legend
  */
 
@@ -17,7 +17,7 @@ import { useMapStore } from '@/stores/useMapStore';
 import { usePistes } from '@/hooks/usePistes';
 import { useLifts } from '@/hooks/useLifts';
 import { usePeaks } from '@/hooks/usePeaks';
-import { usePlaces } from '@/hooks/usePlaces';
+import { useVillages } from '@/hooks/useVillages';
 import { useRestaurants } from '@/hooks/useRestaurants';
 import type { RestaurantType } from '@/lib/api/overpass';
 import { LIFT_TYPE_CONFIG } from '../Lifts';
@@ -215,16 +215,16 @@ function PeakInfoPanel({ id }: { id: string }) {
   );
 }
 
-// Place info panel — fetches its own data
-function PlaceInfoPanel({ id }: { id: string }) {
-  const { data: places } = usePlaces();
+// Village info panel — fetches its own data
+function VillageInfoPanel({ id }: { id: string }) {
+  const { data: villages } = useVillages();
   const clearSelection = useMapStore((s) => s.clearSelection);
 
-  const place = places?.find((p) => p.id === id);
-  if (!place) return null;
+  const village = villages?.find((v) => v.id === id);
+  if (!village) return null;
 
-  const getPlaceIcon = () => {
-    switch (place.type) {
+  const getVillageIcon = () => {
+    switch (village.type) {
       case 'town':
         return '🏘️';
       case 'village':
@@ -236,8 +236,8 @@ function PlaceInfoPanel({ id }: { id: string }) {
     }
   };
 
-  const getPlaceTypeLabel = () => {
-    switch (place.type) {
+  const getVillageTypeLabel = () => {
+    switch (village.type) {
       case 'town':
         return 'Town';
       case 'village':
@@ -245,15 +245,15 @@ function PlaceInfoPanel({ id }: { id: string }) {
       case 'hamlet':
         return 'Hamlet';
       default:
-        return place.type.charAt(0).toUpperCase() + place.type.slice(1);
+        return village.type.charAt(0).toUpperCase() + village.type.slice(1);
     }
   };
 
   return (
     <PanelLayout
-      icon={<span className="text-lg">{getPlaceIcon()}</span>}
-      title={place.name}
-      subtitle={getPlaceTypeLabel()}
+      icon={<span className="text-lg">{getVillageIcon()}</span>}
+      title={village.name}
+      subtitle={getVillageTypeLabel()}
       onClose={clearSelection}
     >
       {/* Stats */}
@@ -263,7 +263,7 @@ function PlaceInfoPanel({ id }: { id: string }) {
           <div>
             <p className="text-[10px] text-white/50">Location</p>
             <p className="text-xs font-medium text-white">
-              {place.lat.toFixed(4)}°N, {place.lon.toFixed(4)}°E
+              {village.lat.toFixed(4)}°N, {village.lon.toFixed(4)}°E
             </p>
           </div>
         </div>
@@ -355,8 +355,8 @@ export function InfoPanel() {
       return <LiftInfoPanel id={selectedEntity.id} />;
     case 'peak':
       return <PeakInfoPanel id={selectedEntity.id} />;
-    case 'place':
-      return <PlaceInfoPanel id={selectedEntity.id} />;
+    case 'village':
+      return <VillageInfoPanel id={selectedEntity.id} />;
     case 'restaurant':
       return <RestaurantInfoPanel id={selectedEntity.id} />;
     default:

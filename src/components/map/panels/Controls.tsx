@@ -7,7 +7,7 @@
  *   1. Piste Filters — Difficulty toggles with All/None
  *   2. Lift Filters — Lift type toggles with All/None
  *   3. Peaks — All/None toggle for peak labels
- *   4. Villages — All/None toggle for place labels
+ *   4. Villages — All/None toggle for village labels
  *   5. Dining — Per-type toggles (Restaurant, Cafe, Bar, Alpine Hut) with All/None
  *   6. Quality — Resolution selector (1x–16x) with loading spinner
  *
@@ -53,13 +53,13 @@ export function MapControls() {
   const { enabledDifficulties } = useDifficultyFilter();
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes);
   const showPeaks = useMapStore((s) => s.showPeaks);
-  const showPlaces = useMapStore((s) => s.showPlaces);
+  const showVillages = useMapStore((s) => s.showVillages);
   const visibleRestaurantTypes = useMapStore((s) => s.visibleRestaurantTypes);
   const activeFilters =
     enabledDifficulties.size +
     visibleLiftTypes.size +
     (showPeaks ? 1 : 0) +
-    (showPlaces ? 1 : 0) +
+    (showVillages ? 1 : 0) +
     visibleRestaurantTypes.size;
   const totalFilters =
     ALL_DIFFICULTIES.length +
@@ -153,7 +153,7 @@ export function MapControls() {
 
       {/* --- Villages filter --- */}
       <div className="h-px bg-white/20" />
-      <PlaceFilter />
+      <VillageFilter />
 
       {/* --- Dining filters --- */}
       <div className="h-px bg-white/20" />
@@ -487,9 +487,9 @@ function PeakFilter() {
 /**
  * Villages visibility toggle — simple All/None
  */
-function PlaceFilter() {
-  const showPlaces = useMapStore((s) => s.showPlaces);
-  const togglePlaces = useMapStore((s) => s.togglePlaces);
+function VillageFilter() {
+  const showVillages = useMapStore((s) => s.showVillages);
+  const toggleVillages = useMapStore((s) => s.toggleVillages);
 
   return (
     <div className="flex items-center justify-between gap-4">
@@ -497,13 +497,13 @@ function PlaceFilter() {
       <div className="flex gap-1">
         <button
           onClick={() => {
-            if (!showPlaces) togglePlaces();
+            if (!showVillages) toggleVillages();
           }}
-          disabled={showPlaces}
+          disabled={showVillages}
           className={`
             rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors
             ${
-              showPlaces
+              showVillages
                 ? 'bg-white/10 text-white/30 cursor-not-allowed'
                 : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
             }
@@ -513,13 +513,13 @@ function PlaceFilter() {
         </button>
         <button
           onClick={() => {
-            if (showPlaces) togglePlaces();
+            if (showVillages) toggleVillages();
           }}
-          disabled={!showPlaces}
+          disabled={!showVillages}
           className={`
             rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors
             ${
-              !showPlaces
+              !showVillages
                 ? 'bg-white/10 text-white/30 cursor-not-allowed'
                 : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
             }

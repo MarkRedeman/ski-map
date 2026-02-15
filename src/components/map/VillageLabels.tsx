@@ -1,5 +1,5 @@
 /**
- * PlaceLabels component - renders village/town labels with smart visibility
+ * VillageLabels component - renders village/town labels with smart visibility
  *
  * Features:
  * - Badge-style labels with building icon
@@ -10,16 +10,16 @@
 import { useMemo, useState } from 'react';
 import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { usePlaces } from '@/hooks/usePlaces';
+import { useVillages } from '@/hooks/useVillages';
 import { useLifts } from '@/hooks/useLifts';
 import { useMapStore } from '@/stores/useMapStore';
 import { geoToLocal } from '@/lib/geo/coordinates';
 import { sampleElevation } from '@/lib/geo/elevationGrid';
 
-type PlaceType = 'town' | 'village' | 'hamlet';
+type VillageType = 'town' | 'village' | 'hamlet';
 
 /** Only show villages/hamlets within this distance (meters) of a lift */
-const PLACE_PROXIMITY_RADIUS = 1000;
+const VILLAGE_PROXIMITY_RADIUS = 1000;
 
 /**
  * Calculate approximate distance between two geo points in meters
@@ -31,12 +31,12 @@ function geoDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
 }
 
 /**
- * Get which place types to show based on zoom distance
+ * Get which village types to show based on zoom distance
  *
  * Uses distance from camera to orbit target, which is stable during
  * rotation and only changes on actual zoom in/out.
  */
-function getVisiblePlaceTypes(zoomDistance: number): Set<PlaceType> {
+function getVisibleVillageTypes(zoomDistance: number): Set<VillageType> {
   if (zoomDistance < 500) {
     return new Set(['town', 'village', 'hamlet']); // Show all
   }
@@ -56,9 +56,9 @@ function getDistanceLevel(zoomDistance: number): number {
 }
 
 /**
- * Get icon based on place type
+ * Get icon based on village type
  */
-function getPlaceIcon(type: PlaceType): string {
+function getVillageIcon(type: VillageType): string {
   switch (type) {
     case 'town':
       return '🏘️';
@@ -69,14 +69,14 @@ function getPlaceIcon(type: PlaceType): string {
   }
 }
 
-interface PlaceLabelProps {
+interface VillageLabelProps {
   name: string;
-  type: PlaceType;
+  type: VillageType;
   position: [number, number, number];
   isSelected: boolean;
 }
 
-function PlaceLabel({ name, type, position, isSelected }: PlaceLabelProps) {
+function VillageLabel({ name, type, position, isSelected }: VillageLabelProps) {
   const isTown = type === 'town';
 
   return (
@@ -87,7 +87,7 @@ function PlaceLabel({ name, type, position, isSelected }: PlaceLabelProps) {
         ${isSelected ? (isTown ? 'bg-orange-900/90 ring-2 ring-orange-400/60 px-4 py-2' : 'bg-orange-900/90 ring-2 ring-orange-400/60 px-3 py-1.5') : isTown ? 'bg-amber-900/80 px-4 py-2' : 'bg-black/70 px-3 py-1.5'}
       `}
       >
-        <span className={isTown ? 'text-lg' : 'text-base'}>{getPlaceIcon(type)}</span>
+        <span className={isTown ? 'text-lg' : 'text-base'}>{getVillageIcon(type)}</span>
         <span
           className={`
           font-semibold text-white whitespace-nowrap
@@ -101,12 +101,12 @@ function PlaceLabel({ name, type, position, isSelected }: PlaceLabelProps) {
   );
 }
 
-export function PlaceLabels() {
-  const { data: places } = usePlaces();
+export function VillageLabels() {
+  const { data: villages } = useVillages();
   const { data: lifts } = useLifts();
   const elevationGrid = useMapStore((s) => s.elevationGrid);
-  const showPlaces = useMapStore((s) => s.showPlaces);
-  const selectedPlaceId = useMapStore((s) => s.getSelectedId('place'));
+  const showVillages = useMapStore((s) => s.showVillages);
+  const selectedVillageId = useMapStore((s) => s.getSelectedId('village'));
 
   // Track zoom level for filtering
   const [distanceLevel, setDistanceLevel] = useState(1);
@@ -130,34 +130,35 @@ export function PlaceLabels() {
     return lifts.flatMap((lift) => lift.coordinates.map(([lon, lat]) => ({ lat, lon })));
   }, [lifts]);
 
-  // Filter and position places based on camera distance and lift proximity
-  // Always include the selected place regardless of zoom/filters
-  const visiblePlaces = useMemo(() => {
-    if (!places || !showPlaces) return [];
+  // Filter and position villages based on camera distance and lift proximity
+  // Always include the selected village regardless of zoom/filters
+  const visibleVillages = useMemo(() => {
+    if (!villages || !showVillages) return [];
 
-    const visibleTypes = getVisiblePlaceTypes(
+    const visibleTypes = getVisibleVillageTypes(
       distanceLevel === 0 ? 0 : distanceLevel === 1 ? 1000 : 2000
     );
 
     return (
-      places
-        // Keep selected place, otherwise filter by type visibility
+      villages
+        // Keep selected village, otherwise filter by type visibility
         .filter(
-          (place) => place.id === selectedPlaceId || visibleTypes.has(place.type as PlaceType)
+          (village) =>
+            village.id === selectedVillageId || visibleTypes.has(village.type as VillageType)
         )
         // Towns are always visible; villages/hamlets only if near lifts (or selected)
-        .filter((place) => {
-          if (place.id === selectedPlaceId) return true;
-          if (place.type === 'town') return true;
+        .filter((village) => {
+          if (village.id === selectedVillageId) return true;
+          if (village.type === 'town') return true;
           if (liftPoints.length === 0) return true;
           return liftPoints.some(
             (point) =>
-              geoDistance(place.lat, place.lon, point.lat, point.lon) < PLACE_PROXIMITY_RADIUS
+              geoDistance(village.lat, village.lon, point.lat, point.lon) < VILLAGE_PROXIMITY_RADIUS
           );
         })
-        .map((place) => {
+        .map((village) => {
           // Convert geo coordinates to local 3D position
-          const [x, , z] = geoToLocal(place.lat, place.lon, 0);
+          const [x, , z] = geoToLocal(village.lat, village.lon, 0);
 
           // Get terrain height at this position
           let y: number;
@@ -168,24 +169,24 @@ export function PlaceLabels() {
           }
 
           return {
-            ...place,
+            ...village,
             position: [x, y, z] as [number, number, number],
           };
         })
     );
-  }, [places, liftPoints, elevationGrid, showPlaces, distanceLevel, selectedPlaceId]);
+  }, [villages, liftPoints, elevationGrid, showVillages, distanceLevel, selectedVillageId]);
 
-  if (!showPlaces || visiblePlaces.length === 0) return null;
+  if (!showVillages || visibleVillages.length === 0) return null;
 
   return (
-    <group name="place-labels">
-      {visiblePlaces.map((place) => (
-        <PlaceLabel
-          key={place.id}
-          name={place.name}
-          type={place.type as PlaceType}
-          position={place.position}
-          isSelected={selectedPlaceId === place.id}
+    <group name="village-labels">
+      {visibleVillages.map((village) => (
+        <VillageLabel
+          key={village.id}
+          name={village.name}
+          type={village.type as VillageType}
+          position={village.position}
+          isSelected={selectedVillageId === village.id}
         />
       ))}
     </group>

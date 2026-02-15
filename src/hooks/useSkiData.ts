@@ -1,7 +1,7 @@
 /**
  * Combined hook for fetching all ski data in a single Overpass API request
  *
- * This replaces the individual usePistes, useLifts, usePeaks, usePlaces hooks
+ * This replaces the individual usePistes, useLifts, usePeaks, useVillages hooks
  * by fetching everything at once, reducing API calls from 5 to 1.
  */
 
@@ -12,7 +12,7 @@ import {
   type Piste,
   type Lift,
   type Peak,
-  type Place,
+  type Village,
   type Restaurant,
   type SkiArea,
   type SkiAreaPolygon,
@@ -28,7 +28,7 @@ export interface ProcessedSkiData {
   lifts: Lift[];
   skiAreas: SkiAreaPolygon[]; // All ski areas with polygon boundaries
   peaks: Peak[];
-  places: Place[];
+  villages: Village[];
   restaurants: Restaurant[];
 }
 
@@ -59,7 +59,7 @@ export const skiDataQueryOptions = queryOptions({
       lifts: liftsWithAreas,
       skiAreas: data.skiAreaPolygons, // Now includes all ski areas with polygon data
       peaks: data.peaks,
-      places: data.places,
+      villages: data.villages,
       restaurants: restaurantsWithAreas,
     };
   },
@@ -75,4 +75,4 @@ export function useSkiData() {
 }
 
 // Re-export types for convenience
-export type { Piste, Lift, Peak, Place, Restaurant, SkiArea, SkiAreaPolygon, SkiData };
+export type { Piste, Lift, Peak, Village, Restaurant, SkiArea, SkiAreaPolygon, SkiData };

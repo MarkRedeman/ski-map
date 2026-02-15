@@ -30,7 +30,7 @@ export const ALL_LIFT_TYPES: LiftType[] = [
 ];
 
 /** Entity types that can be selected */
-export type EntityType = 'piste' | 'lift' | 'peak' | 'place' | 'restaurant';
+export type EntityType = 'piste' | 'lift' | 'peak' | 'village' | 'restaurant';
 
 /** Selection state for an entity */
 export interface EntitySelection {
@@ -66,8 +66,8 @@ interface MapState {
   // Label visibility per category
   showPeaks: boolean;
   togglePeaks: () => void;
-  showPlaces: boolean;
-  togglePlaces: () => void;
+  showVillages: boolean;
+  toggleVillages: () => void;
 
   // Restaurant type filter - which restaurant types are visible
   visibleRestaurantTypes: Set<RestaurantType>;
@@ -127,9 +127,9 @@ export const useMapStore = create<MapState>((set, get) => ({
   showPeaks: true,
   togglePeaks: () => set((state) => ({ showPeaks: !state.showPeaks })),
 
-  // Places (villages) visible by default
-  showPlaces: true,
-  togglePlaces: () => set((state) => ({ showPlaces: !state.showPlaces })),
+  // Villages visible by default
+  showVillages: true,
+  toggleVillages: () => set((state) => ({ showVillages: !state.showVillages })),
 
   // All restaurant types visible by default
   visibleRestaurantTypes: new Set<RestaurantType>(ALL_RESTAURANT_TYPES),

@@ -2,7 +2,7 @@
  * URL Search Parameter Schema
  *
  * Defines the Zod schema for shareable URL state including:
- * - Selection (piste, lift, peak, place, restaurant)
+ * - Selection (piste, lift, peak, village, restaurant)
  * - Filters (difficulties, lift types, layers)
  * - Resolution
  * - Camera position (for advanced sharing)
@@ -22,7 +22,7 @@ import {
 } from '@/stores/useSettingsStore';
 
 // Selection types
-export type SelectionType = 'piste' | 'lift' | 'peak' | 'place' | 'restaurant';
+export type SelectionType = 'piste' | 'lift' | 'peak' | 'village' | 'restaurant';
 
 export interface Selection {
   type: SelectionType;
@@ -32,11 +32,11 @@ export interface Selection {
 // Default values
 export const DEFAULT_DIFFICULTIES: Difficulty[] = ['blue', 'red', 'black'];
 export const DEFAULT_LIFT_TYPES: LiftType[] = ['Gondola', 'Cable Car', 'Chair Lift', 'Lift'];
-export const DEFAULT_LAYERS = ['peaks', 'places', 'dining'] as const;
+export const DEFAULT_LAYERS = ['peaks', 'villages', 'dining'] as const;
 export const DEFAULT_RESOLUTION: ResolutionLevel = '2x';
 
 // Valid values for validation
-const VALID_SELECTION_TYPES = ['piste', 'lift', 'peak', 'place', 'restaurant'] as const;
+const VALID_SELECTION_TYPES = ['piste', 'lift', 'peak', 'village', 'restaurant'] as const;
 const VALID_DIFFICULTIES = ['blue', 'red', 'black'] as const;
 const VALID_LIFT_TYPES = [
   'Gondola',
@@ -48,7 +48,7 @@ const VALID_LIFT_TYPES = [
   'Magic Carpet',
   'Lift',
 ] as const;
-const VALID_LAYERS = ['peaks', 'places', 'dining'] as const;
+const VALID_LAYERS = ['peaks', 'villages', 'dining'] as const;
 const VALID_RESOLUTIONS = ['1x', '2x', '4x', '8x', '16x'] as const;
 
 /**
@@ -193,7 +193,7 @@ export const searchSchema = z.object({
   // Lift type filter: "Gondola,Chair Lift"
   lifts: z.string().optional(),
 
-  // Layer visibility: "peaks,places,dining" (comma-separated active layers)
+  // Layer visibility: "peaks,villages,dining" (comma-separated active layers)
   show: z.string().optional(),
 
   // Resolution: "1x", "2x", "4x", "8x", "16x"
@@ -245,7 +245,7 @@ export function buildSearchParams(state: {
   difficulties: Difficulty[];
   liftTypes: LiftType[];
   showPeaks: boolean;
-  showPlaces: boolean;
+  showVillages: boolean;
   visibleRestaurantTypes: RestaurantType[];
   resolution: ResolutionLevel;
   terrainBrightness: number;
@@ -269,7 +269,7 @@ export function buildSearchParams(state: {
   // Layer visibility - build list of active layers, only include in URL if not default
   const activeLayers: string[] = [];
   if (state.showPeaks) activeLayers.push('peaks');
-  if (state.showPlaces) activeLayers.push('places');
+  if (state.showVillages) activeLayers.push('villages');
   if (state.visibleRestaurantTypes.length > 0) activeLayers.push('dining');
   const layersStr = serializeList(activeLayers, DEFAULT_LAYERS, VALID_LAYERS);
   if (layersStr !== undefined) {

@@ -203,7 +203,7 @@ const PisteLines = memo(function PisteLines({
   difficulty,
   isHovered,
   isSelected,
-  dimmed,
+  dimmed: _dimmed,
   elevationGrid,
   zoomScale,
 }: PisteLinesProps) {
