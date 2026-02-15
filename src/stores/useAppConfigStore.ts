@@ -96,10 +96,17 @@ export function getRegionBounds(): RegionConfig['bounds'] {
   return useAppConfigStore.getState().regionBounds ?? DEFAULT_REGION.bounds;
 }
 
+export interface RegionBbox {
+  south: number;
+  north: number;
+  west: number;
+  east: number;
+}
+
 /**
  * Get the effective region bbox in Overpass API format
  */
-export function getRegionBbox() {
+export function getRegionBbox(): RegionBbox {
   const bounds = getRegionBounds();
   return {
     south: bounds.minLat,

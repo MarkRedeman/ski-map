@@ -3,20 +3,20 @@
  *
  * Returns both the elevation grid (for 3D mesh displacement) and
  * satellite texture (for terrain material).
+ *
+ * Elevation grid building (tile fetch + decode + scaling) is offloaded
+ * to a Web Worker via Comlink. Satellite imagery stays on the main thread
+ * because it requires HTMLCanvasElement and THREE.CanvasTexture.
  */
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import * as THREE from 'three';
-import {
-  getTilesForBounds,
-  buildElevationGridFromTiles,
-  buildSatelliteImageFromTiles,
-} from '@/lib/geo/mapboxTiles';
-import { geoToLocal } from '@/lib/geo/coordinates';
+import { getTilesForBounds, buildSatelliteImageFromTiles } from '@/lib/geo/mapboxTiles';
 import { getMapboxToken, getRegionCenter, getRegionBounds } from '@/stores/useAppConfigStore';
 import type { ElevationGrid } from '@/lib/geo/elevationGrid';
 import { useMapStore } from '@/stores/useMapStore';
+import { getTerrainWorker } from '@/workers/terrainWorkerClient';
 
 interface UseTerrainDataOptions {
   /** Tile zoom level (default 12) */
@@ -50,8 +50,10 @@ export interface TerrainData {
   rawHeight: number;
 }
 
-// Scale factor matching coordinates.ts
-const SCALE = 0.1;
+/**
+ * Singleton terrain worker instance — created once, reused across queries.
+ * Shared with useContourLines via terrainWorkerClient.
+ */
 
 export function useTerrainData({
   zoom = 12,
@@ -72,8 +74,9 @@ export function useTerrainData({
       console.log('[TerrainData] Starting terrain data fetch...');
 
       const bounds = getRegionBounds();
+      const regionCenter = getRegionCenter();
 
-      // 1. Calculate tiles needed
+      // Calculate tiles needed (for satellite fetch on main thread)
       const tiles = getTilesForBounds(
         bounds.minLat,
         bounds.maxLat,
@@ -83,79 +86,62 @@ export function useTerrainData({
       );
       console.log(`[TerrainData] Fetching ${tiles.length} tiles at zoom ${zoom}`);
 
-      // 2. Fetch elevation and satellite tiles in parallel
+      // Run elevation grid (worker) and satellite imagery (main thread) in parallel
+      const worker = getTerrainWorker();
+
       const [elevationResult, satelliteResult] = await Promise.all([
-        buildElevationGridFromTiles(tiles, accessToken, (loaded, total) => {
-          console.log(`[TerrainData] Elevation tiles: ${loaded}/${total}`);
+        // Elevation grid built entirely in the worker
+        worker.buildElevationGrid({
+          bounds,
+          zoom,
+          accessToken,
+          regionCenter,
         }),
+        // Satellite imagery stays on main thread (requires HTMLCanvasElement)
         buildSatelliteImageFromTiles(tiles, accessToken, (loaded, total) => {
           console.log(`[TerrainData] Satellite tiles: ${loaded}/${total}`);
         }),
       ]);
 
-      // 3. Convert geographic bounds to world coordinates
-      const [minX, , maxZ] = geoToLocal(
-        elevationResult.bounds.minLat,
-        elevationResult.bounds.minLon
-      );
-      const [maxX, , minZ] = geoToLocal(
-        elevationResult.bounds.maxLat,
-        elevationResult.bounds.maxLon
-      );
-
-      const width = maxX - minX;
-      const height = maxZ - minZ;
-      const centerX = (minX + maxX) / 2;
-      const centerZ = (minZ + maxZ) / 2;
+      const { worldBounds, worldWidth, worldHeight, center } = elevationResult;
+      const { minX, maxX, minZ, maxZ } = worldBounds;
 
       console.log(
         `[TerrainData] World bounds: X [${minX.toFixed(0)} to ${maxX.toFixed(0)}], Z [${minZ.toFixed(0)} to ${maxZ.toFixed(0)}]`
       );
-      console.log(`[TerrainData] Terrain size: ${width.toFixed(0)} x ${height.toFixed(0)} units`);
+      console.log(
+        `[TerrainData] Terrain size: ${worldWidth.toFixed(0)} x ${worldHeight.toFixed(0)} units`
+      );
+      console.log(
+        `[TerrainData] Elevation range: ${elevationResult.minElevation.toFixed(0)}m - ${elevationResult.maxElevation.toFixed(0)}m`
+      );
 
-      // Log elevation range
-      let minElev = Infinity,
-        maxElev = -Infinity;
-      for (const e of elevationResult.elevations) {
-        if (e < minElev) minElev = e;
-        if (e > maxElev) maxElev = e;
-      }
-      console.log(`[TerrainData] Elevation range: ${minElev.toFixed(0)}m - ${maxElev.toFixed(0)}m`);
-
-      // 4. Create satellite texture
+      // Create satellite texture (main thread only — requires THREE.js)
       const satelliteTexture = new THREE.CanvasTexture(satelliteResult.canvas);
       satelliteTexture.minFilter = THREE.LinearFilter;
       satelliteTexture.magFilter = THREE.LinearFilter;
       satelliteTexture.colorSpace = THREE.SRGBColorSpace;
 
-      // 5. Create elevation grid for sampling
-      // Convert raw elevations to scene Y coordinates
-      const scaledElevations = new Float32Array(elevationResult.elevations.length);
-      for (let i = 0; i < elevationResult.elevations.length; i++) {
-        // Convert meters to scene units, relative to center elevation
-        scaledElevations[i] =
-          (elevationResult.elevations[i]! - getRegionCenter().elevation) * SCALE;
-      }
-
+      // Assemble elevation grid from worker results
       const elevationGrid: ElevationGrid = {
-        data: scaledElevations,
+        data: elevationResult.scaledElevations,
         cols: elevationResult.width,
         rows: elevationResult.height,
         minX,
         maxX,
         minZ,
         maxZ,
-        cellWidth: width / (elevationResult.width - 1),
-        cellDepth: height / (elevationResult.height - 1),
+        cellWidth: worldWidth / (elevationResult.width - 1),
+        cellDepth: worldHeight / (elevationResult.height - 1),
       };
 
       return {
         elevationGrid,
         satelliteTexture,
         bounds: { minX, maxX, minZ, maxZ },
-        width,
-        height,
-        center: [centerX, 0, centerZ],
+        width: worldWidth,
+        height: worldHeight,
+        center,
         rawElevations: elevationResult.elevations,
         rawWidth: elevationResult.width,
         rawHeight: elevationResult.height,

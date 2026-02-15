@@ -5,7 +5,7 @@
  */
 
 import { contours } from 'd3-contour';
-import { geoToLocal } from './coordinates';
+import { geoToLocalPure, type RegionCenter } from './coordinates';
 
 export interface ContourLine {
   elevation: number;
@@ -89,6 +89,7 @@ export function generateContours(
  * @param useElevationForY - If true, set Y based on contour elevation (converted to scene units)
  * @param centerElevation - Reference elevation (used when useElevationForY is true)
  * @param scale - Scale factor for elevation (used when useElevationForY is true)
+ * @param regionCenter - Region center for geo-to-local conversion (worker-safe)
  */
 export function contourToWorld(
   contourLines: ContourLine[],
@@ -98,7 +99,8 @@ export function contourToWorld(
   yOffset: number = 0,
   useElevationForY: boolean = false,
   centerElevation: number = 2284,
-  scale: number = 0.1
+  scale: number = 0.1,
+  regionCenter?: RegionCenter
 ): ContourData3D[] {
   const { minLon, maxLon, minLat, maxLat } = bounds;
   const lonRange = maxLon - minLon;
@@ -165,7 +167,11 @@ export function contourToWorld(
           }
 
           // Convert to local 3D coordinates
-          const [x, , z] = geoToLocal(lat, lon);
+          const [x, , z] = regionCenter
+            ? geoToLocalPure(lat, lon, regionCenter)
+            : (() => {
+                throw new Error('regionCenter is required for contourToWorld');
+              })();
 
           // Validate world coordinates
           if (!isFinite(x) || !isFinite(z)) {

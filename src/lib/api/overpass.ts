@@ -4,7 +4,7 @@
  * Fetches pistes, lifts, and POIs for the active region
  */
 
-import { getRegionBbox } from '@/stores/useAppConfigStore';
+import type { RegionBbox } from '@/stores/useAppConfigStore';
 
 const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
 
@@ -569,8 +569,8 @@ export interface SkiData {
 /**
  * Build a single combined Overpass query for all ski data
  */
-function buildCombinedQuery(): string {
-  const { south, west, north, east } = getRegionBbox();
+function buildCombinedQuery(bbox: RegionBbox): string {
+  const { south, west, north, east } = bbox;
   return `
 [out:json][timeout:120];
 (
@@ -604,10 +604,10 @@ out skel qt;
 /**
  * Fetch all ski data in a single request
  */
-export async function fetchAllSkiData(): Promise<SkiData> {
+export async function fetchAllSkiData(bbox: RegionBbox): Promise<SkiData> {
   console.log('[Overpass] Fetching all ski data...');
 
-  const query = buildCombinedQuery();
+  const query = buildCombinedQuery(bbox);
   const response = await executeQuery(query);
 
   // Build node lookup

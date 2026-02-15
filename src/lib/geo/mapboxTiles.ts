@@ -117,6 +117,8 @@ export function decodeTerrainRGB(r: number, g: number, b: number): number {
 /**
  * Fetch a terrain tile and return its pixel data as ImageData
  * Uses IndexedDB cache for offline access and reduced API calls.
+ *
+ * Supports both main-thread (HTMLCanvasElement) and worker (OffscreenCanvas) contexts.
  */
 export async function fetchTerrainTile(
   x: number,
@@ -126,34 +128,30 @@ export async function fetchTerrainTile(
 ): Promise<ImageData> {
   // Try cache first
   const cachedBlob = await getCachedTerrainTile(z, x, y);
-  let img: HTMLImageElement;
+  let blob: Blob;
 
   if (cachedBlob) {
-    // Load from cache
-    img = await blobToImage(cachedBlob);
+    blob = cachedBlob;
   } else {
     // Fetch from network
     const url = getMapboxTerrainRGBUrl(x, y, z, accessToken);
-    const blob = await fetchImageAsBlob(url);
+    blob = await fetchImageAsBlob(url);
 
     // Store in cache
     await setCachedTerrainTile(z, x, y, blob);
-
-    img = await blobToImage(blob);
   }
 
-  // Draw to canvas to get pixel data
-  const canvas = document.createElement('canvas');
-  canvas.width = img.width;
-  canvas.height = img.height;
-
+  // Use createImageBitmap + OffscreenCanvas (works in both main thread and workers)
+  const bitmap = await createImageBitmap(blob);
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) {
-    throw new Error('Failed to get 2D context');
+    throw new Error('Failed to get 2D context from OffscreenCanvas');
   }
 
-  ctx.drawImage(img, 0, 0);
-  return ctx.getImageData(0, 0, img.width, img.height);
+  ctx.drawImage(bitmap, 0, 0);
+  bitmap.close();
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
 /**

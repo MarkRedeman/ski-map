@@ -11,18 +11,28 @@ import { sampleElevation } from './elevationGrid';
 import type { ElevationGrid } from './elevationGrid';
 
 // Scale factor: meters per unit in 3D scene
-const SCALE = 0.1; // 1 unit = 10 meters
+export const SCALE = 0.1; // 1 unit = 10 meters
 
 // Earth's radius in meters
 const EARTH_RADIUS = 6371000;
 
-/**
- * Convert latitude/longitude to local X/Z coordinates centered on the active region
- * Y is reserved for elevation
- */
-export function geoToLocal(lat: number, lon: number, elevation = 0): [number, number, number] {
-  const center = getRegionCenter();
+/** Region center coordinates needed for geo <-> local conversions */
+export interface RegionCenter {
+  lat: number;
+  lon: number;
+  elevation: number;
+}
 
+/**
+ * Pure version of geoToLocal that accepts region center as a parameter.
+ * Safe to use in Web Workers (no store dependency).
+ */
+export function geoToLocalPure(
+  lat: number,
+  lon: number,
+  center: RegionCenter,
+  elevation = 0
+): [number, number, number] {
   // Calculate distance from center
   const dLat = (lat - center.lat) * (Math.PI / 180);
   const dLon = (lon - center.lon) * (Math.PI / 180);
@@ -37,6 +47,15 @@ export function geoToLocal(lat: number, lon: number, elevation = 0): [number, nu
   const z = -latMeters * SCALE; // Negative because north is -Z in Three.js convention
 
   return [x, y, z];
+}
+
+/**
+ * Convert latitude/longitude to local X/Z coordinates centered on the active region
+ * Y is reserved for elevation
+ */
+export function geoToLocal(lat: number, lon: number, elevation = 0): [number, number, number] {
+  const center = getRegionCenter();
+  return geoToLocalPure(lat, lon, center, elevation);
 }
 
 /**
