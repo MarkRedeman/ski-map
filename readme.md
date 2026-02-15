@@ -2,6 +2,11 @@
 
 A 3D ski map app with real terrain visualization, piste/lift filtering, GPS tracking, and ride playback. Default region is Sölden, Austria — configurable at runtime via the Settings panel.
 
+| **Overview** | **Run** |
+|--------------|---------|
+| <img width="1080" height="720" alt="ski-map-overview" src="https://github.com/user-attachments/assets/363c9ef9-c5ac-40e1-b08e-cadd93eefb6f" /> | <img width="1080" height="720" alt="ski-map-run" src="https://github.com/user-attachments/assets/4dd6fb38-21ea-475e-b450-1724447e32fc" /> |
+
+
 ## Features
 
 - **3D Terrain** — React Three Fiber powered map with Mapbox elevation tiles and contour lines
