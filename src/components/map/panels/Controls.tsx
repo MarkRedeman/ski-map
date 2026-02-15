@@ -34,7 +34,7 @@ export function MapControls() {
 
   // Labels visibility
   const showLabels = useMapStore((s) => s.showLabels);
-  const toggleLayer = useMapStore((s) => s.toggleLayer);
+  const toggleLabels = useMapStore((s) => s.toggleLabels);
 
   // Resolution
   const resolution = useSettingsStore((s) => s.resolution);
@@ -141,7 +141,7 @@ export function MapControls() {
       {/* --- Labels toggle --- */}
       <div className="h-px bg-white/20" />
       <button
-        onClick={() => toggleLayer('labels')}
+        onClick={() => toggleLabels()}
         className="flex items-center justify-between gap-3 transition-colors hover:text-white/80"
         title={showLabels ? 'Hide labels' : 'Show labels'}
       >

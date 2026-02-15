@@ -60,13 +60,8 @@ interface MapState {
   setViewMode: (mode: 'overview' | 'follow' | 'free') => void;
 
   // Layers
-  showTerrain: boolean;
-  showPistes: boolean;
-  showLifts: boolean;
   showLabels: boolean;
-  toggleLayer: (layer: 'terrain' | 'pistes' | 'lifts' | 'labels') => void;
-  setShowPistes: (show: boolean) => void;
-  setShowLifts: (show: boolean) => void;
+  toggleLabels: () => void;
 
   // Lift type filter - which lift types are visible
   visibleLiftTypes: Set<LiftType>;
@@ -95,12 +90,7 @@ interface MapState {
   setIsLoadingTerrain: (loading: boolean) => void;
 }
 
-const layerMap = {
-  terrain: 'showTerrain' as const,
-  pistes: 'showPistes' as const,
-  lifts: 'showLifts' as const,
-  labels: 'showLabels' as const,
-};
+
 
 export const useMapStore = create<MapState>((set, get) => ({
   // Terrain
@@ -124,19 +114,13 @@ export const useMapStore = create<MapState>((set, get) => ({
   viewMode: 'overview',
   setViewMode: (mode) => set({ viewMode: mode }),
 
-  // All layers visible by default
-  showTerrain: true,
-  showPistes: true,
-  showLifts: true,
+  // Labels visible by default
   showLabels: true,
 
-  toggleLayer: (layer) =>
+  toggleLabels: () =>
     set((state) => ({
-      [layerMap[layer]]: !state[layerMap[layer]],
+      showLabels: !state.showLabels,
     })),
-
-  setShowPistes: (show) => set({ showPistes: show }),
-  setShowLifts: (show) => set({ showLifts: show }),
 
   // Only main lift types visible by default (Gondola, Cable Car, Chair Lift)
   // Drag lifts (T-Bar, Button, Drag, Magic Carpet) hidden by default - useful for snowboarders

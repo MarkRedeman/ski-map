@@ -12,7 +12,7 @@ import * as THREE from 'three';
 import { usePistes } from '@/hooks/usePistes';
 import { useLifts } from '@/hooks/useLifts';
 import { type Difficulty } from '@/lib/api/overpass';
-import { useMapStore } from '@/stores/useMapStore';
+import { useMapStore, type LiftType } from '@/stores/useMapStore';
 import { coordsToLocal } from '@/lib/geo/coordinates';
 import { projectPointsOnGrid } from '@/lib/geo/elevationGrid';
 import { featureSpatialIndex } from '@/lib/geo/spatialIndex';
@@ -36,8 +36,7 @@ export function ProximitySelector({ enabledDifficulties }: ProximitySelectorProp
   const elevationGrid = useMapStore((s) => s.elevationGrid);
   const setHoveredEntity = useMapStore((s) => s.setHoveredEntity);
   const setSelectedEntity = useMapStore((s) => s.setSelectedEntity);
-  const showPistes = useMapStore((s) => s.showPistes);
-  const showLifts = useMapStore((s) => s.showLifts);
+  const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes);
 
   const { data: pistes } = usePistes();
   const { data: lifts } = useLifts();
@@ -52,7 +51,7 @@ export function ProximitySelector({ enabledDifficulties }: ProximitySelectorProp
     featureSpatialIndex.clear();
 
     // Add pistes (filtered by difficulty) - index ALL segments with same piste ID
-    if (pistes && showPistes) {
+    if (pistes) {
       for (const piste of pistes) {
         if (!enabledDifficulties.has(piste.difficulty)) continue;
 
@@ -71,9 +70,10 @@ export function ProximitySelector({ enabledDifficulties }: ProximitySelectorProp
       }
     }
 
-    // Add lifts
-    if (lifts && showLifts) {
+    // Add lifts (filtered by visible lift types)
+    if (lifts) {
       for (const lift of lifts) {
+        if (!visibleLiftTypes.has(lift.type as LiftType)) continue;
         const localCoords = coordsToLocal(lift.coordinates, 0);
         const projectedPoints = projectPointsOnGrid(elevationGrid, localCoords, 10);
 
@@ -84,7 +84,7 @@ export function ProximitySelector({ enabledDifficulties }: ProximitySelectorProp
         });
       }
     }
-  }, [pistes, lifts, elevationGrid, enabledDifficulties, showPistes, showLifts]);
+  }, [pistes, lifts, elevationGrid, enabledDifficulties, visibleLiftTypes]);
 
   // Get terrain intersection point from mouse position
   const getTerrainPoint = useCallback(

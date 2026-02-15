@@ -48,9 +48,6 @@ export function useURLSync() {
   // Get store values (no difficulty — that's URL-native)
   const selectedEntity = useMapStore((s) => s.selectedEntity);
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes);
-  const showTerrain = useMapStore((s) => s.showTerrain);
-  const showPistes = useMapStore((s) => s.showPistes);
-  const showLifts = useMapStore((s) => s.showLifts);
   const showLabels = useMapStore((s) => s.showLabels);
   const resolution = useSettingsStore((s) => s.resolution);
   const terrainBrightness = useSettingsStore((s) => s.terrainBrightness);
@@ -89,22 +86,12 @@ export function useURLSync() {
         });
       }
 
-      // Apply layers
+      // Apply layers (only labels now)
       if (parsed.layers) {
         const mapStore = useMapStore.getState();
-        const layerMap = {
-          terrain: mapStore.showTerrain,
-          pistes: mapStore.showPistes,
-          lifts: mapStore.showLifts,
-          labels: mapStore.showLabels,
-        };
-
-        // Toggle layers to match URL state
-        for (const layer of ['terrain', 'pistes', 'lifts', 'labels'] as const) {
-          const shouldBeVisible = parsed.layers.includes(layer);
-          if (layerMap[layer] !== shouldBeVisible) {
-            mapStore.toggleLayer(layer);
-          }
+        const shouldShowLabels = parsed.layers.includes('labels');
+        if (mapStore.showLabels !== shouldShowLabels) {
+          mapStore.toggleLabels();
         }
       }
 
@@ -153,12 +140,7 @@ export function useURLSync() {
       selection: entityToSelection(selectedEntity),
       difficulties: DEFAULT_DIFFICULTIES as Difficulty[],
       liftTypes: Array.from(visibleLiftTypes) as LiftType[],
-      layers: {
-        terrain: showTerrain,
-        pistes: showPistes,
-        lifts: showLifts,
-        labels: showLabels,
-      },
+      showLabels,
       resolution,
       terrainBrightness,
       terrainSaturation,
@@ -177,9 +159,6 @@ export function useURLSync() {
     navigate,
     selectedEntity,
     visibleLiftTypes,
-    showTerrain,
-    showPistes,
-    showLifts,
     showLabels,
     resolution,
     terrainBrightness,
@@ -231,9 +210,6 @@ export function useURLSync() {
     updateURLFromStores,
     selectedEntity,
     visibleLiftTypes,
-    showTerrain,
-    showPistes,
-    showLifts,
     showLabels,
     resolution,
     terrainBrightness,
@@ -251,9 +227,6 @@ export function useShareableURL(): () => string {
   const search = useSearch({ strict: false }) as SearchParams;
   const selectedEntity = useMapStore((s) => s.selectedEntity);
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes);
-  const showTerrain = useMapStore((s) => s.showTerrain);
-  const showPistes = useMapStore((s) => s.showPistes);
-  const showLifts = useMapStore((s) => s.showLifts);
   const showLabels = useMapStore((s) => s.showLabels);
   const cameraPosition = useMapStore((s) => s.cameraPosition);
   const cameraTarget = useMapStore((s) => s.cameraTarget);
@@ -271,12 +244,7 @@ export function useShareableURL(): () => string {
       selection: entityToSelection(selectedEntity),
       difficulties: currentDifficulties,
       liftTypes: Array.from(visibleLiftTypes) as LiftType[],
-      layers: {
-        terrain: showTerrain,
-        pistes: showPistes,
-        lifts: showLifts,
-        labels: showLabels,
-      },
+      showLabels,
       resolution,
       terrainBrightness,
       terrainSaturation,
@@ -301,9 +269,6 @@ export function useShareableURL(): () => string {
     search.diff,
     selectedEntity,
     visibleLiftTypes,
-    showTerrain,
-    showPistes,
-    showLifts,
     showLabels,
     cameraPosition,
     cameraTarget,

@@ -54,7 +54,6 @@ interface PistesProps {
  */
 export function Pistes({ enabledDifficulties }: PistesProps) {
   const { data: pistes, isLoading } = usePistes();
-  const showPistes = useMapStore((s) => s.showPistes);
   const hoveredPisteId = useMapStore((s) => s.getHoveredId('piste'));
   const selectedPisteId = useMapStore((s) => s.getSelectedId('piste'));
   const hoveredEntity = useMapStore((s) => s.hoveredEntity);
@@ -70,7 +69,7 @@ export function Pistes({ enabledDifficulties }: PistesProps) {
     [pistes, enabledDifficulties]
   );
 
-  if (!showPistes || isLoading || !filteredPistes.length) {
+  if (isLoading || !filteredPistes.length) {
     return null;
   }
 

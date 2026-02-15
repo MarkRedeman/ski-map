@@ -32,7 +32,7 @@ export interface Selection {
 // Default values
 export const DEFAULT_DIFFICULTIES: Difficulty[] = ['blue', 'red', 'black'];
 export const DEFAULT_LIFT_TYPES: LiftType[] = ['Gondola', 'Cable Car', 'Chair Lift', 'Lift'];
-export const DEFAULT_LAYERS = ['terrain', 'pistes', 'lifts', 'labels'] as const;
+export const DEFAULT_LAYERS = ['labels'] as const;
 export const DEFAULT_RESOLUTION: ResolutionLevel = '2x';
 
 // Valid values for validation
@@ -48,7 +48,7 @@ const VALID_LIFT_TYPES = [
   'Magic Carpet',
   'Lift',
 ] as const;
-const VALID_LAYERS = ['terrain', 'pistes', 'lifts', 'labels'] as const;
+const VALID_LAYERS = ['labels'] as const;
 const VALID_RESOLUTIONS = ['1x', '2x', '4x', '8x', '16x'] as const;
 
 /**
@@ -193,7 +193,7 @@ export const searchSchema = z.object({
   // Lift type filter: "Gondola,Chair Lift"
   lifts: z.string().optional(),
 
-  // Layer visibility: "pistes,lifts" (terrain always shown)
+  // Layer visibility: "labels" (only labels is toggleable now)
   show: z.string().optional(),
 
   // Resolution: "1x", "2x", "4x", "8x", "16x"
@@ -244,7 +244,7 @@ export function buildSearchParams(state: {
   selection: Selection | null;
   difficulties: Difficulty[];
   liftTypes: LiftType[];
-  layers: { terrain: boolean; pistes: boolean; lifts: boolean; labels: boolean };
+  showLabels: boolean;
   resolution: ResolutionLevel;
   terrainBrightness: number;
   terrainSaturation: number;
@@ -264,12 +264,10 @@ export function buildSearchParams(state: {
   const liftsStr = serializeList(state.liftTypes, DEFAULT_LIFT_TYPES, VALID_LIFT_TYPES);
   if (liftsStr) params.lifts = liftsStr;
 
-  // Layers (only if something is hidden)
-  const activeLayers = Object.entries(state.layers)
-    .filter(([_, visible]) => visible)
-    .map(([layer]) => layer) as (typeof VALID_LAYERS)[number][];
-  const layersStr = serializeList(activeLayers, DEFAULT_LAYERS, VALID_LAYERS);
-  if (layersStr) params.show = layersStr;
+  // Labels visibility (only include in URL if labels are hidden)
+  if (!state.showLabels) {
+    params.show = '';
+  }
 
   // Resolution (only if not default)
   if (state.resolution !== DEFAULT_RESOLUTION) {

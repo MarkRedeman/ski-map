@@ -71,28 +71,43 @@ function RidePage() {
   }, [reset, selectRun]);
 
   // Auto-hide pistes and lifts when viewing a ride
-  // Restore previous visibility when leaving ride view
-  const previousVisibilityRef = useRef<{ pistes: boolean; lifts: boolean } | null>(null);
-  const setShowPistes = useMapStore((s) => s.setShowPistes);
-  const setShowLifts = useMapStore((s) => s.setShowLifts);
+  // Save and restore difficulty filters (URL state) and lift type filters (store state)
+  const previousFiltersRef = useRef<{
+    difficulties: string | undefined;
+    liftTypes: Set<import('@/stores/useMapStore').LiftType>;
+  } | null>(null);
 
   useEffect(() => {
-    // Save current visibility state on mount
-    const { showPistes, showLifts } = useMapStore.getState();
-    previousVisibilityRef.current = { pistes: showPistes, lifts: showLifts };
+    // Save current filter state on mount
+    const currentSearch = window.location.search;
+    const urlParams = new URLSearchParams(currentSearch);
+    const currentDiff = urlParams.get('diff') ?? undefined;
+    const { visibleLiftTypes } = useMapStore.getState();
+    previousFiltersRef.current = {
+      difficulties: currentDiff,
+      liftTypes: new Set(visibleLiftTypes),
+    };
 
-    // Hide pistes and lifts to focus on the ride
-    setShowPistes(false);
-    setShowLifts(false);
+    // Clear all difficulties and lift types to hide pistes/lifts
+    useMapStore.getState().setAllLiftTypesVisible(false);
+    // Navigate with empty diff to hide all pistes
+    navigate({
+      search: (prev) => ({ ...prev, diff: '' }),
+      replace: true,
+    });
 
-    // Restore visibility on unmount
+    // Restore filters on unmount
     return () => {
-      if (previousVisibilityRef.current) {
-        setShowPistes(previousVisibilityRef.current.pistes);
-        setShowLifts(previousVisibilityRef.current.lifts);
+      if (previousFiltersRef.current) {
+        // Restore lift types
+        const { liftTypes } = previousFiltersRef.current;
+        useMapStore.getState().setAllLiftTypesVisible(false);
+        for (const type of liftTypes) {
+          useMapStore.getState().toggleLiftType(type);
+        }
       }
     };
-  }, [setShowPistes, setShowLifts]);
+  }, [navigate]);
 
   // Sync playback time with URL (debounced)
   useEffect(() => {

@@ -52,7 +52,6 @@ function getLiftConfig(type: string): { color: string; colorHighlight: string; i
  */
 export function Lifts() {
   const { data: lifts, isLoading } = useLifts();
-  const showLifts = useMapStore((s) => s.showLifts);
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes);
   const hoveredLiftId = useMapStore((s) => s.getHoveredId('lift'));
   const selectedLiftId = useMapStore((s) => s.getSelectedId('lift'));
@@ -70,7 +69,7 @@ export function Lifts() {
     return lifts.filter((lift) => visibleLiftTypes.has(lift.type as LiftType));
   }, [lifts, visibleLiftTypes]);
 
-  if (!showLifts || isLoading || !visibleLifts.length) {
+  if (isLoading || !visibleLifts.length) {
     return null;
   }
 
