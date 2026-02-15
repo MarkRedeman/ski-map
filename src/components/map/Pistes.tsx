@@ -124,8 +124,90 @@ interface PisteLinesProps {
 const PISTE_OFFSET = 2;
 
 /**
- * Renders all segments of a piste as separate Line components
- * All segments share the same hover/selection state
+ * Tolerance for matching segment endpoints (in degrees, ~1m)
+ * OSM ways that share a node will have identical coordinates,
+ * but we use a small tolerance for floating point safety.
+ */
+const STITCH_TOLERANCE = 0.000001;
+
+/**
+ * Stitch adjacent segments into continuous polylines.
+ *
+ * OSM frequently splits a single ski run into multiple way segments that
+ * share a common node at their junction. Rendering them as separate Line2
+ * meshes causes visible round endcaps to stack at shared endpoints.
+ * By stitching connected segments into longer polylines, we eliminate
+ * these artifacts.
+ */
+function stitchSegments(segments: [number, number][][]): [number, number][][] {
+  if (segments.length <= 1) return segments;
+
+  // Work with a mutable copy so we can mark segments as consumed
+  const remaining = segments.map((coords, i) => ({ id: i, coords, reversed: false }));
+  const result: [number, number][][] = [];
+
+  while (remaining.length > 0) {
+    // Start a new chain with the first remaining segment
+    const seed = remaining.shift()!;
+    const chain: [number, number][] = [...seed.coords];
+
+    // Repeatedly try to extend the chain by finding a segment whose
+    // start or end matches the chain's current start or end
+    let extended = true;
+    while (extended) {
+      extended = false;
+      const chainStart = chain[0]!;
+      const chainEnd = chain[chain.length - 1]!;
+
+      for (let i = 0; i < remaining.length; i++) {
+        const seg = remaining[i]!;
+        const segStart = seg.coords[0]!;
+        const segEnd = seg.coords[seg.coords.length - 1]!;
+
+        if (coordsMatch(chainEnd, segStart)) {
+          // Append segment (skip first point — it's the shared node)
+          chain.push(...seg.coords.slice(1));
+          remaining.splice(i, 1);
+          extended = true;
+          break;
+        } else if (coordsMatch(chainEnd, segEnd)) {
+          // Append reversed segment (skip last point after reversing — shared node)
+          const reversed = [...seg.coords].reverse();
+          chain.push(...reversed.slice(1));
+          remaining.splice(i, 1);
+          extended = true;
+          break;
+        } else if (coordsMatch(chainStart, segEnd)) {
+          // Prepend segment (skip last point — it's the shared node)
+          chain.unshift(...seg.coords.slice(0, -1));
+          remaining.splice(i, 1);
+          extended = true;
+          break;
+        } else if (coordsMatch(chainStart, segStart)) {
+          // Prepend reversed segment (skip first point after reversing — shared node)
+          const reversed = [...seg.coords].reverse();
+          chain.unshift(...reversed.slice(0, -1));
+          remaining.splice(i, 1);
+          extended = true;
+          break;
+        }
+      }
+    }
+
+    result.push(chain);
+  }
+
+  return result;
+}
+
+function coordsMatch(a: [number, number], b: [number, number]): boolean {
+  return Math.abs(a[0] - b[0]) < STITCH_TOLERANCE && Math.abs(a[1] - b[1]) < STITCH_TOLERANCE;
+}
+
+/**
+ * Renders all segments of a piste as Line components
+ * Adjacent segments sharing endpoints are stitched into continuous polylines
+ * to avoid overlapping endcap artifacts.
  */
 const PisteLines = memo(function PisteLines({
   segments,
@@ -144,9 +226,12 @@ const PisteLines = memo(function PisteLines({
     : DIFFICULTY_COLORS[difficulty];
   const opacity = isHighlighted ? 1 : dimmed ? DIMMED_OPACITY : LINE_OPACITY;
 
+  // Stitch connected segments into continuous polylines
+  const stitchedSegments = useMemo(() => stitchSegments(segments), [segments]);
+
   return (
     <>
-      {segments.map((segmentCoords, index) => (
+      {stitchedSegments.map((segmentCoords, index) => (
         <PisteSegment
           key={index}
           coordinates={segmentCoords}
