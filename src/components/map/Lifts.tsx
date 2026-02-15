@@ -188,6 +188,7 @@ const LiftLine = memo(function LiftLine({
         lineWidth={shadowWidth}
         opacity={opacity > 0 ? Math.min(opacity, SHADOW_OPACITY) : 0}
         transparent
+        depthWrite={false}
         dashed
         dashSize={2}
         gapSize={1}

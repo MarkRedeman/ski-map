@@ -130,6 +130,11 @@ const PISTE_OFFSET = 2;
  */
 const STITCH_TOLERANCE = 0.000001;
 
+interface StitchResult {
+  /** Stitched polylines (connected segments merged) */
+  polylines: [number, number][][];
+}
+
 /**
  * Stitch adjacent segments into continuous polylines.
  *
@@ -137,14 +142,14 @@ const STITCH_TOLERANCE = 0.000001;
  * share a common node at their junction. Rendering them as separate Line2
  * meshes causes visible round endcaps to stack at shared endpoints.
  * By stitching connected segments into longer polylines, we eliminate
- * these artifacts.
+ * most of these artifacts.
  */
-function stitchSegments(segments: [number, number][][]): [number, number][][] {
-  if (segments.length <= 1) return segments;
+function stitchSegments(segments: [number, number][][]): StitchResult {
+  if (segments.length <= 1) return { polylines: segments };
 
   // Work with a mutable copy so we can mark segments as consumed
-  const remaining = segments.map((coords, i) => ({ id: i, coords, reversed: false }));
-  const result: [number, number][][] = [];
+  const remaining = segments.map((coords) => ({ coords }));
+  const polylines: [number, number][][] = [];
 
   while (remaining.length > 0) {
     // Start a new chain with the first remaining segment
@@ -165,26 +170,22 @@ function stitchSegments(segments: [number, number][][]): [number, number][][] {
         const segEnd = seg.coords[seg.coords.length - 1]!;
 
         if (coordsMatch(chainEnd, segStart)) {
-          // Append segment (skip first point — it's the shared node)
           chain.push(...seg.coords.slice(1));
           remaining.splice(i, 1);
           extended = true;
           break;
         } else if (coordsMatch(chainEnd, segEnd)) {
-          // Append reversed segment (skip last point after reversing — shared node)
           const reversed = [...seg.coords].reverse();
           chain.push(...reversed.slice(1));
           remaining.splice(i, 1);
           extended = true;
           break;
         } else if (coordsMatch(chainStart, segEnd)) {
-          // Prepend segment (skip last point — it's the shared node)
           chain.unshift(...seg.coords.slice(0, -1));
           remaining.splice(i, 1);
           extended = true;
           break;
         } else if (coordsMatch(chainStart, segStart)) {
-          // Prepend reversed segment (skip first point after reversing — shared node)
           const reversed = [...seg.coords].reverse();
           chain.unshift(...reversed.slice(0, -1));
           remaining.splice(i, 1);
@@ -194,10 +195,10 @@ function stitchSegments(segments: [number, number][][]): [number, number][][] {
       }
     }
 
-    result.push(chain);
+    polylines.push(chain);
   }
 
-  return result;
+  return { polylines };
 }
 
 function coordsMatch(a: [number, number], b: [number, number]): boolean {
@@ -205,9 +206,10 @@ function coordsMatch(a: [number, number], b: [number, number]): boolean {
 }
 
 /**
- * Renders all segments of a piste as Line components
+ * Renders all segments of a piste as Line components.
  * Adjacent segments sharing endpoints are stitched into continuous polylines
- * to avoid overlapping endcap artifacts.
+ * to avoid overlapping endcap artifacts. Shadow and main lines are rendered
+ * in separate groups to prevent shadow endcap alpha-blending at junctions.
  */
 const PisteLines = memo(function PisteLines({
   segments,
@@ -227,17 +229,22 @@ const PisteLines = memo(function PisteLines({
   const opacity = isHighlighted ? 1 : dimmed ? DIMMED_OPACITY : LINE_OPACITY;
 
   // Stitch connected segments into continuous polylines
-  const stitchedSegments = useMemo(() => stitchSegments(segments), [segments]);
+  const { polylines } = useMemo(() => stitchSegments(segments), [segments]);
+
+  const shadowWidth = lineWidth * SHADOW_WIDTH_MULTIPLIER;
+  const shadowOpacity = opacity > 0 ? Math.min(opacity, SHADOW_OPACITY) : 0;
 
   return (
     <>
-      {stitchedSegments.map((segmentCoords, index) => (
+      {polylines.map((segmentCoords, index) => (
         <PisteSegment
           key={index}
           coordinates={segmentCoords}
           color={color}
           lineWidth={lineWidth}
           opacity={opacity}
+          shadowWidth={shadowWidth}
+          shadowOpacity={shadowOpacity}
           elevationGrid={elevationGrid}
         />
       ))}
@@ -250,6 +257,8 @@ interface PisteSegmentProps {
   color: string;
   lineWidth: number;
   opacity: number;
+  shadowWidth: number;
+  shadowOpacity: number;
   elevationGrid: ElevationGrid | null;
 }
 
@@ -261,6 +270,8 @@ const PisteSegment = memo(function PisteSegment({
   color,
   lineWidth,
   opacity,
+  shadowWidth,
+  shadowOpacity,
   elevationGrid,
 }: PisteSegmentProps) {
   // Convert geo coordinates to local 3D coordinates with terrain elevation
@@ -288,8 +299,6 @@ const PisteSegment = memo(function PisteSegment({
 
   if (points.length < 2) return null;
 
-  const shadowWidth = lineWidth * SHADOW_WIDTH_MULTIPLIER;
-
   return (
     <>
       {/* Shadow outline — wider dark line underneath for terrain contrast */}
@@ -297,8 +306,9 @@ const PisteSegment = memo(function PisteSegment({
         points={shadowPoints}
         color={SHADOW_COLOR}
         lineWidth={shadowWidth}
-        opacity={opacity > 0 ? Math.min(opacity, SHADOW_OPACITY) : 0}
+        opacity={shadowOpacity}
         transparent
+        depthWrite={false}
         raycast={() => null}
       />
       {/* Main colored line */}
