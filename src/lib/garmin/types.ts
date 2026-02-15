@@ -6,28 +6,28 @@
  * A single point along a ski run with GPS and optional sensor data
  */
 export interface RunPoint {
-  lat: number
-  lon: number
-  elevation: number
-  time: Date
-  speed?: number // m/s, calculated from time/distance between points
-  heartRate?: number // bpm, from sensor data if available
+  lat: number;
+  lon: number;
+  elevation: number;
+  time: Date;
+  speed?: number; // m/s, calculated from time/distance between points
+  heartRate?: number; // bpm, from sensor data if available
 }
 
 /**
  * A complete ski run with computed statistics
  */
 export interface SkiRun {
-  id: string
-  name: string
-  date: Date
-  duration: number // seconds
-  distance: number // meters
-  elevationGain: number // meters
-  elevationLoss: number // meters
-  maxSpeed: number // m/s
-  avgSpeed: number // m/s
-  coordinates: RunPoint[]
+  id: string;
+  name: string;
+  date: Date;
+  duration: number; // seconds
+  distance: number; // meters
+  elevationGain: number; // meters
+  elevationLoss: number; // meters
+  maxSpeed: number; // m/s
+  avgSpeed: number; // m/s
+  coordinates: RunPoint[];
 }
 
 /**
@@ -35,28 +35,28 @@ export interface SkiRun {
  * Dates are stored as ISO strings
  */
 export interface SkiRunSerialized {
-  id: string
-  name: string
-  date: string // ISO string
-  duration: number
-  distance: number
-  elevationGain: number
-  elevationLoss: number
-  maxSpeed: number
-  avgSpeed: number
-  coordinates: RunPointSerialized[]
+  id: string;
+  name: string;
+  date: string; // ISO string
+  duration: number;
+  distance: number;
+  elevationGain: number;
+  elevationLoss: number;
+  maxSpeed: number;
+  avgSpeed: number;
+  coordinates: RunPointSerialized[];
 }
 
 /**
  * Serializable version of RunPoint
  */
 export interface RunPointSerialized {
-  lat: number
-  lon: number
-  elevation: number
-  time: string // ISO string
-  speed?: number
-  heartRate?: number
+  lat: number;
+  lon: number;
+  elevation: number;
+  time: string; // ISO string
+  speed?: number;
+  heartRate?: number;
 }
 
 /**
@@ -70,7 +70,7 @@ export function serializeRun(run: SkiRun): SkiRunSerialized {
       ...point,
       time: point.time.toISOString(),
     })),
-  }
+  };
 }
 
 /**
@@ -84,5 +84,5 @@ export function deserializeRun(run: SkiRunSerialized): SkiRun {
       ...point,
       time: new Date(point.time),
     })),
-  }
+  };
 }

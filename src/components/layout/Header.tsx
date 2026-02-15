@@ -1,6 +1,6 @@
-import { Link } from '@tanstack/react-router'
-import { Mountain } from 'lucide-react'
-import { OfflineIndicator } from '@/components/OfflineIndicator'
+import { Link } from '@tanstack/react-router';
+import { Mountain } from 'lucide-react';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
 
 export function Header() {
   return (
@@ -9,8 +9,8 @@ export function Header() {
         <Mountain className="h-5 w-5 text-amber-500" />
         <span className="text-base font-bold text-amber-500">Sölden Navigator</span>
       </Link>
-      
+
       <OfflineIndicator />
     </header>
-  )
+  );
 }

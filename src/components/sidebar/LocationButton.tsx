@@ -1,9 +1,9 @@
-import { Locate, LocateOff, AlertCircle, Navigation, MapPinOff } from 'lucide-react'
-import { useGeolocation } from '@/hooks/useGeolocation'
-import { useGeolocationStore } from '@/stores/useGeolocationStore'
-import { useMapStore } from '@/stores/useMapStore'
-import { geoToLocal, isInSoldenBounds } from '@/lib/geo/coordinates'
-import { cn } from '@/lib/utils'
+import { Locate, LocateOff, AlertCircle, Navigation, MapPinOff } from 'lucide-react';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import { useGeolocationStore } from '@/stores/useGeolocationStore';
+import { useMapStore } from '@/stores/useMapStore';
+import { geoToLocal, isInSoldenBounds } from '@/lib/geo/coordinates';
+import { cn } from '@/lib/utils';
 
 /**
  * Button component that toggles GPS location tracking on/off.
@@ -11,43 +11,41 @@ import { cn } from '@/lib/utils'
  * Includes a "center on me" button to navigate the camera to the user's location.
  */
 export function LocationButton() {
-  const { isTracking, error, accuracy, startTracking, stopTracking } = useGeolocation()
-  const userLocation = useGeolocationStore((s) => s.userLocation)
-  const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget)
+  const { isTracking, error, accuracy, startTracking, stopTracking } = useGeolocation();
+  const userLocation = useGeolocationStore((s) => s.userLocation);
+  const setCameraFocusTarget = useMapStore((s) => s.setCameraFocusTarget);
 
   // Check if user is within Sölden ski area bounds
-  const isInBounds = userLocation 
-    ? isInSoldenBounds(userLocation[0], userLocation[1])
-    : true // Default to true when no location
+  const isInBounds = userLocation ? isInSoldenBounds(userLocation[0], userLocation[1]) : true; // Default to true when no location
 
   const handleClick = () => {
     if (isTracking) {
-      stopTracking()
+      stopTracking();
     } else {
-      startTracking()
+      startTracking();
     }
-  }
+  };
 
   const handleCenterOnMe = (e: React.MouseEvent) => {
-    e.stopPropagation() // Don't trigger the main button
-    
-    if (!userLocation) return
-    
-    const [lat, lon, elevation] = userLocation
-    const [x, y, z] = geoToLocal(lat, lon, elevation)
-    
+    e.stopPropagation(); // Don't trigger the main button
+
+    if (!userLocation) return;
+
+    const [lat, lon, elevation] = userLocation;
+    const [x, y, z] = geoToLocal(lat, lon, elevation);
+
     setCameraFocusTarget({
       position: [x, y, z],
       distance: 150, // Zoom in reasonably close
-    })
-  }
+    });
+  };
 
   const formatAccuracy = (meters: number): string => {
-    if (meters < 10) return 'Excellent'
-    if (meters < 30) return 'Good'
-    if (meters < 100) return 'Fair'
-    return 'Poor'
-  }
+    if (meters < 10) return 'Excellent';
+    if (meters < 30) return 'Good';
+    if (meters < 100) return 'Fair';
+    return 'Poor';
+  };
 
   return (
     <div className="space-y-2">
@@ -82,13 +80,9 @@ export function LocationButton() {
           {/* Label and status */}
           <div className="flex-1 text-left">
             <span className="text-sm font-medium">
-              {error
-                ? 'Location Error'
-                : isTracking
-                  ? 'Tracking Active'
-                  : 'Enable Location'}
+              {error ? 'Location Error' : isTracking ? 'Tracking Active' : 'Enable Location'}
             </span>
-            
+
             {/* Accuracy indicator when tracking */}
             {isTracking && accuracy !== null && !error && (
               <div className="text-xs text-amber-400">
@@ -130,9 +124,7 @@ export function LocationButton() {
 
       {/* Error message */}
       {error && (
-        <div className="rounded bg-red-500/20 p-2 text-xs text-red-300">
-          {error.message}
-        </div>
+        <div className="rounded bg-red-500/20 p-2 text-xs text-red-300">{error.message}</div>
       )}
 
       {/* Out of bounds warning */}
@@ -150,5 +142,5 @@ export function LocationButton() {
         </p>
       )}
     </div>
-  )
+  );
 }

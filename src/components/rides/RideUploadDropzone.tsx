@@ -10,123 +10,123 @@
  * - Error handling with inline error message
  */
 
-import { useState, useCallback, useRef } from 'react'
-import { FolderOpen, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { parseGPXFile } from '@/lib/garmin/parser'
-import { useRunsStore } from '@/stores/useRunsStore'
+import { useState, useCallback, useRef } from 'react';
+import { FolderOpen, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { parseGPXFile } from '@/lib/garmin/parser';
+import { useRunsStore } from '@/stores/useRunsStore';
 
 interface RideUploadDropzoneProps {
   /** Called after all files are successfully parsed and added */
-  onComplete?: () => void
+  onComplete?: () => void;
   /** Compact mode for use in smaller spaces */
-  compact?: boolean
+  compact?: boolean;
 }
 
 export function RideUploadDropzone({ onComplete, compact = false }: RideUploadDropzoneProps) {
-  const addRun = useRunsStore((s) => s.addRun)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const addRun = useRunsStore((s) => s.addRun);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [isDragging, setIsDragging] = useState(false)
-  const [isParsing, setIsParsing] = useState(false)
-  const [parseProgress, setParseProgress] = useState<{ current: number; total: number } | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
+  const [parseProgress, setParseProgress] = useState<{ current: number; total: number } | null>(
+    null
+  );
+  const [error, setError] = useState<string | null>(null);
 
   // Handle multiple files
   const handleFiles = useCallback(
     async (files: FileList | File[]) => {
-      const fileArray = Array.from(files)
+      const fileArray = Array.from(files);
 
       // Filter for GPX files only
-      const gpxFiles = fileArray.filter((file) =>
-        file.name.toLowerCase().endsWith('.gpx')
-      )
+      const gpxFiles = fileArray.filter((file) => file.name.toLowerCase().endsWith('.gpx'));
 
       if (gpxFiles.length === 0) {
-        setError('Please select .gpx files only')
-        return
+        setError('Please select .gpx files only');
+        return;
       }
 
-      setError(null)
-      setIsParsing(true)
-      setParseProgress({ current: 0, total: gpxFiles.length })
+      setError(null);
+      setIsParsing(true);
+      setParseProgress({ current: 0, total: gpxFiles.length });
 
-      const errors: string[] = []
+      const errors: string[] = [];
 
       for (let i = 0; i < gpxFiles.length; i++) {
-        const file = gpxFiles[i]!
-        setParseProgress({ current: i + 1, total: gpxFiles.length })
+        const file = gpxFiles[i]!;
+        setParseProgress({ current: i + 1, total: gpxFiles.length });
 
         try {
-          const run = await parseGPXFile(file)
-          await addRun(run)
+          const run = await parseGPXFile(file);
+          await addRun(run);
         } catch (err) {
-          const message = err instanceof Error ? err.message : 'Failed to parse file'
-          errors.push(`${file.name}: ${message}`)
+          const message = err instanceof Error ? err.message : 'Failed to parse file';
+          errors.push(`${file.name}: ${message}`);
         }
       }
 
-      setIsParsing(false)
-      setParseProgress(null)
+      setIsParsing(false);
+      setParseProgress(null);
 
       if (errors.length > 0) {
-        setError(errors.length === 1 ? errors[0]! : `${errors.length} files failed to parse`)
+        setError(errors.length === 1 ? errors[0]! : `${errors.length} files failed to parse`);
       } else {
-        onComplete?.()
+        onComplete?.();
       }
 
       // Clear input
       if (fileInputRef.current) {
-        fileInputRef.current.value = ''
+        fileInputRef.current.value = '';
       }
     },
     [addRun, onComplete]
-  )
+  );
 
   // Drag event handlers
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(true)
-  }, [])
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-  }, [])
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      setIsDragging(false)
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
 
-      const files = e.dataTransfer.files
+      const files = e.dataTransfer.files;
       if (files.length > 0) {
-        handleFiles(files)
+        handleFiles(files);
       }
     },
     [handleFiles]
-  )
+  );
 
   // Click to open file picker
   const handleClick = () => {
     if (!isParsing) {
-      fileInputRef.current?.click()
+      fileInputRef.current?.click();
     }
-  }
+  };
 
   // File input change handler
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files
+      const files = e.target.files;
       if (files && files.length > 0) {
-        handleFiles(files)
+        handleFiles(files);
       }
     },
     [handleFiles]
-  )
+  );
 
   return (
     <div className="w-full">
@@ -171,9 +171,7 @@ export function RideUploadDropzone({ onComplete, compact = false }: RideUploadDr
                   isDragging ? 'scale-110 text-amber-400' : 'text-white/50'
                 )}
               />
-              <p className="text-sm font-medium text-white/80">
-                Drag & drop GPX files here
-              </p>
+              <p className="text-sm font-medium text-white/80">Drag & drop GPX files here</p>
               <p className="mt-1 text-xs text-white/40">or click to browse</p>
             </>
           )}
@@ -182,10 +180,8 @@ export function RideUploadDropzone({ onComplete, compact = false }: RideUploadDr
 
       {/* Error message */}
       {error && (
-        <div className="mt-2 rounded bg-red-500/20 px-3 py-2 text-xs text-red-300">
-          {error}
-        </div>
+        <div className="mt-2 rounded bg-red-500/20 px-3 py-2 text-xs text-red-300">{error}</div>
       )}
     </div>
-  )
+  );
 }

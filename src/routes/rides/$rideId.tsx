@@ -1,115 +1,117 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { zodValidator } from '@tanstack/zod-adapter'
-import { z } from 'zod'
-import { Suspense, lazy, useEffect, useRef } from 'react'
-import { Sidebar } from '@/components/layout/Sidebar'
-import { SidebarToggle } from '@/components/map/panels/SidebarToggle'
-import { PlaybackControls } from '@/components/playback/PlaybackControls'
-import { useRunsStore } from '@/stores/useRunsStore'
-import { usePlaybackStore } from '@/stores/usePlaybackStore'
-import { useMapStore } from '@/stores/useMapStore'
-import { useRuns } from '@/hooks/useRuns'
-import { searchSchema } from '@/lib/url/searchSchema'
-import { useURLSync } from '@/hooks/useURLSync'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { zodValidator } from '@tanstack/zod-adapter';
+import { z } from 'zod';
+import { Suspense, lazy, useEffect, useRef } from 'react';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { SidebarToggle } from '@/components/map/panels/SidebarToggle';
+import { PlaybackControls } from '@/components/playback/PlaybackControls';
+import { useRunsStore } from '@/stores/useRunsStore';
+import { usePlaybackStore } from '@/stores/usePlaybackStore';
+import { useMapStore } from '@/stores/useMapStore';
+import { useRuns } from '@/hooks/useRuns';
+import { searchSchema } from '@/lib/url/searchSchema';
+import { useURLSync } from '@/hooks/useURLSync';
 
 // Lazy load the 3D map for better initial load
-const SkiMap3D = lazy(() => import('@/components/map/SkiMap3D').then(m => ({ default: m.SkiMap3D })))
+const SkiMap3D = lazy(() =>
+  import('@/components/map/SkiMap3D').then((m) => ({ default: m.SkiMap3D }))
+);
 
 // Extend base search schema with ride-specific time parameter
 const rideSearchSchema = searchSchema.extend({
   t: z.coerce.number().optional().default(0),
-})
+});
 
 export const Route = createFileRoute('/rides/$rideId')({
   validateSearch: zodValidator(rideSearchSchema),
   component: RidePage,
-})
+});
 
 function RidePage() {
-  const navigate = useNavigate({ from: Route.fullPath })
-  const { rideId } = Route.useParams()
-  const { t } = Route.useSearch()
-  
+  const navigate = useNavigate({ from: Route.fullPath });
+  const { rideId } = Route.useParams();
+  const { t } = Route.useSearch();
+
   // Sync URL search params with stores (for filters/selection)
-  useURLSync()
-  
+  useURLSync();
+
   // Ensure runs are loaded (this also triggers load if not already done)
-  const { runs, isLoading } = useRuns()
-  const selectRun = useRunsStore((state) => state.selectRun)
-  
-  const isPlaying = usePlaybackStore((state) => state.isPlaying)
-  const currentTime = usePlaybackStore((state) => state.currentTime)
-  const seek = usePlaybackStore((state) => state.seek)
-  const reset = usePlaybackStore((state) => state.reset)
-  
+  const { runs, isLoading } = useRuns();
+  const selectRun = useRunsStore((state) => state.selectRun);
+
+  const isPlaying = usePlaybackStore((state) => state.isPlaying);
+  const currentTime = usePlaybackStore((state) => state.currentTime);
+  const seek = usePlaybackStore((state) => state.seek);
+  const reset = usePlaybackStore((state) => state.reset);
+
   // Find the ride
-  const ride = runs.find((run) => run.id === rideId)
-  
+  const ride = runs.find((run) => run.id === rideId);
+
   // Ref for debouncing URL updates
-  const lastUpdateRef = useRef<number>(0)
-  
+  const lastUpdateRef = useRef<number>(0);
+
   // Select ride when it becomes available
   useEffect(() => {
     if (ride) {
-      selectRun(rideId)
+      selectRun(rideId);
     }
-  }, [rideId, ride, selectRun])
-  
+  }, [rideId, ride, selectRun]);
+
   // Set initial seek position on mount
   useEffect(() => {
-    seek(t)
-  }, [t, seek])
-  
+    seek(t);
+  }, [t, seek]);
+
   // Reset on unmount
   useEffect(() => {
     return () => {
-      reset()
-      selectRun(null)
-    }
-  }, [reset, selectRun])
-  
+      reset();
+      selectRun(null);
+    };
+  }, [reset, selectRun]);
+
   // Auto-hide pistes and lifts when viewing a ride
   // Restore previous visibility when leaving ride view
-  const previousVisibilityRef = useRef<{ pistes: boolean; lifts: boolean } | null>(null)
-  const setShowPistes = useMapStore((s) => s.setShowPistes)
-  const setShowLifts = useMapStore((s) => s.setShowLifts)
-  
+  const previousVisibilityRef = useRef<{ pistes: boolean; lifts: boolean } | null>(null);
+  const setShowPistes = useMapStore((s) => s.setShowPistes);
+  const setShowLifts = useMapStore((s) => s.setShowLifts);
+
   useEffect(() => {
     // Save current visibility state on mount
-    const { showPistes, showLifts } = useMapStore.getState()
-    previousVisibilityRef.current = { pistes: showPistes, lifts: showLifts }
-    
+    const { showPistes, showLifts } = useMapStore.getState();
+    previousVisibilityRef.current = { pistes: showPistes, lifts: showLifts };
+
     // Hide pistes and lifts to focus on the ride
-    setShowPistes(false)
-    setShowLifts(false)
-    
+    setShowPistes(false);
+    setShowLifts(false);
+
     // Restore visibility on unmount
     return () => {
       if (previousVisibilityRef.current) {
-        setShowPistes(previousVisibilityRef.current.pistes)
-        setShowLifts(previousVisibilityRef.current.lifts)
+        setShowPistes(previousVisibilityRef.current.pistes);
+        setShowLifts(previousVisibilityRef.current.lifts);
       }
-    }
-  }, [setShowPistes, setShowLifts])
-  
+    };
+  }, [setShowPistes, setShowLifts]);
+
   // Sync playback time with URL (debounced)
   useEffect(() => {
-    if (!isPlaying) return
-    
+    if (!isPlaying) return;
+
     const intervalId = setInterval(() => {
-      const now = Date.now()
+      const now = Date.now();
       if (now - lastUpdateRef.current >= 500) {
-        lastUpdateRef.current = now
+        lastUpdateRef.current = now;
         navigate({
           search: { t: Math.floor(currentTime) },
           replace: true,
-        })
+        });
       }
-    }, 500)
-    
-    return () => clearInterval(intervalId)
-  }, [isPlaying, currentTime, navigate])
-  
+    }, 500);
+
+    return () => clearInterval(intervalId);
+  }, [isPlaying, currentTime, navigate]);
+
   // Handle loading state
   if (isLoading) {
     return (
@@ -119,9 +121,9 @@ function RidePage() {
           <div className="text-lg font-medium text-amber-700">Loading rides...</div>
         </div>
       </div>
-    )
+    );
   }
-  
+
   // Handle ride not found
   if (!ride) {
     return (
@@ -140,19 +142,19 @@ function RidePage() {
           </Link>
         </div>
       </div>
-    )
+    );
   }
-  
+
   return (
     <div className="flex h-full">
       {/* Sidebar with navigation controls */}
       <Sidebar />
-      
+
       {/* 3D Map View */}
       <div className="flex-1 relative">
         {/* Sidebar toggle button */}
         <SidebarToggle />
-        
+
         <Suspense
           fallback={
             <div className="flex h-full items-center justify-center bg-gradient-to-b from-amber-50 to-white">
@@ -166,12 +168,10 @@ function RidePage() {
         >
           <SkiMap3D />
         </Suspense>
-        
+
         {/* Playback Controls Overlay */}
-        {ride && (
-          <PlaybackControls ride={ride} />
-        )}
+        {ride && <PlaybackControls ride={ride} />}
       </div>
     </div>
-  )
+  );
 }

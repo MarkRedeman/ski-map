@@ -1,12 +1,12 @@
 /**
  * Settings store for app-wide configuration
- * 
+ *
  * Manages resolution settings. URL persistence is handled by useURLSync hook.
  */
 
-import { create } from 'zustand'
+import { create } from 'zustand';
 
-export type ResolutionLevel = '1x' | '2x' | '4x' | '8x' | '16x'
+export type ResolutionLevel = '1x' | '2x' | '4x' | '8x' | '16x';
 
 /** Resolution presets mapping to zoom levels and mesh segments */
 const RESOLUTION_PRESETS: Record<ResolutionLevel, { zoom: number; segments: number }> = {
@@ -15,55 +15,55 @@ const RESOLUTION_PRESETS: Record<ResolutionLevel, { zoom: number; segments: numb
   '4x': { zoom: 13, segments: 512 },
   '8x': { zoom: 14, segments: 512 },
   '16x': { zoom: 15, segments: 512 },
-}
+};
 
 interface SettingsState {
   /** Current resolution level */
-  resolution: ResolutionLevel
+  resolution: ResolutionLevel;
   /** Set resolution level */
-  setResolution: (res: ResolutionLevel) => void
+  setResolution: (res: ResolutionLevel) => void;
   /** Get terrain zoom level for current resolution */
-  getTerrainZoom: () => number
+  getTerrainZoom: () => number;
   /** Get mesh segments for current resolution */
-  getTerrainSegments: () => number
+  getTerrainSegments: () => number;
 }
 
 /** Read initial resolution from URL query params (for initial load before useURLSync takes over) */
 function getInitialResolution(): ResolutionLevel {
-  if (typeof window === 'undefined') return '2x'
-  
-  const params = new URLSearchParams(window.location.search)
-  const res = params.get('resolution')
-  
+  if (typeof window === 'undefined') return '2x';
+
+  const params = new URLSearchParams(window.location.search);
+  const res = params.get('resolution');
+
   if (res && res in RESOLUTION_PRESETS) {
-    return res as ResolutionLevel
+    return res as ResolutionLevel;
   }
-  
-  return '2x' // Default
+
+  return '2x'; // Default
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   resolution: getInitialResolution(),
-  
+
   setResolution: (resolution) => {
-    set({ resolution })
+    set({ resolution });
     // URL update is now handled by useURLSync hook
   },
-  
+
   getTerrainZoom: () => {
-    const { resolution } = get()
-    return RESOLUTION_PRESETS[resolution].zoom
+    const { resolution } = get();
+    return RESOLUTION_PRESETS[resolution].zoom;
   },
-  
+
   getTerrainSegments: () => {
-    const { resolution } = get()
-    return RESOLUTION_PRESETS[resolution].segments
+    const { resolution } = get();
+    return RESOLUTION_PRESETS[resolution].segments;
   },
-}))
+}));
 
 /** Hook to get computed terrain settings */
 export function useTerrainSettings() {
-  const resolution = useSettingsStore((s) => s.resolution)
+  const resolution = useSettingsStore((s) => s.resolution);
   // Return stable reference - RESOLUTION_PRESETS entries are static objects
-  return RESOLUTION_PRESETS[resolution]
+  return RESOLUTION_PRESETS[resolution];
 }

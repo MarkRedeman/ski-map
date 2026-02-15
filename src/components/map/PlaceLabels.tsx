@@ -1,33 +1,33 @@
 /**
  * PlaceLabels component - renders village/town labels with smart visibility
- * 
+ *
  * Features:
  * - Badge-style labels with building icon
  * - Smart distance-based filtering: towns always visible, villages/hamlets filtered by proximity to lifts
  * - Uses terrain elevation sampling for accurate Y positioning
  */
 
-import { useMemo, useState } from 'react'
-import { Html } from '@react-three/drei'
-import { useFrame } from '@react-three/fiber'
-import { usePlaces } from '@/hooks/usePlaces'
-import { useLifts } from '@/hooks/useLifts'
-import { useMapStore } from '@/stores/useMapStore'
-import { geoToLocal } from '@/lib/geo/coordinates'
-import { sampleElevation } from '@/lib/geo/elevationGrid'
+import { useMemo, useState } from 'react';
+import { Html } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
+import { usePlaces } from '@/hooks/usePlaces';
+import { useLifts } from '@/hooks/useLifts';
+import { useMapStore } from '@/stores/useMapStore';
+import { geoToLocal } from '@/lib/geo/coordinates';
+import { sampleElevation } from '@/lib/geo/elevationGrid';
 
-type PlaceType = 'town' | 'village' | 'hamlet'
+type PlaceType = 'town' | 'village' | 'hamlet';
 
 /** Only show villages/hamlets within this distance (meters) of a lift */
-const PLACE_PROXIMITY_RADIUS = 1000
+const PLACE_PROXIMITY_RADIUS = 1000;
 
 /**
  * Calculate approximate distance between two geo points in meters
  */
 function geoDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const latDiff = (lat2 - lat1) * 111000 // ~111km per degree latitude
-  const lonDiff = (lon2 - lon1) * 111000 * Math.cos(lat1 * Math.PI / 180)
-  return Math.sqrt(latDiff * latDiff + lonDiff * lonDiff)
+  const latDiff = (lat2 - lat1) * 111000; // ~111km per degree latitude
+  const lonDiff = (lon2 - lon1) * 111000 * Math.cos((lat1 * Math.PI) / 180);
+  return Math.sqrt(latDiff * latDiff + lonDiff * lonDiff);
 }
 
 /**
@@ -35,21 +35,21 @@ function geoDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
  */
 function getVisiblePlaceTypes(cameraDistance: number): Set<PlaceType> {
   if (cameraDistance < 500) {
-    return new Set(['town', 'village', 'hamlet'])  // Show all
+    return new Set(['town', 'village', 'hamlet']); // Show all
   }
   if (cameraDistance < 1500) {
-    return new Set(['town', 'village'])  // Towns and villages
+    return new Set(['town', 'village']); // Towns and villages
   }
-  return new Set(['town'])  // Only towns when far away
+  return new Set(['town']); // Only towns when far away
 }
 
 /**
  * Quantize camera distance to threshold levels to avoid constant re-renders
  */
 function getDistanceLevel(distance: number): number {
-  if (distance < 500) return 0
-  if (distance < 1500) return 1
-  return 2
+  if (distance < 500) return 0;
+  if (distance < 1500) return 1;
+  return 2;
 }
 
 /**
@@ -58,114 +58,111 @@ function getDistanceLevel(distance: number): number {
 function getPlaceIcon(type: PlaceType): string {
   switch (type) {
     case 'town':
-      return '🏘️'
+      return '🏘️';
     case 'village':
-      return '🏠'
+      return '🏠';
     case 'hamlet':
-      return '🏡'
+      return '🏡';
   }
 }
 
 interface PlaceLabelProps {
-  name: string
-  type: PlaceType
-  position: [number, number, number]
+  name: string;
+  type: PlaceType;
+  position: [number, number, number];
 }
 
 function PlaceLabel({ name, type, position }: PlaceLabelProps) {
-  const isTown = type === 'town'
-  
+  const isTown = type === 'town';
+
   return (
-    <Html
-      position={position}
-      center
-      distanceFactor={isTown ? 250 : 200}
-      zIndexRange={[40, 0]}
-    >
-      <div className={`
+    <Html position={position} center distanceFactor={isTown ? 250 : 200} zIndexRange={[40, 0]}>
+      <div
+        className={`
         pointer-events-none flex items-center gap-2 rounded-full backdrop-blur-sm shadow-lg
-        ${isTown 
-          ? 'bg-amber-900/80 px-4 py-2' 
-          : 'bg-black/70 px-3 py-1.5'
-        }
-      `}>
+        ${isTown ? 'bg-amber-900/80 px-4 py-2' : 'bg-black/70 px-3 py-1.5'}
+      `}
+      >
         <span className={isTown ? 'text-lg' : 'text-base'}>{getPlaceIcon(type)}</span>
-        <span className={`
+        <span
+          className={`
           font-semibold text-white whitespace-nowrap
           ${isTown ? 'text-base' : 'text-sm'}
-        `}>
+        `}
+        >
           {name}
         </span>
       </div>
     </Html>
-  )
+  );
 }
 
 export function PlaceLabels() {
-  const { data: places } = usePlaces()
-  const { data: lifts } = useLifts()
-  const elevationGrid = useMapStore((s) => s.elevationGrid)
-  const showLabels = useMapStore((s) => s.showLabels)
-  
+  const { data: places } = usePlaces();
+  const { data: lifts } = useLifts();
+  const elevationGrid = useMapStore((s) => s.elevationGrid);
+  const showLabels = useMapStore((s) => s.showLabels);
+
   // Track camera distance level for filtering
-  const [distanceLevel, setDistanceLevel] = useState(1)
-  
+  const [distanceLevel, setDistanceLevel] = useState(1);
+
   // Update distance level based on camera position
   useFrame(({ camera }) => {
-    const distance = camera.position.length()
-    const newLevel = getDistanceLevel(distance)
+    const distance = camera.position.length();
+    const newLevel = getDistanceLevel(distance);
     if (newLevel !== distanceLevel) {
-      setDistanceLevel(newLevel)
+      setDistanceLevel(newLevel);
     }
-  })
-  
+  });
+
   // Get all lift coordinates for proximity filtering
   const liftPoints = useMemo(() => {
-    if (!lifts) return []
-    return lifts.flatMap(lift => 
-      lift.coordinates.map(([lon, lat]) => ({ lat, lon }))
-    )
-  }, [lifts])
-  
+    if (!lifts) return [];
+    return lifts.flatMap((lift) => lift.coordinates.map(([lon, lat]) => ({ lat, lon })));
+  }, [lifts]);
+
   // Filter and position places based on camera distance and lift proximity
   const visiblePlaces = useMemo(() => {
-    if (!places || !showLabels) return []
-    
+    if (!places || !showLabels) return [];
+
     const visibleTypes = getVisiblePlaceTypes(
       distanceLevel === 0 ? 0 : distanceLevel === 1 ? 1000 : 2000
-    )
-    
-    return places
-      .filter((place) => visibleTypes.has(place.type as PlaceType))
-      // Towns are always visible; villages/hamlets only if near lifts
-      .filter((place) => {
-        if (place.type === 'town') return true
-        if (liftPoints.length === 0) return true
-        return liftPoints.some(point => 
-          geoDistance(place.lat, place.lon, point.lat, point.lon) < PLACE_PROXIMITY_RADIUS
-        )
-      })
-      .map((place) => {
-        // Convert geo coordinates to local 3D position
-        const [x, , z] = geoToLocal(place.lat, place.lon, 0)
-        
-        // Get terrain height at this position
-        let y: number
-        if (elevationGrid) {
-          y = sampleElevation(elevationGrid, x, z) + 20 // Offset above terrain
-        } else {
-          y = 20 // Default height if no elevation data
-        }
-        
-        return {
-          ...place,
-          position: [x, y, z] as [number, number, number],
-        }
-      })
-  }, [places, liftPoints, elevationGrid, showLabels, distanceLevel])
-  
-  if (!showLabels || visiblePlaces.length === 0) return null
-  
+    );
+
+    return (
+      places
+        .filter((place) => visibleTypes.has(place.type as PlaceType))
+        // Towns are always visible; villages/hamlets only if near lifts
+        .filter((place) => {
+          if (place.type === 'town') return true;
+          if (liftPoints.length === 0) return true;
+          return liftPoints.some(
+            (point) =>
+              geoDistance(place.lat, place.lon, point.lat, point.lon) < PLACE_PROXIMITY_RADIUS
+          );
+        })
+        .map((place) => {
+          // Convert geo coordinates to local 3D position
+          const [x, , z] = geoToLocal(place.lat, place.lon, 0);
+
+          // Get terrain height at this position
+          let y: number;
+          if (elevationGrid) {
+            y = sampleElevation(elevationGrid, x, z) + 20; // Offset above terrain
+          } else {
+            y = 20; // Default height if no elevation data
+          }
+
+          return {
+            ...place,
+            position: [x, y, z] as [number, number, number],
+          };
+        })
+    );
+  }, [places, liftPoints, elevationGrid, showLabels, distanceLevel]);
+
+  if (!showLabels || visiblePlaces.length === 0) return null;
+
   return (
     <group name="place-labels">
       {visiblePlaces.map((place) => (
@@ -177,5 +174,5 @@ export function PlaceLabels() {
         />
       ))}
     </group>
-  )
+  );
 }

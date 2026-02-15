@@ -8,17 +8,17 @@
  * - Selected and hover state styling
  */
 
-import { useState, useCallback } from 'react'
-import { Link } from '@tanstack/react-router'
-import { Trash2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { formatDuration, formatDistance } from '@/lib/garmin/parser'
-import { useDeleteRun } from '@/hooks/useRuns'
-import type { SkiRun } from '@/lib/garmin/types'
+import { useState, useCallback } from 'react';
+import { Link } from '@tanstack/react-router';
+import { Trash2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { formatDuration, formatDistance } from '@/lib/garmin/parser';
+import { useDeleteRun } from '@/hooks/useRuns';
+import type { SkiRun } from '@/lib/garmin/types';
 
 interface RideListItemProps {
-  ride: SkiRun
-  isSelected: boolean
+  ride: SkiRun;
+  isSelected: boolean;
 }
 
 /**
@@ -29,55 +29,55 @@ function formatDate(date: Date): string {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-  })
+  });
 }
 
 export function RideListItem({ ride, isSelected }: RideListItemProps) {
-  const deleteMutation = useDeleteRun()
+  const deleteMutation = useDeleteRun();
 
-  const [isHovered, setIsHovered] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isHovered, setIsHovered] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleLinkClick = useCallback(
     (e: React.MouseEvent) => {
       // Prevent navigation when delete confirmation is showing
       if (showDeleteConfirm) {
-        e.preventDefault()
+        e.preventDefault();
       }
     },
     [showDeleteConfirm]
-  )
+  );
 
   const handleDeleteClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-    setShowDeleteConfirm(true)
-  }, [])
+    e.stopPropagation();
+    e.preventDefault();
+    setShowDeleteConfirm(true);
+  }, []);
 
   const handleConfirmDelete = useCallback(
     async (e: React.MouseEvent) => {
-      e.stopPropagation()
-      e.preventDefault()
+      e.stopPropagation();
+      e.preventDefault();
       try {
-        await deleteMutation.mutateAsync(ride.id)
+        await deleteMutation.mutateAsync(ride.id);
       } catch {
         // Error handling is done in the mutation
       }
-      setShowDeleteConfirm(false)
+      setShowDeleteConfirm(false);
     },
     [deleteMutation, ride.id]
-  )
+  );
 
   const handleCancelDelete = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-    setShowDeleteConfirm(false)
-  }, [])
+    e.stopPropagation();
+    e.preventDefault();
+    setShowDeleteConfirm(false);
+  }, []);
 
   // Toggle behavior: selected rides deselect (go home), unselected rides select
   const linkProps = isSelected
     ? { to: '/' as const }
-    : { to: '/rides/$rideId' as const, params: { rideId: ride.id }, search: { t: 0 } }
+    : { to: '/rides/$rideId' as const, params: { rideId: ride.id }, search: { t: 0 } };
 
   return (
     <Link
@@ -85,8 +85,8 @@ export function RideListItem({ ride, isSelected }: RideListItemProps) {
       onClick={handleLinkClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
-        setIsHovered(false)
-        setShowDeleteConfirm(false)
+        setIsHovered(false);
+        setShowDeleteConfirm(false);
       }}
       className={cn(
         'relative block cursor-pointer border-b border-white/5 px-3 py-2 transition-colors',
@@ -102,9 +102,7 @@ export function RideListItem({ ride, isSelected }: RideListItemProps) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-sm">🎿</span>
-            <span className="truncate text-sm font-medium text-white">
-              {ride.name}
-            </span>
+            <span className="truncate text-sm font-medium text-white">{ride.name}</span>
           </div>
           <div className="mt-0.5 text-xs text-white/50">
             {formatDate(ride.date)} • {formatDuration(ride.duration)} •{' '}
@@ -145,5 +143,5 @@ export function RideListItem({ ride, isSelected }: RideListItemProps) {
         </div>
       </div>
     </Link>
-  )
+  );
 }

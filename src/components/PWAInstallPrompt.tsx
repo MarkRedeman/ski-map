@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Download, X, Smartphone } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react';
+import { Download, X, Smartphone } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
 /**
@@ -12,77 +12,77 @@ interface BeforeInstallPromptEvent extends Event {
  * Styled to match the dark glass theme of the app
  */
 export function PWAInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
-  const [showPrompt, setShowPrompt] = useState(false)
-  const [isInstalled, setIsInstalled] = useState(false)
-  const [dismissed, setDismissed] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true)
-      return
+      setIsInstalled(true);
+      return;
     }
 
     // Check if user previously dismissed
-    const wasDismissed = localStorage.getItem('pwa-prompt-dismissed')
+    const wasDismissed = localStorage.getItem('pwa-prompt-dismissed');
     if (wasDismissed) {
-      const dismissedAt = new Date(wasDismissed)
-      const daysSinceDismissed = (Date.now() - dismissedAt.getTime()) / (1000 * 60 * 60 * 24)
+      const dismissedAt = new Date(wasDismissed);
+      const daysSinceDismissed = (Date.now() - dismissedAt.getTime()) / (1000 * 60 * 60 * 24);
       // Show again after 7 days
       if (daysSinceDismissed < 7) {
-        setDismissed(true)
+        setDismissed(true);
       }
     }
 
     const handleBeforeInstall = (e: Event) => {
-      e.preventDefault()
-      setDeferredPrompt(e as BeforeInstallPromptEvent)
-      setShowPrompt(true)
-    }
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setShowPrompt(true);
+    };
 
     const handleAppInstalled = () => {
-      setIsInstalled(true)
-      setShowPrompt(false)
-      setDeferredPrompt(null)
-    }
+      setIsInstalled(true);
+      setShowPrompt(false);
+      setDeferredPrompt(null);
+    };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall)
-    window.addEventListener('appinstalled', handleAppInstalled)
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
-      window.removeEventListener('appinstalled', handleAppInstalled)
-    }
-  }, [])
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
 
   const handleInstall = useCallback(async () => {
-    if (!deferredPrompt) return
+    if (!deferredPrompt) return;
 
     try {
-      await deferredPrompt.prompt()
-      const { outcome } = await deferredPrompt.userChoice
-      
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+
       if (outcome === 'accepted') {
-        setIsInstalled(true)
+        setIsInstalled(true);
       }
     } catch (error) {
-      console.error('Error installing PWA:', error)
+      console.error('Error installing PWA:', error);
     }
 
-    setShowPrompt(false)
-    setDeferredPrompt(null)
-  }, [deferredPrompt])
+    setShowPrompt(false);
+    setDeferredPrompt(null);
+  }, [deferredPrompt]);
 
   const handleDismiss = useCallback(() => {
-    setShowPrompt(false)
-    setDismissed(true)
-    localStorage.setItem('pwa-prompt-dismissed', new Date().toISOString())
-  }, [])
+    setShowPrompt(false);
+    setDismissed(true);
+    localStorage.setItem('pwa-prompt-dismissed', new Date().toISOString());
+  }, []);
 
   // Don't render if installed, dismissed, or no prompt available
   if (isInstalled || dismissed || !showPrompt || !deferredPrompt) {
-    return null
+    return null;
   }
 
   return (
@@ -92,15 +92,13 @@ export function PWAInstallPrompt() {
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg">
           <Smartphone className="h-5 w-5 text-white" />
         </div>
-        
+
         {/* Text content */}
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-white text-sm">Install Sölden Ski Nav</p>
-          <p className="text-xs text-white/60">
-            Works offline on the slopes
-          </p>
+          <p className="text-xs text-white/60">Works offline on the slopes</p>
         </div>
-        
+
         {/* Action buttons */}
         <div className="flex shrink-0 items-center gap-2">
           <button
@@ -120,5 +118,5 @@ export function PWAInstallPrompt() {
         </div>
       </div>
     </div>
-  )
+  );
 }

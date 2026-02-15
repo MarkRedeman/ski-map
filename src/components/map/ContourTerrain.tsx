@@ -1,29 +1,29 @@
 /**
  * Contour terrain component
- * 
+ *
  * Renders topographic contour lines from real Mapbox elevation data.
  * Major contours (every 100m) are thicker and darker.
  * Minor contours (every 50m) are thinner and lighter.
  */
 
-import { useMemo, memo } from 'react'
-import { Line } from '@react-three/drei'
-import { useContourLines } from '@/hooks/useContourLines'
-import { useMapStore } from '@/stores/useMapStore'
-import { sampleElevation } from '@/lib/geo/elevationGrid'
-import { useTerrainSettings } from '@/stores/useSettingsStore'
-import { SOLDEN_BOUNDS } from '@/config/region'
-import { LOADING } from '@/config/theme'
+import { useMemo, memo } from 'react';
+import { Line } from '@react-three/drei';
+import { useContourLines } from '@/hooks/useContourLines';
+import { useMapStore } from '@/stores/useMapStore';
+import { sampleElevation } from '@/lib/geo/elevationGrid';
+import { useTerrainSettings } from '@/stores/useSettingsStore';
+import { SOLDEN_BOUNDS } from '@/config/region';
+import { LOADING } from '@/config/theme';
 
 interface ContourTerrainProps {
   /** Contour interval in meters (default 50) */
-  interval?: number
+  interval?: number;
   /** Major contour interval - thicker lines (default 100) */
-  majorInterval?: number
+  majorInterval?: number;
   /** Minor contour line color */
-  minorColor?: string
+  minorColor?: string;
   /** Major contour line color */
-  majorColor?: string
+  majorColor?: string;
 }
 
 export const ContourTerrain = memo(function ContourTerrain({
@@ -32,47 +32,51 @@ export const ContourTerrain = memo(function ContourTerrain({
   minorColor = '#9ca3af',
   majorColor = '#4b5563',
 }: ContourTerrainProps) {
-  const { zoom } = useTerrainSettings()
-  const { data: contours, isLoading, error } = useContourLines({
+  const { zoom } = useTerrainSettings();
+  const {
+    data: contours,
+    isLoading,
+    error,
+  } = useContourLines({
     ...SOLDEN_BOUNDS,
     zoom,
     interval,
-  })
-  
-  const elevationGrid = useMapStore((s) => s.elevationGrid)
+  });
+
+  const elevationGrid = useMapStore((s) => s.elevationGrid);
 
   // Separate major and minor contours for different styling
   // Also project contour points onto actual terrain surface
   const { majorContours, minorContours } = useMemo(() => {
-    if (!contours) return { majorContours: [], minorContours: [] }
-    
-    const major: Array<{ elevation: number; rings: Array<Array<[number, number, number]>> }> = []
-    const minor: Array<{ elevation: number; rings: Array<Array<[number, number, number]>> }> = []
-    
+    if (!contours) return { majorContours: [], minorContours: [] };
+
+    const major: Array<{ elevation: number; rings: Array<Array<[number, number, number]>> }> = [];
+    const minor: Array<{ elevation: number; rings: Array<Array<[number, number, number]>> }> = [];
+
     for (const contour of contours) {
       // Project each ring onto the terrain surface if elevation grid is available
-      const projectedRings = contour.rings.map(ring => 
+      const projectedRings = contour.rings.map((ring) =>
         ring.map(([x, y, z]) => {
           if (elevationGrid) {
-            const terrainY = sampleElevation(elevationGrid, x, z)
+            const terrainY = sampleElevation(elevationGrid, x, z);
             // Use terrain Y + small offset to float above surface
-            return [x, terrainY + 1, z] as [number, number, number]
+            return [x, terrainY + 1, z] as [number, number, number];
           }
-          return [x, y, z] as [number, number, number]
+          return [x, y, z] as [number, number, number];
         })
-      )
-      
-      const projectedContour = { elevation: contour.elevation, rings: projectedRings }
-      
+      );
+
+      const projectedContour = { elevation: contour.elevation, rings: projectedRings };
+
       if (contour.elevation % majorInterval === 0) {
-        major.push(projectedContour)
+        major.push(projectedContour);
       } else {
-        minor.push(projectedContour)
+        minor.push(projectedContour);
       }
     }
-    
-    return { majorContours: major, minorContours: minor }
-  }, [contours, majorInterval, elevationGrid])
+
+    return { majorContours: major, minorContours: minor };
+  }, [contours, majorInterval, elevationGrid]);
 
   if (isLoading) {
     return (
@@ -83,16 +87,16 @@ export const ContourTerrain = memo(function ContourTerrain({
           <meshBasicMaterial color={LOADING.contourTerrain} transparent opacity={0.5} />
         </mesh>
       </group>
-    )
+    );
   }
 
   if (error) {
-    console.error('[ContourTerrain] Failed to load contours:', error)
-    return null
+    console.error('[ContourTerrain] Failed to load contours:', error);
+    return null;
   }
 
   if (!contours || contours.length === 0) {
-    return null
+    return null;
   }
 
   return (
@@ -100,7 +104,7 @@ export const ContourTerrain = memo(function ContourTerrain({
       {/* Minor contours - lighter, thinner */}
       {minorContours.map((contour, ci) =>
         contour.rings.map((ring, ri) => {
-          if (ring.length < 2) return null
+          if (ring.length < 2) return null;
           return (
             <Line
               key={`minor-${ci}-${ri}`}
@@ -110,14 +114,14 @@ export const ContourTerrain = memo(function ContourTerrain({
               transparent
               opacity={0.25}
             />
-          )
+          );
         })
       )}
-      
+
       {/* Major contours - darker, thicker */}
       {majorContours.map((contour, ci) =>
         contour.rings.map((ring, ri) => {
-          if (ring.length < 2) return null
+          if (ring.length < 2) return null;
           return (
             <Line
               key={`major-${ci}-${ri}`}
@@ -127,11 +131,11 @@ export const ContourTerrain = memo(function ContourTerrain({
               transparent
               opacity={0.45}
             />
-          )
+          );
         })
       )}
     </group>
-  )
-})
+  );
+});
 
-ContourTerrain.displayName = 'ContourTerrain'
+ContourTerrain.displayName = 'ContourTerrain';

@@ -1,41 +1,36 @@
-import { Canvas } from "@react-three/fiber";
-import {
-  OrbitControls,
-  Environment,
-  GizmoHelper,
-  GizmoViewport,
-} from "@react-three/drei";
-import { Suspense, useState, useCallback } from "react";
-import { Terrain3D } from "./Terrain3D";
-import { ContourTerrain } from "./ContourTerrain";
-import { Pistes } from "./Pistes";
-import { Lifts } from "./Lifts";
-import { UserMarker } from "./UserMarker";
-import { RunPath } from "./RunPath";
-import { PlayerMarker } from "./PlayerMarker";
-import { PlaybackCameraFollow } from "./PlaybackCameraFollow";
-import { PlaybackManager } from "./PlaybackManager";
-import { InfoTooltip } from "./panels/InfoTooltip";
-import { InfoPanel } from "./panels/InfoPanel";
-import { ProximitySelector } from "./ProximitySelector";
-import { KeyboardControls } from "./KeyboardControls";
-import { CompassController, CompassUI } from "./panels/Compass";
-import { PeakLabels } from "./PeakLabels";
-import { PlaceLabels } from "./PlaceLabels";
-import { MapControls } from "./panels/Controls";
-import { CameraNavigator } from "./CameraNavigator";
-import { SkiAreaBoundary } from "./SkiAreaBoundary";
-import { useSelectedRun } from "@/hooks/useRuns";
-import { useDifficultyFilter } from "@/hooks/useDifficultyFilter";
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Environment, GizmoHelper, GizmoViewport } from '@react-three/drei';
+import { Suspense, useState, useCallback } from 'react';
+import { Terrain3D } from './Terrain3D';
+import { ContourTerrain } from './ContourTerrain';
+import { Pistes } from './Pistes';
+import { Lifts } from './Lifts';
+import { UserMarker } from './UserMarker';
+import { RunPath } from './RunPath';
+import { PlayerMarker } from './PlayerMarker';
+import { PlaybackCameraFollow } from './PlaybackCameraFollow';
+import { PlaybackManager } from './PlaybackManager';
+import { InfoTooltip } from './panels/InfoTooltip';
+import { InfoPanel } from './panels/InfoPanel';
+import { ProximitySelector } from './ProximitySelector';
+import { KeyboardControls } from './KeyboardControls';
+import { CompassController, CompassUI } from './panels/Compass';
+import { PeakLabels } from './PeakLabels';
+import { PlaceLabels } from './PlaceLabels';
+import { MapControls } from './panels/Controls';
+import { CameraNavigator } from './CameraNavigator';
+import { SkiAreaBoundary } from './SkiAreaBoundary';
+import { useSelectedRun } from '@/hooks/useRuns';
+import { useDifficultyFilter } from '@/hooks/useDifficultyFilter';
 
 export function SkiMap3D() {
   const selectedRun = useSelectedRun();
   const { enabledDifficulties } = useDifficultyFilter();
-  
+
   // Compass state - needs to bridge Canvas (controller) and DOM (UI)
   const [compassRotation, setCompassRotation] = useState(0);
   const [resetToNorth, setResetToNorth] = useState(false);
-  
+
   const handleCompassClick = useCallback(() => {
     setResetToNorth(true);
     // Reset the trigger after a short delay
@@ -102,21 +97,18 @@ export function SkiMap3D() {
 
         {/* Keyboard Controls */}
         <KeyboardControls />
-        
+
         {/* Camera Navigator (handles animated focus on selection) */}
         <CameraNavigator />
-        
+
         {/* Playback Camera Follow (follows player during ride playback) */}
         <PlaybackCameraFollow ride={selectedRun} />
-        
+
         {/* Playback Manager (advances time during playback) */}
         <PlaybackManager ride={selectedRun} />
-        
+
         {/* Compass Controller (updates rotation state) */}
-        <CompassController 
-          onRotationUpdate={setCompassRotation}
-          resetToNorth={resetToNorth}
-        />
+        <CompassController onRotationUpdate={setCompassRotation} resetToNorth={resetToNorth} />
 
         {/* Camera Controls */}
         <OrbitControls
@@ -136,10 +128,7 @@ export function SkiMap3D() {
         {/* Development helpers */}
         {import.meta.env.DEV && (
           <GizmoHelper alignment="bottom-left" margin={[80, 80]}>
-            <GizmoViewport
-              axisColors={["#ef4444", "#22c55e", "#3b82f6"]}
-              labelColor="white"
-            />
+            <GizmoViewport axisColors={['#ef4444', '#22c55e', '#3b82f6']} labelColor="white" />
           </GizmoHelper>
         )}
       </Canvas>

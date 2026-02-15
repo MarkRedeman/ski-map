@@ -1,26 +1,26 @@
 /**
  * Region configuration
- * 
+ *
  * Centralized geographic configuration for the ski area.
  * Designed to be easily extendable for user-defined regions in the future.
  */
 
 export interface RegionConfig {
   /** Region name */
-  name: string
+  name: string;
   /** Center point of the region (for camera positioning) */
   center: {
-    lat: number
-    lon: number
-    elevation: number
-  }
+    lat: number;
+    lon: number;
+    elevation: number;
+  };
   /** Geographic bounds */
   bounds: {
-    minLat: number
-    maxLat: number
-    minLon: number
-    maxLon: number
-  }
+    minLat: number;
+    maxLat: number;
+    minLon: number;
+    maxLon: number;
+  };
 }
 
 /**
@@ -40,13 +40,13 @@ export const SOLDEN_REGION: RegionConfig = {
     minLon: 10.86,
     maxLon: 11.2,
   },
-}
+};
 
 /**
  * Currently active region
  * In the future, this could be loaded from user preferences or URL params
  */
-export const ACTIVE_REGION = SOLDEN_REGION
+export const ACTIVE_REGION = SOLDEN_REGION;
 
 /**
  * Convert bounds to bbox format (for APIs like Overpass)
@@ -57,7 +57,7 @@ export function boundsToBbox(bounds: RegionConfig['bounds']) {
     north: bounds.maxLat,
     west: bounds.minLon,
     east: bounds.maxLon,
-  }
+  };
 }
 
 /**
@@ -73,11 +73,11 @@ export function isInRegionBounds(
     lat <= region.bounds.maxLat &&
     lon >= region.bounds.minLon &&
     lon <= region.bounds.maxLon
-  )
+  );
 }
 
 // Re-export commonly used values for convenience
-export const { center: SOLDEN_CENTER, bounds: SOLDEN_BOUNDS } = SOLDEN_REGION
+export const { center: SOLDEN_CENTER, bounds: SOLDEN_BOUNDS } = SOLDEN_REGION;
 
 /** Sölden bounding box in Overpass API format */
-export const SOLDEN_BBOX = boundsToBbox(SOLDEN_BOUNDS)
+export const SOLDEN_BBOX = boundsToBbox(SOLDEN_BOUNDS);

@@ -1,15 +1,15 @@
-import { create } from 'zustand'
+import { create } from 'zustand';
 
 interface GeolocationState {
   // User location / geolocation
-  userLocation: [number, number, number] | null // [lat, lon, elevation]
-  setUserLocation: (location: [number, number, number] | null) => void
-  userAccuracy: number | null // GPS accuracy in meters
-  setUserAccuracy: (accuracy: number | null) => void
-  userHeading: number | null // Device heading in degrees (0 = north)
-  setUserHeading: (heading: number | null) => void
-  isTrackingLocation: boolean
-  setIsTrackingLocation: (tracking: boolean) => void
+  userLocation: [number, number, number] | null; // [lat, lon, elevation]
+  setUserLocation: (location: [number, number, number] | null) => void;
+  userAccuracy: number | null; // GPS accuracy in meters
+  setUserAccuracy: (accuracy: number | null) => void;
+  userHeading: number | null; // Device heading in degrees (0 = north)
+  setUserHeading: (heading: number | null) => void;
+  isTrackingLocation: boolean;
+  setIsTrackingLocation: (tracking: boolean) => void;
 }
 
 export const useGeolocationStore = create<GeolocationState>()((set) => ({
@@ -24,4 +24,4 @@ export const useGeolocationStore = create<GeolocationState>()((set) => ({
 
   isTrackingLocation: false,
   setIsTrackingLocation: (tracking) => set({ isTrackingLocation: tracking }),
-}))
+}));

@@ -1,12 +1,12 @@
-import { WifiOff, Wifi } from 'lucide-react'
-import { useOfflineStatus } from '@/hooks/useOfflineStatus'
+import { WifiOff, Wifi } from 'lucide-react';
+import { useOfflineStatus } from '@/hooks/useOfflineStatus';
 
 /**
  * Offline status indicator
  * Shows when the user is offline or has just recovered from being offline
  */
 export function OfflineIndicator() {
-  const { isOnline, wasOffline } = useOfflineStatus()
+  const { isOnline, wasOffline } = useOfflineStatus();
 
   // Show "back online" message briefly
   if (wasOffline && isOnline) {
@@ -15,7 +15,7 @@ export function OfflineIndicator() {
         <Wifi className="h-3 w-3" />
         <span>Back online</span>
       </div>
-    )
+    );
   }
 
   // Show offline indicator
@@ -25,9 +25,9 @@ export function OfflineIndicator() {
         <WifiOff className="h-3 w-3" />
         <span>Offline</span>
       </div>
-    )
+    );
   }
 
   // Online and wasn't just offline - don't show anything
-  return null
+  return null;
 }
