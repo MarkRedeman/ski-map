@@ -140,7 +140,7 @@ export function MapControls() {
       <div className="h-px bg-white/20" />
       <button
         onClick={() => toggleLayer('labels')}
-        className="flex items-center justify-between gap-3 rounded px-2 py-1 transition-colors hover:bg-white/10"
+        className="flex items-center justify-between gap-3 transition-colors hover:text-white/80"
         title={showLabels ? 'Hide labels' : 'Show labels'}
       >
         <span className="text-xs font-semibold text-white">Labels</span>
