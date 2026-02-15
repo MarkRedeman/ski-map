@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 
 /** Base class string for the glass-panel appearance. */
 export const PANEL_CLASSES =
-  'rounded-lg bg-black/80 shadow-lg shadow-black/30 backdrop-blur-md hover:bg-black/90';
+  'rounded-lg bg-black/80 shadow-lg shadow-black/30 backdrop-blur-md hover:bg-black/90 z-[100]';
 
 interface PanelProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
