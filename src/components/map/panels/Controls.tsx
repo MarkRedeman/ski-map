@@ -6,19 +6,26 @@
  * Sections (top to bottom when expanded):
  *   1. Piste Filters — Difficulty toggles with All/None
  *   2. Lift Filters — Lift type toggles with All/None
- *   3. Quality — Resolution selector (1x–16x) with loading spinner
- *   4. Labels — Toggle visibility of peak/place labels (eye icon)
+ *   3. Peaks — All/None toggle for peak labels
+ *   4. Villages — All/None toggle for place labels
+ *   5. Dining — Per-type toggles (Restaurant, Cafe, Bar, Alpine Hut) with All/None
+ *   6. Quality — Resolution selector (1x–16x) with loading spinner
  *
  * On mobile, collapses to a compact button showing active filter count
  * and current resolution.
  */
 
-import { Navigation, ChevronUp, ChevronDown, Settings2, Eye, EyeOff } from 'lucide-react';
+import { Navigation, ChevronUp, ChevronDown, Settings2 } from 'lucide-react';
 import { useSettingsStore, type ResolutionLevel } from '@/stores/useSettingsStore';
-import { useMapStore, ALL_LIFT_TYPES, type LiftType } from '@/stores/useMapStore';
+import {
+  useMapStore,
+  ALL_LIFT_TYPES,
+  ALL_RESTAURANT_TYPES,
+  type LiftType,
+} from '@/stores/useMapStore';
 import { useGeolocationStore } from '@/stores/useGeolocationStore';
 import { useUIStore } from '@/stores/useUIStore';
-import { ALL_DIFFICULTIES, type Difficulty } from '@/lib/api/overpass';
+import { ALL_DIFFICULTIES, type Difficulty, type RestaurantType } from '@/lib/api/overpass';
 import { useDifficultyFilter } from '@/hooks/useDifficultyFilter';
 import { geoToLocal } from '@/lib/geo/coordinates';
 import { cn } from '@/lib/utils';
@@ -31,10 +38,6 @@ const RESOLUTION_LEVELS: ResolutionLevel[] = ['1x', '2x', '4x', '8x', '16x'];
 export function MapControls() {
   const controlsExpanded = useUIStore((s) => s.controlsExpanded);
   const toggleControls = useUIStore((s) => s.toggleControls);
-
-  // Labels visibility
-  const showLabels = useMapStore((s) => s.showLabels);
-  const toggleLabels = useMapStore((s) => s.toggleLabels);
 
   // Resolution
   const resolution = useSettingsStore((s) => s.resolution);
@@ -49,8 +52,22 @@ export function MapControls() {
   // Filter counts for collapsed state
   const { enabledDifficulties } = useDifficultyFilter();
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes);
-  const activeFilters = enabledDifficulties.size + visibleLiftTypes.size;
-  const totalFilters = ALL_DIFFICULTIES.length + ALL_LIFT_TYPES.length - 1; // -1 for generic 'Lift' type we hide
+  const showPeaks = useMapStore((s) => s.showPeaks);
+  const showPlaces = useMapStore((s) => s.showPlaces);
+  const visibleRestaurantTypes = useMapStore((s) => s.visibleRestaurantTypes);
+  const activeFilters =
+    enabledDifficulties.size +
+    visibleLiftTypes.size +
+    (showPeaks ? 1 : 0) +
+    (showPlaces ? 1 : 0) +
+    visibleRestaurantTypes.size;
+  const totalFilters =
+    ALL_DIFFICULTIES.length +
+    ALL_LIFT_TYPES.length -
+    1 + // -1 for generic 'Lift' type we hide
+    1 + // peaks
+    1 + // places
+    ALL_RESTAURANT_TYPES.length;
 
   const handleLocateMe = () => {
     if (!userLocation) return;
@@ -130,6 +147,18 @@ export function MapControls() {
       <div className="h-px bg-white/20" />
       <LiftFilters />
 
+      {/* --- Peaks filter --- */}
+      <div className="h-px bg-white/20" />
+      <PeakFilter />
+
+      {/* --- Villages filter --- */}
+      <div className="h-px bg-white/20" />
+      <PlaceFilter />
+
+      {/* --- Dining filters --- */}
+      <div className="h-px bg-white/20" />
+      <DiningFilters />
+
       {/* --- Quality section --- */}
       <div className="h-px bg-white/20" />
       <QualitySelector
@@ -137,21 +166,6 @@ export function MapControls() {
         setResolution={setResolution}
         isLoading={isLoading}
       />
-
-      {/* --- Labels toggle --- */}
-      <div className="h-px bg-white/20" />
-      <button
-        onClick={() => toggleLabels()}
-        className="flex items-center justify-between gap-3 transition-colors hover:text-white/80"
-        title={showLabels ? 'Hide labels' : 'Show labels'}
-      >
-        <span className="text-xs font-semibold text-white">Labels</span>
-        {showLabels ? (
-          <Eye className="h-4 w-4 text-amber-400" />
-        ) : (
-          <EyeOff className="h-4 w-4 text-white/30" />
-        )}
-      </button>
     </Panel>
   );
 }
@@ -417,6 +431,209 @@ function LiftTypeToggle({
       <span className={`text-sm ${isVisible ? 'opacity-80' : 'opacity-40'}`}>{config.icon}</span>
       <span className={`text-[11px] font-medium whitespace-nowrap ${!isVisible && 'opacity-40'}`}>
         {liftType}
+      </span>
+    </button>
+  );
+}
+
+/**
+ * Peaks visibility toggle — simple All/None
+ */
+function PeakFilter() {
+  const showPeaks = useMapStore((s) => s.showPeaks);
+  const togglePeaks = useMapStore((s) => s.togglePeaks);
+
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-xs font-semibold text-white">Peaks</span>
+      <div className="flex gap-1">
+        <button
+          onClick={() => {
+            if (!showPeaks) togglePeaks();
+          }}
+          disabled={showPeaks}
+          className={`
+            rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors
+            ${
+              showPeaks
+                ? 'bg-white/10 text-white/30 cursor-not-allowed'
+                : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
+            }
+          `}
+        >
+          All
+        </button>
+        <button
+          onClick={() => {
+            if (showPeaks) togglePeaks();
+          }}
+          disabled={!showPeaks}
+          className={`
+            rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors
+            ${
+              !showPeaks
+                ? 'bg-white/10 text-white/30 cursor-not-allowed'
+                : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
+            }
+          `}
+        >
+          None
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Villages visibility toggle — simple All/None
+ */
+function PlaceFilter() {
+  const showPlaces = useMapStore((s) => s.showPlaces);
+  const togglePlaces = useMapStore((s) => s.togglePlaces);
+
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-xs font-semibold text-white">Villages</span>
+      <div className="flex gap-1">
+        <button
+          onClick={() => {
+            if (!showPlaces) togglePlaces();
+          }}
+          disabled={showPlaces}
+          className={`
+            rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors
+            ${
+              showPlaces
+                ? 'bg-white/10 text-white/30 cursor-not-allowed'
+                : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
+            }
+          `}
+        >
+          All
+        </button>
+        <button
+          onClick={() => {
+            if (showPlaces) togglePlaces();
+          }}
+          disabled={!showPlaces}
+          className={`
+            rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors
+            ${
+              !showPlaces
+                ? 'bg-white/10 text-white/30 cursor-not-allowed'
+                : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
+            }
+          `}
+        >
+          None
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Icon and color config for each restaurant type */
+const RESTAURANT_TYPE_CONFIG: Record<RestaurantType, { icon: string; color: string }> = {
+  'Alpine Hut': { icon: '🏔️', color: '#34d399' },
+  Restaurant: { icon: '🍽️', color: '#6ee7b7' },
+  Cafe: { icon: '☕', color: '#a7f3d0' },
+  Bar: { icon: '🍷', color: '#d1fae5' },
+};
+
+/**
+ * Dining type filter section — per-type toggles with All/None
+ */
+function DiningFilters() {
+  const visibleRestaurantTypes = useMapStore((s) => s.visibleRestaurantTypes);
+  const toggleRestaurantType = useMapStore((s) => s.toggleRestaurantType);
+  const setAllRestaurantTypesVisible = useMapStore((s) => s.setAllRestaurantTypesVisible);
+
+  const allVisible = visibleRestaurantTypes.size === ALL_RESTAURANT_TYPES.length;
+  const noneVisible = visibleRestaurantTypes.size === 0;
+
+  return (
+    <div className="flex flex-col gap-2">
+      {/* Header with show all / hide all */}
+      <div className="flex items-center justify-between gap-4">
+        <span className="text-xs font-semibold text-white">Dining</span>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setAllRestaurantTypesVisible(true)}
+            disabled={allVisible}
+            className={`
+              rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors
+              ${
+                allVisible
+                  ? 'bg-white/10 text-white/30 cursor-not-allowed'
+                  : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
+              }
+            `}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setAllRestaurantTypesVisible(false)}
+            disabled={noneVisible}
+            className={`
+              rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors
+              ${
+                noneVisible
+                  ? 'bg-white/10 text-white/30 cursor-not-allowed'
+                  : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
+              }
+            `}
+          >
+            None
+          </button>
+        </div>
+      </div>
+
+      {/* Restaurant type toggles */}
+      <div className="grid grid-cols-2 gap-1">
+        {ALL_RESTAURANT_TYPES.map((type) => (
+          <DiningTypeToggle
+            key={type}
+            type={type}
+            isVisible={visibleRestaurantTypes.has(type)}
+            onToggle={() => toggleRestaurantType(type)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DiningTypeToggle({
+  type,
+  isVisible,
+  onToggle,
+}: {
+  type: RestaurantType;
+  isVisible: boolean;
+  onToggle: () => void;
+}) {
+  const config = RESTAURANT_TYPE_CONFIG[type];
+
+  return (
+    <button
+      onClick={onToggle}
+      className={`
+        flex items-center gap-1.5 rounded px-2 py-1 text-left transition-all
+        ${
+          isVisible
+            ? 'bg-white/10 text-white/70'
+            : 'bg-white/5 text-white/30 hover:bg-white/10 hover:text-white/60'
+        }
+      `}
+      title={`${isVisible ? 'Hide' : 'Show'} ${type}`}
+    >
+      <div
+        className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+        style={{ backgroundColor: config.color, opacity: isVisible ? 0.8 : 0.3 }}
+      />
+      <span className={`text-sm ${isVisible ? 'opacity-80' : 'opacity-40'}`}>{config.icon}</span>
+      <span className={`text-[11px] font-medium whitespace-nowrap ${!isVisible && 'opacity-40'}`}>
+        {type}
       </span>
     </button>
   );

@@ -113,7 +113,7 @@ export function RestaurantLabels() {
   const { data: lifts } = useLifts();
   const { data: pistes } = usePistes();
   const elevationGrid = useMapStore((s) => s.elevationGrid);
-  const showLabels = useMapStore((s) => s.showLabels);
+  const visibleRestaurantTypes = useMapStore((s) => s.visibleRestaurantTypes);
   const hoveredRestaurantId = useMapStore((s) => s.getHoveredId('restaurant'));
   const selectedRestaurantId = useMapStore((s) => s.getSelectedId('restaurant'));
   const setHoveredEntity = useMapStore((s) => s.setHoveredEntity);
@@ -166,11 +166,17 @@ export function RestaurantLabels() {
   // Filter and position restaurants based on proximity to lifts/pistes
   // Always include the selected restaurant regardless of zoom/filters
   const visibleRestaurants = useMemo(() => {
-    if (!restaurants || !showLabels || infrastructurePoints.length === 0) return [];
+    if (!restaurants || visibleRestaurantTypes.size === 0 || infrastructurePoints.length === 0)
+      return [];
 
     const maxCount = getMaxRestaurants(distanceLevel === 0 ? 0 : distanceLevel === 1 ? 1000 : 2000);
 
     const filtered = restaurants
+      // Only show restaurants whose type is visible (but always keep the selected one)
+      .filter(
+        (restaurant) =>
+          restaurant.id === selectedRestaurantId || visibleRestaurantTypes.has(restaurant.type)
+      )
       // Only show restaurants near lifts or pistes (but always keep the selected one)
       .filter(
         (restaurant) =>
@@ -217,7 +223,7 @@ export function RestaurantLabels() {
     restaurants,
     infrastructurePoints,
     elevationGrid,
-    showLabels,
+    visibleRestaurantTypes,
     distanceLevel,
     selectedRestaurantId,
   ]);
@@ -235,7 +241,7 @@ export function RestaurantLabels() {
     [setSelectedEntity, setCameraFocusTarget, elevationGrid]
   );
 
-  if (!showLabels || visibleRestaurants.length === 0) return null;
+  if (visibleRestaurants.length === 0) return null;
 
   return (
     <group name="restaurant-labels">

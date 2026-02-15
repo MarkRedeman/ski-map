@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import type * as THREE from 'three';
 import type { ElevationGrid } from '@/lib/geo/elevationGrid';
+import type { RestaurantType } from '@/lib/api/overpass';
+
+/** All restaurant sub-types for filtering */
+export const ALL_RESTAURANT_TYPES: RestaurantType[] = ['Alpine Hut', 'Restaurant', 'Cafe', 'Bar'];
 
 /** Lift types that can be filtered */
 export type LiftType =
@@ -59,9 +63,16 @@ interface MapState {
   viewMode: 'overview' | 'follow' | 'free';
   setViewMode: (mode: 'overview' | 'follow' | 'free') => void;
 
-  // Layers
-  showLabels: boolean;
-  toggleLabels: () => void;
+  // Label visibility per category
+  showPeaks: boolean;
+  togglePeaks: () => void;
+  showPlaces: boolean;
+  togglePlaces: () => void;
+
+  // Restaurant type filter - which restaurant types are visible
+  visibleRestaurantTypes: Set<RestaurantType>;
+  toggleRestaurantType: (type: RestaurantType) => void;
+  setAllRestaurantTypesVisible: (visible: boolean) => void;
 
   // Lift type filter - which lift types are visible
   visibleLiftTypes: Set<LiftType>;
@@ -112,12 +123,29 @@ export const useMapStore = create<MapState>((set, get) => ({
   viewMode: 'overview',
   setViewMode: (mode) => set({ viewMode: mode }),
 
-  // Labels visible by default
-  showLabels: true,
+  // Peaks visible by default
+  showPeaks: true,
+  togglePeaks: () => set((state) => ({ showPeaks: !state.showPeaks })),
 
-  toggleLabels: () =>
-    set((state) => ({
-      showLabels: !state.showLabels,
+  // Places (villages) visible by default
+  showPlaces: true,
+  togglePlaces: () => set((state) => ({ showPlaces: !state.showPlaces })),
+
+  // All restaurant types visible by default
+  visibleRestaurantTypes: new Set<RestaurantType>(ALL_RESTAURANT_TYPES),
+  toggleRestaurantType: (type) =>
+    set((state) => {
+      const newSet = new Set(state.visibleRestaurantTypes);
+      if (newSet.has(type)) {
+        newSet.delete(type);
+      } else {
+        newSet.add(type);
+      }
+      return { visibleRestaurantTypes: newSet };
+    }),
+  setAllRestaurantTypesVisible: (visible) =>
+    set(() => ({
+      visibleRestaurantTypes: visible ? new Set(ALL_RESTAURANT_TYPES) : new Set(),
     })),
 
   // Only main lift types visible by default (Gondola, Cable Car, Chair Lift)

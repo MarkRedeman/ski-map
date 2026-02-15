@@ -15,7 +15,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useMapStore, type LiftType } from '@/stores/useMapStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
-import type { Difficulty } from '@/lib/api/overpass';
+import type { Difficulty, RestaurantType } from '@/lib/api/overpass';
 import {
   type SearchParams,
   parseSearchParams,
@@ -48,7 +48,9 @@ export function useURLSync() {
   // Get store values (no difficulty — that's URL-native)
   const selectedEntity = useMapStore((s) => s.selectedEntity);
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes);
-  const showLabels = useMapStore((s) => s.showLabels);
+  const showPeaks = useMapStore((s) => s.showPeaks);
+  const showPlaces = useMapStore((s) => s.showPlaces);
+  const visibleRestaurantTypes = useMapStore((s) => s.visibleRestaurantTypes);
   const resolution = useSettingsStore((s) => s.resolution);
   const terrainBrightness = useSettingsStore((s) => s.terrainBrightness);
   const terrainSaturation = useSettingsStore((s) => s.terrainSaturation);
@@ -86,13 +88,20 @@ export function useURLSync() {
         });
       }
 
-      // Apply layers (only labels now)
+      // Apply layers (per-category visibility)
       if (parsed.layers) {
         const mapStore = useMapStore.getState();
-        const shouldShowLabels = parsed.layers.includes('labels');
-        if (mapStore.showLabels !== shouldShowLabels) {
-          mapStore.toggleLabels();
+        const showPeaks = parsed.layers.includes('peaks');
+        const showPlaces = parsed.layers.includes('places');
+        const showDining = parsed.layers.includes('dining');
+
+        if (mapStore.showPeaks !== showPeaks) {
+          mapStore.togglePeaks();
         }
+        if (mapStore.showPlaces !== showPlaces) {
+          mapStore.togglePlaces();
+        }
+        mapStore.setAllRestaurantTypesVisible(showDining);
       }
 
       // Apply resolution (bypass store's own URL handling)
@@ -140,7 +149,9 @@ export function useURLSync() {
       selection: entityToSelection(selectedEntity),
       difficulties: DEFAULT_DIFFICULTIES as Difficulty[],
       liftTypes: Array.from(visibleLiftTypes) as LiftType[],
-      showLabels,
+      showPeaks,
+      showPlaces,
+      visibleRestaurantTypes: Array.from(visibleRestaurantTypes) as RestaurantType[],
       resolution,
       terrainBrightness,
       terrainSaturation,
@@ -159,7 +170,9 @@ export function useURLSync() {
     navigate,
     selectedEntity,
     visibleLiftTypes,
-    showLabels,
+    showPeaks,
+    showPlaces,
+    visibleRestaurantTypes,
     resolution,
     terrainBrightness,
     terrainSaturation,
@@ -210,7 +223,9 @@ export function useURLSync() {
     updateURLFromStores,
     selectedEntity,
     visibleLiftTypes,
-    showLabels,
+    showPeaks,
+    showPlaces,
+    visibleRestaurantTypes,
     resolution,
     terrainBrightness,
     terrainSaturation,
@@ -227,7 +242,9 @@ export function useShareableURL(): () => string {
   const search = useSearch({ strict: false }) as SearchParams;
   const selectedEntity = useMapStore((s) => s.selectedEntity);
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes);
-  const showLabels = useMapStore((s) => s.showLabels);
+  const showPeaks = useMapStore((s) => s.showPeaks);
+  const showPlaces = useMapStore((s) => s.showPlaces);
+  const visibleRestaurantTypes = useMapStore((s) => s.visibleRestaurantTypes);
   const cameraPosition = useMapStore((s) => s.cameraPosition);
   const cameraTarget = useMapStore((s) => s.cameraTarget);
   const resolution = useSettingsStore((s) => s.resolution);
@@ -244,7 +261,9 @@ export function useShareableURL(): () => string {
       selection: entityToSelection(selectedEntity),
       difficulties: currentDifficulties,
       liftTypes: Array.from(visibleLiftTypes) as LiftType[],
-      showLabels,
+      showPeaks,
+      showPlaces,
+      visibleRestaurantTypes: Array.from(visibleRestaurantTypes) as RestaurantType[],
       resolution,
       terrainBrightness,
       terrainSaturation,
@@ -269,7 +288,9 @@ export function useShareableURL(): () => string {
     search.diff,
     selectedEntity,
     visibleLiftTypes,
-    showLabels,
+    showPeaks,
+    showPlaces,
+    visibleRestaurantTypes,
     cameraPosition,
     cameraTarget,
     resolution,

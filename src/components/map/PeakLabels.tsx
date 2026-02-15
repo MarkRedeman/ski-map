@@ -84,7 +84,7 @@ export function PeakLabels() {
   const { data: peaks } = usePeaks();
   const { data: lifts } = useLifts();
   const elevationGrid = useMapStore((s) => s.elevationGrid);
-  const showLabels = useMapStore((s) => s.showLabels);
+  const showPeaks = useMapStore((s) => s.showPeaks);
   const selectedPeakId = useMapStore((s) => s.getSelectedId('peak'));
 
   // Track zoom level for filtering (quantized to avoid constant re-renders)
@@ -112,7 +112,7 @@ export function PeakLabels() {
   // Filter peaks to only those near lifts, then by elevation
   // Always include the selected peak regardless of zoom/filters
   const visiblePeaks = useMemo(() => {
-    if (!peaks || !showLabels || liftPoints.length === 0) return [];
+    if (!peaks || !showPeaks || liftPoints.length === 0) return [];
 
     const minElevation = getMinElevation(
       distanceLevel === 0 ? 0 : distanceLevel === 1 ? 700 : 1500
@@ -151,9 +151,9 @@ export function PeakLabels() {
         position: [x, y, z] as [number, number, number],
       };
     });
-  }, [peaks, liftPoints, elevationGrid, showLabels, distanceLevel, selectedPeakId]);
+  }, [peaks, liftPoints, elevationGrid, showPeaks, distanceLevel, selectedPeakId]);
 
-  if (!showLabels || visiblePeaks.length === 0) return null;
+  if (!showPeaks || visiblePeaks.length === 0) return null;
 
   return (
     <group name="peak-labels">

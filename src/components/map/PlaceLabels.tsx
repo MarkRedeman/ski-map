@@ -105,7 +105,7 @@ export function PlaceLabels() {
   const { data: places } = usePlaces();
   const { data: lifts } = useLifts();
   const elevationGrid = useMapStore((s) => s.elevationGrid);
-  const showLabels = useMapStore((s) => s.showLabels);
+  const showPlaces = useMapStore((s) => s.showPlaces);
   const selectedPlaceId = useMapStore((s) => s.getSelectedId('place'));
 
   // Track zoom level for filtering
@@ -133,7 +133,7 @@ export function PlaceLabels() {
   // Filter and position places based on camera distance and lift proximity
   // Always include the selected place regardless of zoom/filters
   const visiblePlaces = useMemo(() => {
-    if (!places || !showLabels) return [];
+    if (!places || !showPlaces) return [];
 
     const visibleTypes = getVisiblePlaceTypes(
       distanceLevel === 0 ? 0 : distanceLevel === 1 ? 1000 : 2000
@@ -173,9 +173,9 @@ export function PlaceLabels() {
           };
         })
     );
-  }, [places, liftPoints, elevationGrid, showLabels, distanceLevel, selectedPlaceId]);
+  }, [places, liftPoints, elevationGrid, showPlaces, distanceLevel, selectedPlaceId]);
 
-  if (!showLabels || visiblePlaces.length === 0) return null;
+  if (!showPlaces || visiblePlaces.length === 0) return null;
 
   return (
     <group name="place-labels">

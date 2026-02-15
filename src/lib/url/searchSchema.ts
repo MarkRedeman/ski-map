@@ -10,7 +10,7 @@
 
 import { z } from 'zod';
 import type { LiftType } from '@/stores/useMapStore';
-import type { Difficulty } from '@/lib/api/overpass';
+import type { Difficulty, RestaurantType } from '@/lib/api/overpass';
 import type { ResolutionLevel } from '@/stores/useSettingsStore';
 import {
   DEFAULT_TERRAIN_BRIGHTNESS,
@@ -32,7 +32,7 @@ export interface Selection {
 // Default values
 export const DEFAULT_DIFFICULTIES: Difficulty[] = ['blue', 'red', 'black'];
 export const DEFAULT_LIFT_TYPES: LiftType[] = ['Gondola', 'Cable Car', 'Chair Lift', 'Lift'];
-export const DEFAULT_LAYERS = ['labels'] as const;
+export const DEFAULT_LAYERS = ['peaks', 'places', 'dining'] as const;
 export const DEFAULT_RESOLUTION: ResolutionLevel = '2x';
 
 // Valid values for validation
@@ -48,7 +48,7 @@ const VALID_LIFT_TYPES = [
   'Magic Carpet',
   'Lift',
 ] as const;
-const VALID_LAYERS = ['labels'] as const;
+const VALID_LAYERS = ['peaks', 'places', 'dining'] as const;
 const VALID_RESOLUTIONS = ['1x', '2x', '4x', '8x', '16x'] as const;
 
 /**
@@ -193,7 +193,7 @@ export const searchSchema = z.object({
   // Lift type filter: "Gondola,Chair Lift"
   lifts: z.string().optional(),
 
-  // Layer visibility: "labels" (only labels is toggleable now)
+  // Layer visibility: "peaks,places,dining" (comma-separated active layers)
   show: z.string().optional(),
 
   // Resolution: "1x", "2x", "4x", "8x", "16x"
@@ -244,7 +244,9 @@ export function buildSearchParams(state: {
   selection: Selection | null;
   difficulties: Difficulty[];
   liftTypes: LiftType[];
-  showLabels: boolean;
+  showPeaks: boolean;
+  showPlaces: boolean;
+  visibleRestaurantTypes: RestaurantType[];
   resolution: ResolutionLevel;
   terrainBrightness: number;
   terrainSaturation: number;
@@ -264,9 +266,14 @@ export function buildSearchParams(state: {
   const liftsStr = serializeList(state.liftTypes, DEFAULT_LIFT_TYPES, VALID_LIFT_TYPES);
   if (liftsStr) params.lifts = liftsStr;
 
-  // Labels visibility (only include in URL if labels are hidden)
-  if (!state.showLabels) {
-    params.show = '';
+  // Layer visibility - build list of active layers, only include in URL if not default
+  const activeLayers: string[] = [];
+  if (state.showPeaks) activeLayers.push('peaks');
+  if (state.showPlaces) activeLayers.push('places');
+  if (state.visibleRestaurantTypes.length > 0) activeLayers.push('dining');
+  const layersStr = serializeList(activeLayers, DEFAULT_LAYERS, VALID_LAYERS);
+  if (layersStr !== undefined) {
+    params.show = layersStr || '';
   }
 
   // Resolution (only if not default)
