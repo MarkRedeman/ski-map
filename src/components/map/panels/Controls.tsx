@@ -143,14 +143,7 @@ export function MapControls() {
         className="flex items-center justify-between gap-3 rounded px-2 py-1 transition-colors hover:bg-white/10"
         title={showLabels ? 'Hide labels' : 'Show labels'}
       >
-        <div className="flex items-center gap-1.5">
-          <svg className="h-3.5 w-3.5 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5z" />
-            <path d="M2 17l10 5 10-5" />
-            <path d="M2 12l10 5 10-5" />
-          </svg>
-          <span className="text-xs font-medium text-white/80">Labels</span>
-        </div>
+        <span className="text-xs font-semibold text-white">Labels</span>
         {showLabels
           ? <Eye className="h-4 w-4 text-amber-400" />
           : <EyeOff className="h-4 w-4 text-white/30" />
@@ -200,7 +193,7 @@ function QualitySelector({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[10px] font-medium text-white/60 uppercase">Quality</span>
+      <span className="text-xs font-semibold text-white">Quality</span>
       <div className="flex gap-1">
         {RESOLUTION_LEVELS.map((level) => (
           <button
