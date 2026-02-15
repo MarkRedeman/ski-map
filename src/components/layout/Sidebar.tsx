@@ -3,12 +3,14 @@
  * 
  * Contains:
  * - Location tracking controls
- * - Your Rides section
+ * - My Rides section
  * - Browse Slopes & Lifts
  * 
  * Slides in/out from the left. State managed by useUIStore.
  */
 
+import { useRef, useCallback } from 'react'
+import { Plus } from 'lucide-react'
 import { LocationButton } from '@/components/sidebar/LocationButton'
 import { PisteListPanel } from '@/components/sidebar/PisteListPanel'
 import { RideListPanel } from '@/components/rides/RideListPanel'
@@ -17,6 +19,38 @@ import { cn } from '@/lib/utils'
 
 export function Sidebar() {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleAddClick = useCallback(() => {
+    fileInputRef.current?.click()
+  }, [])
+
+  const handleFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files
+      if (!files || files.length === 0) return
+
+      const { parseGPXFile } = await import('@/lib/garmin/parser')
+      const { useRunsStore } = await import('@/stores/useRunsStore')
+      const addRun = useRunsStore.getState().addRun
+
+      for (const file of Array.from(files)) {
+        if (file.name.toLowerCase().endsWith('.gpx')) {
+          try {
+            const run = await parseGPXFile(file)
+            await addRun(run)
+          } catch (err) {
+            console.error('Failed to parse file:', file.name, err)
+          }
+        }
+      }
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    },
+    []
+  )
 
   return (
     <aside
@@ -37,11 +71,29 @@ export function Sidebar() {
           </section>
         </div>
 
-        {/* Your Rides section */}
+        {/* My Rides section */}
         <section className="border-t border-white/10 flex-shrink-0">
-          <h2 className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/50 bg-black/30">
-            Your Rides
-          </h2>
+          <div className="flex items-center justify-between bg-black/30 px-4 py-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-white/50">
+              My Rides
+            </h2>
+            <button
+              onClick={handleAddClick}
+              className="flex h-5 w-5 items-center justify-center rounded text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
+              title="Add ride (.gpx)"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          {/* Hidden file input for add button */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".gpx"
+            multiple
+            onChange={handleFileChange}
+            className="hidden"
+          />
           <RideListPanel />
         </section>
 
