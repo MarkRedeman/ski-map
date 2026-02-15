@@ -116,9 +116,9 @@ export const LOADING = {
 
 export const LINE_STYLE = {
   /** Base line width in pixels */
-  baseWidth: 7,
+  baseWidth: 11,
   /** Width multiplier when hovered/selected */
-  highlightWidthMultiplier: 2,
+  highlightWidthMultiplier: 1.1,
   /** Default line opacity */
   opacity: 1.0,
   /** Dimmed opacity when another entity is active */
