@@ -1,44 +1,12 @@
 import { useMemo, memo } from 'react';
 import { Line } from '@react-three/drei';
-import { useThree, useFrame } from '@react-three/fiber';
-import { useState } from 'react';
 import { usePistes, filterPistesByDifficulty } from '@/hooks/usePistes';
 import { type Difficulty } from '@/lib/api/overpass';
 import { useMapStore } from '@/stores/useMapStore';
 import { coordsToLocal } from '@/lib/geo/coordinates';
 import { sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid';
-import {
-  DIFFICULTY_COLORS,
-  DIFFICULTY_COLORS_HIGHLIGHT,
-  LINE_STYLE,
-} from '@/config/theme';
-
-/**
- * Hook to calculate zoom-based line width scaling
- * Returns a scale factor based on camera distance
- */
-function useZoomScale(): number {
-  const { camera } = useThree();
-  const [scale, setScale] = useState(1);
-
-  useFrame(() => {
-    // Calculate distance from camera to origin (center of terrain)
-    const distance = camera.position.length();
-    // Scale: closer = much thicker, farther = thinner
-    // At distance 50, scale = 4 (very close, very thick)
-    // At distance 150, scale = 2 (close, thick)
-    // At distance 300 (default overview), scale = 1
-    // At distance 1000, scale = 0.3 (far, thin)
-    // At distance 2000, scale = 0.15 (very far, very thin)
-    const newScale = Math.max(0.15, Math.min(4, 300 / distance));
-    // Only update if significantly different to avoid re-renders
-    if (Math.abs(newScale - scale) > 0.02) {
-      setScale(newScale);
-    }
-  });
-
-  return scale;
-}
+import { DIFFICULTY_COLORS, DIFFICULTY_COLORS_HIGHLIGHT, LINE_STYLE } from '@/config/theme';
+import { useZoomScale } from '@/hooks/useZoomScale';
 
 interface PistesProps {
   enabledDifficulties: Set<Difficulty>;
@@ -52,13 +20,8 @@ export function Pistes({ enabledDifficulties }: PistesProps) {
   const { data: pistes, isLoading } = usePistes();
   const hoveredPisteId = useMapStore((s) => s.getHoveredId('piste'));
   const selectedPisteId = useMapStore((s) => s.getSelectedId('piste'));
-  const hoveredEntity = useMapStore((s) => s.hoveredEntity);
-  const selectedEntity = useMapStore((s) => s.selectedEntity);
   const elevationGrid = useMapStore((s) => s.elevationGrid);
   const zoomScale = useZoomScale();
-
-  // Any entity (piste, lift, peak, etc.) is actively hovered or selected
-  const hasActiveEntity = hoveredEntity !== null || selectedEntity !== null;
 
   const filteredPistes = useMemo(
     () => filterPistesByDifficulty(pistes, enabledDifficulties),
@@ -82,7 +45,6 @@ export function Pistes({ enabledDifficulties }: PistesProps) {
             difficulty={piste.difficulty}
             isHovered={isHovered}
             isSelected={isSelected}
-            dimmed={hasActiveEntity && !isHovered && !isSelected}
             elevationGrid={elevationGrid}
             zoomScale={zoomScale}
           />
@@ -98,7 +60,6 @@ interface PisteLinesProps {
   difficulty: Difficulty;
   isHovered: boolean;
   isSelected: boolean;
-  dimmed: boolean;
   elevationGrid: ElevationGrid | null;
   zoomScale: number;
 }
@@ -199,7 +160,6 @@ const PisteLines = memo(function PisteLines({
   difficulty,
   isHovered,
   isSelected,
-  dimmed: _dimmed,
   elevationGrid,
   zoomScale,
 }: PisteLinesProps) {

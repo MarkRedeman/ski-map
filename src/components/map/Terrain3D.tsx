@@ -162,6 +162,28 @@ export function Terrain3D() {
     });
   }, [data, processedTexture, terrainBrightness]);
 
+  // Dispose GPU resources when they are replaced or unmounted
+  useEffect(() => {
+    return () => {
+      geometry?.dispose();
+    };
+  }, [geometry]);
+
+  useEffect(() => {
+    return () => {
+      // Only dispose our processed copy, not the original query-cached texture
+      if (processedTexture && processedTexture !== data?.satelliteTexture) {
+        processedTexture.dispose();
+      }
+    };
+  }, [processedTexture, data?.satelliteTexture]);
+
+  useEffect(() => {
+    return () => {
+      material?.dispose();
+    };
+  }, [material]);
+
   if (isLoading) {
     return (
       <group name="terrain-loading">

@@ -51,6 +51,7 @@ export function SkiMap3D() {
           near: 1,
           far: 10000,
         }}
+        dpr={[1, 1.5]}
         shadows
         gl={{ antialias: true }}
       >

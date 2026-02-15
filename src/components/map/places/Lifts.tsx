@@ -1,41 +1,16 @@
-import { useMemo, useState, memo } from 'react';
+import { useMemo, memo } from 'react';
 import { Line } from '@react-three/drei';
-import { useThree, useFrame } from '@react-three/fiber';
 import { useLifts } from '@/hooks/useLifts';
 import { useMapStore, type LiftType } from '@/stores/useMapStore';
 import { coordsToLocal } from '@/lib/geo/coordinates';
 import { sampleElevation, type ElevationGrid } from '@/lib/geo/elevationGrid';
 import { LIFT_COLORS, LINE_STYLE } from '@/config/theme';
+import { useZoomScale } from '@/hooks/useZoomScale';
 
 /** Height offset above terrain for lift cables (in scene units, ~100m real) */
 const LIFT_CABLE_OFFSET = 10;
 /** Height offset above terrain for station buildings */
 const LIFT_STATION_OFFSET = 3;
-
-/**
- * Hook to calculate zoom-based line width scaling
- * Returns a scale factor based on camera distance
- */
-function useZoomScale(): number {
-  const { camera } = useThree();
-  const [scale, setScale] = useState(1);
-
-  useFrame(() => {
-    const distance = camera.position.length();
-    // Scale: closer = much thicker, farther = thinner
-    // At distance 50, scale = 4 (very close, very thick)
-    // At distance 150, scale = 2 (close, thick)
-    // At distance 300 (default overview), scale = 1
-    // At distance 1000, scale = 0.3 (far, thin)
-    // At distance 2000, scale = 0.15 (very far, very thin)
-    const newScale = Math.max(0.15, Math.min(4, 300 / distance));
-    if (Math.abs(newScale - scale) > 0.02) {
-      setScale(newScale);
-    }
-  });
-
-  return scale;
-}
 
 /**
  * Get the config for a lift type, with fallback to default
@@ -52,13 +27,8 @@ export function Lifts() {
   const visibleLiftTypes = useMapStore((s) => s.visibleLiftTypes);
   const hoveredLiftId = useMapStore((s) => s.getHoveredId('lift'));
   const selectedLiftId = useMapStore((s) => s.getSelectedId('lift'));
-  const hoveredEntity = useMapStore((s) => s.hoveredEntity);
-  const selectedEntity = useMapStore((s) => s.selectedEntity);
   const elevationGrid = useMapStore((s) => s.elevationGrid);
   const zoomScale = useZoomScale();
-
-  // Any entity (piste, lift, peak, etc.) is actively hovered or selected
-  const hasActiveEntity = hoveredEntity !== null || selectedEntity !== null;
 
   // Filter lifts by visible types
   const visibleLifts = useMemo(() => {
@@ -83,7 +53,6 @@ export function Lifts() {
             coordinates={lift.coordinates}
             isHovered={isHovered}
             isSelected={isSelected}
-            dimmed={hasActiveEntity && !isHovered && !isSelected}
             elevationGrid={elevationGrid}
             zoomScale={zoomScale}
           />
@@ -99,7 +68,6 @@ interface LiftLineProps {
   coordinates: [number, number][];
   isHovered: boolean;
   isSelected: boolean;
-  dimmed: boolean;
   elevationGrid: ElevationGrid | null;
   zoomScale: number;
 }
@@ -109,7 +77,6 @@ const LiftLine = memo(function LiftLine({
   coordinates,
   isHovered,
   isSelected,
-  dimmed: _dimmed,
   elevationGrid,
   zoomScale,
 }: LiftLineProps) {

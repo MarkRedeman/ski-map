@@ -40,15 +40,12 @@ export function generateContours(
   minElevation?: number,
   maxElevation?: number
 ): ContourLine[] {
-  // Convert Float32Array to regular array for d3-contour
-  const values = Array.from(elevations);
-
   // Calculate elevation range
   let min = minElevation ?? Infinity;
   let max = maxElevation ?? -Infinity;
 
   if (minElevation === undefined || maxElevation === undefined) {
-    for (const v of values) {
+    for (const v of elevations) {
       if (v < min) min = v;
       if (v > max) max = v;
     }
@@ -69,7 +66,8 @@ export function generateContours(
   const contourGenerator = contours().size([width, height]).thresholds(thresholds);
 
   // Generate contours
-  const contourPolygons = contourGenerator(values);
+  // Float32Array implements ArrayLike<number>, which d3-contour accepts directly
+  const contourPolygons = contourGenerator(elevations as unknown as number[]);
 
   // Extract contour lines
   return contourPolygons.map((polygon) => ({
