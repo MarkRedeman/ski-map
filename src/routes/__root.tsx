@@ -1,7 +1,6 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 import { Suspense } from 'react';
-import { Header } from '@/components/layout/Header';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 
 export const Route = createRootRoute({
@@ -11,7 +10,6 @@ export const Route = createRootRoute({
 function RootLayout() {
   return (
     <div className="flex h-full flex-col">
-      <Header />
       <main className="flex-1 overflow-hidden">
         <Suspense
           fallback={
@@ -24,7 +22,7 @@ function RootLayout() {
         </Suspense>
       </main>
       <PWAInstallPrompt />
-      {import.meta.env.DEV && <TanStackRouterDevtools position="bottom-left" />}
+      {import.meta.env.DEV && <TanStackRouterDevtools position="bottom-right" />}
     </div>
   );
 }

@@ -2,23 +2,29 @@
  * Sidebar - Collapsible navigation sidebar
  *
  * Contains:
+ * - Brand row (logo + settings toggle + offline indicator)
  * - Location tracking controls
  * - My Rides section
  * - Browse Slopes & Lifts
+ * - Collapsible Settings section
  *
  * Slides in/out from the left. State managed by useUIStore.
  */
 
-import { useRef, useCallback } from 'react';
-import { Plus } from 'lucide-react';
+import { useRef, useState, useCallback } from 'react';
+import { Plus, Mountain, Settings, ChevronDown } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
 import { LocationButton } from '@/components/sidebar/LocationButton';
 import { PisteListPanel } from '@/components/sidebar/PisteListPanel';
-import { RideListPanel } from '@/components/rides/RideListPanel';
+import { RideListPanel } from '@/components/sidebar/rides/RideListPanel';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { SettingsContent } from '@/components/layout/SettingsPanel';
 import { useUIStore } from '@/stores/useUIStore';
 import { cn } from '@/lib/utils';
 
 export function Sidebar() {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddClick = useCallback(() => {
@@ -58,6 +64,15 @@ export function Sidebar() {
     >
       {/* Inner container maintains layout even when collapsed */}
       <div className="w-80 flex flex-col h-full">
+        {/* Brand row */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
+          <Link to="/" className="flex items-center gap-2">
+            <Mountain className="h-5 w-5 text-amber-500" />
+            <span className="text-base font-bold text-amber-500">Sölden Navigator</span>
+          </Link>
+          <OfflineIndicator />
+        </div>
+
         <div className="p-4 flex-shrink-0">
           {/* My Location */}
           <section>
@@ -102,6 +117,40 @@ export function Sidebar() {
           </h2>
           <div className="flex-1 overflow-y-auto">
             <PisteListPanel />
+          </div>
+        </section>
+
+        {/* Settings section — collapsible */}
+        <section className="border-t border-white/10 flex-shrink-0">
+          <button
+            onClick={() => setSettingsOpen((v) => !v)}
+            className="flex w-full items-center justify-between bg-black/30 px-4 py-2 text-left transition-colors hover:bg-black/40"
+          >
+            <div className="flex items-center gap-1.5">
+              <Settings
+                className={cn(
+                  'h-3.5 w-3.5 transition-colors',
+                  settingsOpen ? 'text-amber-400' : 'text-white/50'
+                )}
+              />
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-white/50">
+                Settings
+              </h2>
+            </div>
+            <ChevronDown
+              className={cn(
+                'h-3.5 w-3.5 text-white/40 transition-transform duration-200',
+                settingsOpen && 'rotate-180'
+              )}
+            />
+          </button>
+          <div
+            className={cn(
+              'overflow-hidden transition-all duration-200 ease-in-out',
+              settingsOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
+            )}
+          >
+            <SettingsContent />
           </div>
         </section>
       </div>

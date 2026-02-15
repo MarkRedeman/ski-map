@@ -1,102 +1,48 @@
 /**
  * Settings Panel
  *
- * Dropdown panel for runtime configuration of Mapbox token, region bounds,
- * and terrain appearance. Anchored to the cog icon in the Header.
+ * Runtime configuration for Mapbox token, region bounds,
+ * and terrain appearance. Rendered as a collapsible section
+ * inside the Sidebar.
  *
  * Sub-components own their own local form state and write through to the
  * Zustand store on every change. "Apply & Reload" simply reloads the page
  * so all consumers pick up the new values.
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { Settings, RotateCcw, ExternalLink } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { RotateCcw, ExternalLink } from 'lucide-react';
 import { useAppConfigStore } from '@/stores/useAppConfigStore';
 import { SOLDEN_REGION } from '@/config/region';
 import { TerrainSettings } from '@/components/map/panels/TerrainSettings';
 
 // ---------------------------------------------------------------------------
-// SettingsToggle (exported — used by Header)
+// SettingsContent (exported — collapsible settings body for the Sidebar)
 // ---------------------------------------------------------------------------
 
-export function SettingsToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+export function SettingsContent() {
   return (
-    <button
-      onClick={onToggle}
-      className={`rounded p-1.5 transition-colors ${
-        open ? 'bg-amber-500/20 text-amber-400' : 'text-white/60 hover:text-white/90'
-      }`}
-      title="Settings"
-    >
-      <Settings className="h-4 w-4" />
-    </button>
-  );
-}
+    <div className="p-4 space-y-4">
+      {/* Terrain Appearance */}
+      <TerrainSettings />
 
-// ---------------------------------------------------------------------------
-// SettingsPanel (exported — main container)
-// ---------------------------------------------------------------------------
+      <hr className="border-white/10" />
 
-interface SettingsPanelProps {
-  open: boolean;
-  onClose: () => void;
-}
+      <MapboxSettings />
 
-export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
+      <hr className="border-white/10" />
 
-  // Close on outside click
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    }
-    if (open) {
-      // Delay to avoid catching the toggle click
-      const timer = setTimeout(() => {
-        document.addEventListener('mousedown', handleClickOutside);
-      }, 0);
-      return () => {
-        clearTimeout(timer);
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
-  }, [open, onClose]);
+      <RegionSettings />
 
-  if (!open) return null;
+      <hr className="border-white/10" />
 
-  return (
-    <div
-      ref={panelRef}
-      className="absolute right-4 top-12 z-50 w-80 rounded-lg bg-zinc-950/95 shadow-2xl shadow-black/60 backdrop-blur-md"
-    >
-      <div className="p-4">
-        <h2 className="mb-3 text-sm font-semibold text-amber-500">Settings</h2>
-
-        {/* Terrain Appearance */}
-        <section className="mb-4">
-          <TerrainSettings />
-        </section>
-
-        <hr className="mb-4 border-white/10" />
-
-        <MapboxSettings />
-
-        <hr className="mb-4 border-white/10" />
-
-        <RegionSettings />
-
-        <hr className="mb-4 border-white/10" />
-
-        {/* Apply */}
-        <button
-          onClick={() => window.location.reload()}
-          className="w-full rounded bg-amber-500 py-1.5 text-xs font-semibold text-zinc-900 transition-colors hover:bg-amber-400"
-        >
-          Apply &amp; Reload
-        </button>
-      </div>
+      {/* Apply */}
+      <button
+        onClick={() => window.location.reload()}
+        className="w-full rounded bg-amber-500 py-1.5 text-xs font-semibold text-zinc-900 transition-colors hover:bg-amber-400"
+      >
+        Apply &amp; Reload
+      </button>
     </div>
   );
 }
@@ -114,7 +60,7 @@ function MapboxSettings() {
       setToken(value);
       store.setMapboxToken(value.trim() || null);
     },
-    [store],
+    [store]
   );
 
   const handleReset = useCallback(() => {
@@ -123,7 +69,7 @@ function MapboxSettings() {
   }, [store]);
 
   return (
-    <section className="mb-4">
+    <section>
       <div className="mb-1.5 flex items-center justify-between">
         <label className="text-xs font-semibold text-white">Mapbox Token</label>
         <button
@@ -198,7 +144,7 @@ function RegionSettings() {
         store.setRegionBounds(null);
       }
     },
-    [store],
+    [store]
   );
 
   // Write center to store whenever it changes
@@ -216,7 +162,7 @@ function RegionSettings() {
         store.setRegionCenter(null);
       }
     },
-    [store],
+    [store]
   );
 
   const handleReset = useCallback(() => {
