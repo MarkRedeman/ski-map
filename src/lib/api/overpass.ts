@@ -288,13 +288,14 @@ function parsePlaces(elements: OSMElement[]): Place[] {
 }
 
 /**
- * Parse restaurants, cafes, bars, and alpine huts from Overpass response
+ * Parse restaurants, cafes, bars, and alpine huts from Overpass response.
+ * Handles both node-based and way-based (building polygon) restaurants.
+ * For ways, the centroid of the building polygon is used as the location.
  */
-function parseRestaurants(elements: OSMElement[]): Restaurant[] {
+function parseRestaurants(elements: OSMElement[], nodes: Map<number, OSMNode>): Restaurant[] {
   const restaurants: Restaurant[] = [];
 
   for (const element of elements) {
-    if (element.type !== 'node') continue;
     if (!element.tags) continue;
 
     const name = element.tags.name;
@@ -303,13 +304,36 @@ function parseRestaurants(elements: OSMElement[]): Restaurant[] {
     const type = normalizeRestaurantType(element.tags);
     if (!type) continue;
 
+    let lat: number;
+    let lon: number;
+
+    if (element.type === 'node') {
+      lat = element.lat;
+      lon = element.lon;
+    } else if (element.type === 'way') {
+      // Compute centroid from the way's nodes
+      const coords: [number, number][] = [];
+      for (const nodeId of element.nodes) {
+        const node = nodes.get(nodeId);
+        if (node) {
+          coords.push([node.lon, node.lat]);
+        }
+      }
+      if (coords.length === 0) continue;
+      const [cLon, cLat] = computeCentroid(coords);
+      lat = cLat;
+      lon = cLon;
+    } else {
+      continue;
+    }
+
     const elevation = element.tags.ele ? parseFloat(element.tags.ele) : undefined;
 
     restaurants.push({
       id: `restaurant-${element.id}`,
       name,
-      lat: element.lat,
-      lon: element.lon,
+      lat,
+      lon,
       type,
       elevation,
       cuisine: element.tags.cuisine,
@@ -565,9 +589,11 @@ function buildCombinedQuery(): string {
   node["natural"="peak"](${south},${west},${north},${east});
   node["place"~"^(village|hamlet|locality|isolated_dwelling)$"](${south},${west},${north},${east});
   
-  // Restaurants, cafes, bars, and alpine huts
+  // Restaurants, cafes, bars, and alpine huts (nodes and ways/buildings)
   node["amenity"~"^(restaurant|cafe|bar)$"](${south},${west},${north},${east});
+  way["amenity"~"^(restaurant|cafe|bar)$"](${south},${west},${north},${east});
   node["tourism"="alpine_hut"](${south},${west},${north},${east});
+  way["tourism"="alpine_hut"](${south},${west},${north},${east});
 );
 out body;
 >;
@@ -597,7 +623,7 @@ export async function fetchAllSkiData(): Promise<SkiData> {
   const lifts = parseLifts(response.elements);
   const peaks = parsePeaks(response.elements);
   const places = parsePlaces(response.elements);
-  const restaurants = parseRestaurants(response.elements);
+  const restaurants = parseRestaurants(response.elements, nodes);
   const skiAreaPolygons = parseSkiAreaPolygons(response.elements, nodes);
 
   console.log(
